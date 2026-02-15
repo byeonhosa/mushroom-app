@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import (
-    Column, String, Integer, DateTime, ForeignKey, Numeric, Text, Enum, CheckConstraint
+    Column, String, Integer, DateTime, ForeignKey, Numeric, Text, Enum, CheckConstraint, UniqueConstraint
 )
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
@@ -13,9 +13,9 @@ class ZoneType(str, enum.Enum):
     MIXING = "MIXING"
     OTHER = "OTHER"
 
-class SpawnSourceType(str, enum.Enum):
-    PURCHASED = "PURCHASED"
-    IN_HOUSE = "IN_HOUSE"
+class SpawnType(str, enum.Enum):
+    PURCHASED_BLOCK = "PURCHASED_BLOCK"
+    IN_HOUSE_GRAIN = "IN_HOUSE_GRAIN"
 
 class ThermalProcessType(str, enum.Enum):
     PASTEURIZATION_STEAM = "PASTEURIZATION_STEAM"
@@ -61,9 +61,12 @@ class PasteurizationRun(Base):
 class SpawnBatch(Base):
     __tablename__ = "spawn_batches"
     spawn_batch_id = Column(Integer, primary_key=True)
-    source_type = Column(Enum(SpawnSourceType), nullable=False)
-    name = Column(String(120), nullable=False)
-    vendor_lot_code = Column(String(120), nullable=True)
+    spawn_type = Column(Enum(SpawnType), nullable=False)
+    strain_code = Column(String(30), nullable=False)
+    vendor = Column(String(120), nullable=True)
+    lot_code = Column(String(120), nullable=True)
+    made_at = Column(DateTime(timezone=True), nullable=True)
+    incubation_start_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text)
 
 class SubstrateBatch(Base):
@@ -91,7 +94,7 @@ class SubstrateBatch(Base):
 
     recipe = relationship("SubstrateRecipeVersion")
     fill_profile = relationship("FillProfile")
-    inoculations = relationship("BatchInoculation", back_populates="substrate_batch")
+    inoculation = relationship("BatchInoculation", back_populates="substrate_batch", uselist=False)
     bags = relationship("SubstrateBag", back_populates="batch", cascade="all, delete-orphan")
 
 class BatchInoculation(Base):
@@ -100,12 +103,14 @@ class BatchInoculation(Base):
     substrate_batch_id = Column(Integer, ForeignKey("substrate_batches.substrate_batch_id"), nullable=False)
     spawn_batch_id = Column(Integer, ForeignKey("spawn_batches.spawn_batch_id"), nullable=False)
     inoculated_at = Column(DateTime(timezone=True), server_default=func.now())
-    spawn_units_count = Column(Integer, nullable=True)
-    spawn_used_qty_kg = Column(Numeric(10, 3), nullable=True)
-    notes = Column(Text)
+    spawn_blocks_used = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("substrate_batch_id", name="uq_batch_inoculations_substrate_batch_id"),
+    )
 
     spawn_batch = relationship("SpawnBatch")
-    substrate_batch = relationship("SubstrateBatch", back_populates="inoculations")
+    substrate_batch = relationship("SubstrateBatch", back_populates="inoculation")
 
 class SubstrateBag(Base):
     __tablename__ = "substrate_bags"

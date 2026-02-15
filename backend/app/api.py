@@ -19,6 +19,21 @@ def fill_profiles(db: Session = Depends(get_db)):
 def create_fill_profile(payload: schemas.FillProfileCreate, db: Session = Depends(get_db)):
     return crud.create_fill_profile(db, payload.name, payload.target_dry_kg_per_bag, payload.target_water_kg_per_bag, payload.notes)
 
+@router.get("/spawn-batches", response_model=list[schemas.SpawnBatchOut])
+def list_spawn_batches(db: Session = Depends(get_db)):
+    return crud.list_spawn_batches(db)
+
+@router.post("/spawn-batches", response_model=schemas.SpawnBatchOut)
+def create_spawn_batch(payload: schemas.SpawnBatchCreate, db: Session = Depends(get_db)):
+    return crud.create_spawn_batch(db, payload.model_dump(exclude_unset=True))
+
+@router.patch("/spawn-batches/{spawn_batch_id}", response_model=schemas.SpawnBatchOut)
+def update_spawn_batch(spawn_batch_id: int, payload: schemas.SpawnBatchUpdate, db: Session = Depends(get_db)):
+    spawn_batch = crud.update_spawn_batch(db, spawn_batch_id, payload.model_dump(exclude_unset=True))
+    if not spawn_batch:
+        raise HTTPException(404, "Spawn batch not found")
+    return spawn_batch
+
 @router.get("/pasteurization-runs", response_model=list[schemas.PasteurizationRunOut])
 def list_pasteurization_runs(db: Session = Depends(get_db)):
     return crud.list_pasteurization_runs(db)
@@ -59,6 +74,42 @@ def create_batch(payload: schemas.SubstrateBatchCreate, db: Session = Depends(ge
         if isinstance(e.orig, UniqueViolation):
             raise HTTPException(status_code=409, detail="Batch name already exists. Choose a unique batch name.")
         raise
+
+@router.get("/batch-inoculations", response_model=list[schemas.BatchInoculationDetailOut])
+def list_batch_inoculations(substrate_batch_id: int | None = None, db: Session = Depends(get_db)):
+    return crud.list_batch_inoculations(db, substrate_batch_id)
+
+@router.post("/batch-inoculations", response_model=schemas.BatchInoculationDetailOut)
+def create_batch_inoculation(payload: schemas.BatchInoculationCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_batch_inoculation(db, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Batch already has an inoculation record.")
+        raise
+
+@router.patch("/batch-inoculations/{batch_inoculation_id}", response_model=schemas.BatchInoculationDetailOut)
+def update_batch_inoculation(
+    batch_inoculation_id: int,
+    payload: schemas.BatchInoculationUpdate,
+    db: Session = Depends(get_db)
+):
+    try:
+        inoc = crud.update_batch_inoculation(db, batch_inoculation_id, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Batch already has an inoculation record.")
+        raise
+    if not inoc:
+        raise HTTPException(404, "Batch inoculation not found")
+    return inoc
+
+@router.get("/batches/{batch_id}/inoculation", response_model=schemas.BatchInoculationDetailOut)
+def get_batch_inoculation(batch_id: int, db: Session = Depends(get_db)):
+    inoc = crud.get_batch_inoculation_for_batch(db, batch_id)
+    if not inoc:
+        raise HTTPException(404, "Batch inoculation not found")
+    return inoc
 
 @router.get("/batches/{batch_id}/bags", response_model=list[schemas.SubstrateBagOut])
 def list_batch_bags(batch_id: int, db: Session = Depends(get_db)):

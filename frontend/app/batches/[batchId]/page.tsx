@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiGet } from "../../../lib/api";
-import type { SubstrateBag, BatchMetrics } from "../../../lib/types";
+import type { SubstrateBag, BatchMetrics, BatchInoculation } from "../../../lib/types";
 
 export default function BatchDetail() {
   const params = useParams();
@@ -18,6 +18,7 @@ export default function BatchDetail() {
 
   const [bags, setBags] = useState<SubstrateBag[]>([]);
   const [metrics, setMetrics] = useState<BatchMetrics | null>(null);
+  const [inoculation, setInoculation] = useState<BatchInoculation | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,12 @@ export default function BatchDetail() {
         ]);
         setBags(bagsRes);
         setMetrics(metricsRes);
+        try {
+          const inoc = await apiGet<BatchInoculation>(`/batches/${batchId}/inoculation`);
+          setInoculation(inoc);
+        } catch {
+          setInoculation(null);
+        }
       } catch (e: any) {
         setError(e?.message || String(e));
       }
@@ -70,6 +77,17 @@ export default function BatchDetail() {
             <div className="kpi">{metrics.be_percent.toFixed(1)}</div>
           </div>
         </div>
+      )}
+
+      <h2>Inoculation</h2>
+      {!inoculation ? (
+        <p>No inoculation record.</p>
+      ) : (
+        <p>
+          Spawn Batch #{inoculation.spawn_batch_id} ({inoculation.spawn_batch.strain_code} / {inoculation.spawn_batch.spawn_type})
+          {" "}at {new Date(inoculation.inoculated_at).toLocaleString()}
+          {inoculation.spawn_blocks_used ? ` using ${inoculation.spawn_blocks_used} block(s)` : ""}
+        </p>
       )}
 
       <h2>Bags</h2>

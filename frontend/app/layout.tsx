@@ -10,6 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="nav">
               <a href="/batches">Batches</a>
               <a href="/batches/new">New Batch</a>
+              <a href="/spawn-batches">Spawn Batches</a>
               <a href="/pasteurization-runs">Pasteurization Runs</a>
             </nav>
           </div>

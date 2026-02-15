@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
+from sqlalchemy.orm import joinedload
 from . import models
 
 def create_fill_profile(db: Session, name: str, dry: float, water: float, notes: str | None):
@@ -9,6 +10,28 @@ def create_fill_profile(db: Session, name: str, dry: float, water: float, notes:
 
 def list_fill_profiles(db: Session):
     return db.execute(select(models.FillProfile).order_by(models.FillProfile.fill_profile_id)).scalars().all()
+
+def create_spawn_batch(db: Session, data: dict):
+    spawn_batch = models.SpawnBatch(**data)
+    db.add(spawn_batch)
+    db.commit()
+    db.refresh(spawn_batch)
+    return spawn_batch
+
+def list_spawn_batches(db: Session):
+    return db.execute(
+        select(models.SpawnBatch).order_by(models.SpawnBatch.spawn_batch_id.desc())
+    ).scalars().all()
+
+def update_spawn_batch(db: Session, spawn_batch_id: int, data: dict):
+    spawn_batch = db.get(models.SpawnBatch, spawn_batch_id)
+    if not spawn_batch:
+        return None
+    for k, v in data.items():
+        setattr(spawn_batch, k, v)
+    db.commit()
+    db.refresh(spawn_batch)
+    return spawn_batch
 
 def create_substrate_batch(db: Session, data: dict):
     batch = models.SubstrateBatch(**data)
@@ -21,6 +44,47 @@ def create_substrate_batch(db: Session, data: dict):
         db.add(models.SubstrateBag(bag_id=bag_id, substrate_batch_id=batch.substrate_batch_id))
     db.commit()
     return db.get(models.SubstrateBatch, batch.substrate_batch_id)
+
+def create_batch_inoculation(db: Session, data: dict):
+    inoc = models.BatchInoculation(**data)
+    db.add(inoc)
+    db.commit()
+    db.refresh(inoc)
+    return db.execute(
+        select(models.BatchInoculation)
+        .options(joinedload(models.BatchInoculation.spawn_batch))
+        .where(models.BatchInoculation.batch_inoculation_id == inoc.batch_inoculation_id)
+    ).scalar_one()
+
+def list_batch_inoculations(db: Session, substrate_batch_id: int | None = None):
+    stmt = (
+        select(models.BatchInoculation)
+        .options(joinedload(models.BatchInoculation.spawn_batch))
+        .order_by(models.BatchInoculation.batch_inoculation_id.desc())
+    )
+    if substrate_batch_id is not None:
+        stmt = stmt.where(models.BatchInoculation.substrate_batch_id == substrate_batch_id)
+    return db.execute(stmt).scalars().all()
+
+def get_batch_inoculation_for_batch(db: Session, substrate_batch_id: int):
+    return db.execute(
+        select(models.BatchInoculation)
+        .options(joinedload(models.BatchInoculation.spawn_batch))
+        .where(models.BatchInoculation.substrate_batch_id == substrate_batch_id)
+    ).scalar_one_or_none()
+
+def update_batch_inoculation(db: Session, batch_inoculation_id: int, data: dict):
+    inoc = db.get(models.BatchInoculation, batch_inoculation_id)
+    if not inoc:
+        return None
+    for k, v in data.items():
+        setattr(inoc, k, v)
+    db.commit()
+    return db.execute(
+        select(models.BatchInoculation)
+        .options(joinedload(models.BatchInoculation.spawn_batch))
+        .where(models.BatchInoculation.batch_inoculation_id == batch_inoculation_id)
+    ).scalar_one()
 
 def create_pasteurization_run(db: Session, data: dict):
     run = models.PasteurizationRun(**data)

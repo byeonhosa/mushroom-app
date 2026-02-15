@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../../../lib/api";
-import type { FillProfile, PasteurizationRun } from "../../../lib/types";
+import type { FillProfile, PasteurizationRun, SpawnBatch } from "../../../lib/types";
 
 export default function NewBatch() {
   const [fillProfiles, setFillProfiles] = useState<FillProfile[]>([]);
   const [pasteurizationRuns, setPasteurizationRuns] = useState<PasteurizationRun[]>([]);
+  const [spawnBatches, setSpawnBatches] = useState<SpawnBatch[]>([]);
   const [name, setName] = useState("");
   const [fillProfileId, setFillProfileId] = useState<number | null>(null);
   const [pasteurizationRunId, setPasteurizationRunId] = useState<number | null>(null);
+  const [spawnBatchId, setSpawnBatchId] = useState<number | null>(null);
+  const [spawnBlocksUsed, setSpawnBlocksUsed] = useState<number | null>(null);
   const [bagCount, setBagCount] = useState(10);
   const [recipeId, setRecipeId] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +29,12 @@ export default function NewBatch() {
   useEffect(() => {
     apiGet<PasteurizationRun[]>("/pasteurization-runs")
       .then(setPasteurizationRuns)
+      .catch(e => setError(String(e)));
+  }, []);
+
+  useEffect(() => {
+    apiGet<SpawnBatch[]>("/spawn-batches")
+      .then(setSpawnBatches)
       .catch(e => setError(String(e)));
   }, []);
 
@@ -52,6 +61,14 @@ export default function NewBatch() {
         // Show the response so we can see what came back
         setError(`Unexpected response from API: ${JSON.stringify(created)}`);
         return;
+      }
+
+      if (spawnBatchId) {
+        await apiPost("/batch-inoculations", {
+          substrate_batch_id: id,
+          spawn_batch_id: spawnBatchId,
+          spawn_blocks_used: spawnBlocksUsed
+        });
       }
 
       window.location.href = `/batches/${id}`;
@@ -93,6 +110,32 @@ export default function NewBatch() {
               </option>
             ))}
           </select>
+        </label>
+
+        <label>
+          Spawn Batch (optional)
+          <select
+            value={spawnBatchId ?? ""}
+            onChange={e => setSpawnBatchId(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">None</option>
+            {spawnBatches.map(sb => (
+              <option key={sb.spawn_batch_id} value={sb.spawn_batch_id}>
+                #{sb.spawn_batch_id} {sb.strain_code} ({sb.spawn_type})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Spawn Blocks Used (optional)
+          <input
+            type="number"
+            min={1}
+            value={spawnBlocksUsed ?? ""}
+            onChange={e => setSpawnBlocksUsed(e.target.value ? Number(e.target.value) : null)}
+            disabled={!spawnBatchId}
+          />
         </label>
 
         <label>

@@ -25,6 +25,26 @@ export type PasteurizationRun = {
   notes?: string | null;
 };
 
+export type SpawnBatch = {
+  spawn_batch_id: number;
+  spawn_type: "PURCHASED_BLOCK" | "IN_HOUSE_GRAIN";
+  strain_code: string;
+  vendor?: string | null;
+  lot_code?: string | null;
+  made_at?: string | null;
+  incubation_start_at?: string | null;
+  notes?: string | null;
+};
+
+export type BatchInoculation = {
+  batch_inoculation_id: number;
+  substrate_batch_id: number;
+  spawn_batch_id: number;
+  inoculated_at: string;
+  spawn_blocks_used?: number | null;
+  spawn_batch: SpawnBatch;
+};
+
 export type SubstrateBag = {
   bag_id: string;
   substrate_batch_id: number;
