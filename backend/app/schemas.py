@@ -23,6 +23,7 @@ class SubstrateBatchCreate(BaseModel):
     incubation_start_at: Optional[datetime] = None
     fruiting_zone_id: Optional[int] = None
     thermal_run_id: Optional[int] = None
+    pasteurization_run_id: Optional[int] = None
     sample_moisture_wb_pct: Optional[float] = None
     sample_wet_weight_kg: Optional[float] = None
     notes: Optional[str] = None
@@ -57,3 +58,25 @@ class BatchMetricsOut(BaseModel):
     total_harvest_kg: float
     dry_kg_total: float
     be_percent: float
+
+class PasteurizationRunCreate(BaseModel):
+    run_code: str
+    steam_start_at: Optional[datetime] = None
+    steam_end_at: Optional[datetime] = None
+    unloaded_at: datetime
+    notes: Optional[str] = None
+
+class PasteurizationRunUpdate(BaseModel):
+    steam_start_at: Optional[datetime] = None
+    steam_end_at: Optional[datetime] = None
+    unloaded_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class PasteurizationRunOut(BaseModel):
+    pasteurization_run_id: int
+    run_code: str
+    steam_start_at: Optional[datetime] = None
+    steam_end_at: Optional[datetime] = None
+    unloaded_at: datetime
+    notes: Optional[str] = None
+    class Config: from_attributes = True

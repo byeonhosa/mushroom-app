@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../../../lib/api";
-import type { FillProfile } from "../../../lib/types";
+import type { FillProfile, PasteurizationRun } from "../../../lib/types";
 
 export default function NewBatch() {
   const [fillProfiles, setFillProfiles] = useState<FillProfile[]>([]);
+  const [pasteurizationRuns, setPasteurizationRuns] = useState<PasteurizationRun[]>([]);
   const [name, setName] = useState("");
   const [fillProfileId, setFillProfileId] = useState<number | null>(null);
+  const [pasteurizationRunId, setPasteurizationRunId] = useState<number | null>(null);
   const [bagCount, setBagCount] = useState(10);
   const [recipeId, setRecipeId] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,13 @@ export default function NewBatch() {
         if (fps.length && fillProfileId === null) setFillProfileId(fps[0].fill_profile_id);
       })
       .catch(e => setError(String(e)));
-  }, [fillProfileId]);
+  }, []);
+
+  useEffect(() => {
+    apiGet<PasteurizationRun[]>("/pasteurization-runs")
+      .then(setPasteurizationRuns)
+      .catch(e => setError(String(e)));
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +43,8 @@ export default function NewBatch() {
         name,
         substrate_recipe_version_id: recipeId,
         fill_profile_id: fillProfileId,
-        bag_count: bagCount
+        bag_count: bagCount,
+        pasteurization_run_id: pasteurizationRunId
       });
 
       const id = created?.substrate_batch_id;
@@ -66,6 +75,21 @@ export default function NewBatch() {
             {fillProfiles.map(fp => (
               <option key={fp.fill_profile_id} value={fp.fill_profile_id}>
                 {fp.name} ({fp.target_dry_kg_per_bag}kg dry + {fp.target_water_kg_per_bag}kg water)
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Pasteurization Run (optional)
+          <select
+            value={pasteurizationRunId ?? ""}
+            onChange={e => setPasteurizationRunId(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">None</option>
+            {pasteurizationRuns.map(run => (
+              <option key={run.pasteurization_run_id} value={run.pasteurization_run_id}>
+                {run.run_code}
               </option>
             ))}
           </select>

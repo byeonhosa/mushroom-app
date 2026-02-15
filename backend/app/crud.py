@@ -22,6 +22,31 @@ def create_substrate_batch(db: Session, data: dict):
     db.commit()
     return db.get(models.SubstrateBatch, batch.substrate_batch_id)
 
+def create_pasteurization_run(db: Session, data: dict):
+    run = models.PasteurizationRun(**data)
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+    return run
+
+def list_pasteurization_runs(db: Session):
+    return db.execute(
+        select(models.PasteurizationRun).order_by(models.PasteurizationRun.pasteurization_run_id.desc())
+    ).scalars().all()
+
+def get_pasteurization_run(db: Session, pasteurization_run_id: int):
+    return db.get(models.PasteurizationRun, pasteurization_run_id)
+
+def update_pasteurization_run(db: Session, pasteurization_run_id: int, data: dict):
+    run = db.get(models.PasteurizationRun, pasteurization_run_id)
+    if not run:
+        return None
+    for k, v in data.items():
+        setattr(run, k, v)
+    db.commit()
+    db.refresh(run)
+    return run
+
 def list_batches(db: Session):
     return db.execute(select(models.SubstrateBatch).order_by(models.SubstrateBatch.substrate_batch_id.desc())).scalars().all()
 

@@ -49,6 +49,15 @@ class ThermalRun(Base):
     unloaded_at = Column(DateTime(timezone=True), nullable=False)
     notes = Column(Text)
 
+class PasteurizationRun(Base):
+    __tablename__ = "pasteurization_runs"
+    pasteurization_run_id = Column(Integer, primary_key=True)
+    run_code = Column(String(120), nullable=False, unique=True)
+    steam_start_at = Column(DateTime(timezone=True), nullable=True)
+    steam_end_at = Column(DateTime(timezone=True), nullable=True)
+    unloaded_at = Column(DateTime(timezone=True), nullable=False)
+    notes = Column(Text)
+
 class SpawnBatch(Base):
     __tablename__ = "spawn_batches"
     spawn_batch_id = Column(Integer, primary_key=True)
@@ -73,6 +82,7 @@ class SubstrateBatch(Base):
     fruiting_zone_id = Column(Integer, ForeignKey("zones.zone_id"), nullable=True)
 
     thermal_run_id = Column(Integer, ForeignKey("thermal_runs.thermal_run_id"), nullable=True)
+    pasteurization_run_id = Column(Integer, ForeignKey("pasteurization_runs.pasteurization_run_id"), nullable=True)
 
     sample_moisture_wb_pct = Column(Numeric(6, 3), nullable=True)
     sample_wet_weight_kg = Column(Numeric(10, 3), nullable=True)

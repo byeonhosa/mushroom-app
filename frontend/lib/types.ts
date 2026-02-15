@@ -12,6 +12,16 @@ export type SubstrateBatch = {
   substrate_recipe_version_id: number;
   fill_profile_id: number;
   bag_count: number;
+  pasteurization_run_id?: number | null;
+  notes?: string | null;
+};
+
+export type PasteurizationRun = {
+  pasteurization_run_id: number;
+  run_code: string;
+  steam_start_at?: string | null;
+  steam_end_at?: string | null;
+  unloaded_at: string;
   notes?: string | null;
 };
 
