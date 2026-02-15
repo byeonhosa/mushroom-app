@@ -26,3 +26,6 @@ yarn-error.log*
 
 # Docker / local data
 pgdata/
+
+# Codex local config
+.codex/
