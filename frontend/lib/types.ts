@@ -33,6 +33,13 @@ export type SpawnBatch = {
   lot_code?: string | null;
   made_at?: string | null;
   incubation_start_at?: string | null;
+  grain_dry_kg?: number | null;
+  grain_water_kg?: number | null;
+  supplement_kg?: number | null;
+  lc_vendor?: string | null;
+  lc_code?: string | null;
+  sterilization_run_code?: string | null;
+  incubation_zone_id?: number | null;
   notes?: string | null;
 };
 

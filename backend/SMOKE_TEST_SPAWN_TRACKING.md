@@ -47,6 +47,16 @@ curl -sS http://127.0.0.1:8000/api/spawn-batches
 
 ## 4) Batch + inoculation attribution
 
+Create an in-house grain spawn batch (includes Iteration A fields):
+
+```bash
+INHOUSE_SPAWN_JSON=$(curl -sS -X POST http://127.0.0.1:8000/api/spawn-batches \
+  -H "Content-Type: application/json" \
+  -d '{"spawn_type":"IN_HOUSE_GRAIN","strain_code":"LM","grain_dry_kg":6.500,"grain_water_kg":5.850,"supplement_kg":0.250,"lc_vendor":"LabA","lc_code":"LC-LM-20260215","sterilization_run_code":"ST-20260215-A","incubation_zone_id":2,"notes":"in-house grain smoke"}')
+echo "$INHOUSE_SPAWN_JSON"
+INHOUSE_SPAWN_ID=$(echo "$INHOUSE_SPAWN_JSON" | sed -n 's/.*"spawn_batch_id":\([0-9]\+\).*/\1/p')
+```
+
 ```bash
 BATCH_NAME="SMOKE-BATCH-SPAWN-$(date +%s)"
 BATCH_JSON=$(curl -sS -X POST http://127.0.0.1:8000/api/batches \
@@ -59,7 +69,7 @@ BATCH_ID=$(echo "$BATCH_JSON" | sed -n 's/.*"substrate_batch_id":\([0-9]\+\).*/\
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/api/batch-inoculations \
   -H "Content-Type: application/json" \
-  -d "{\"substrate_batch_id\":${BATCH_ID},\"spawn_batch_id\":${SPAWN_ID},\"spawn_blocks_used\":2}"
+  -d "{\"substrate_batch_id\":${BATCH_ID},\"spawn_batch_id\":${INHOUSE_SPAWN_ID},\"spawn_blocks_used\":2}"
 ```
 
 ```bash
@@ -75,5 +85,5 @@ curl -sS "http://127.0.0.1:8000/api/batches/${BATCH_ID}/inoculation"
 ```bash
 curl -i -sS -X POST http://127.0.0.1:8000/api/batch-inoculations \
   -H "Content-Type: application/json" \
-  -d "{\"substrate_batch_id\":${BATCH_ID},\"spawn_batch_id\":${SPAWN_ID},\"spawn_blocks_used\":3}"
+  -d "{\"substrate_batch_id\":${BATCH_ID},\"spawn_batch_id\":${INHOUSE_SPAWN_ID},\"spawn_blocks_used\":3}"
 ```

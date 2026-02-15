@@ -67,6 +67,13 @@ class SpawnBatch(Base):
     lot_code = Column(String(120), nullable=True)
     made_at = Column(DateTime(timezone=True), nullable=True)
     incubation_start_at = Column(DateTime(timezone=True), nullable=True)
+    grain_dry_kg = Column(Numeric(10, 3), nullable=True)
+    grain_water_kg = Column(Numeric(10, 3), nullable=True)
+    supplement_kg = Column(Numeric(10, 3), nullable=True)
+    lc_vendor = Column(String(120), nullable=True)
+    lc_code = Column(String(120), nullable=True)
+    sterilization_run_code = Column(String(120), nullable=True)
+    incubation_zone_id = Column(Integer, ForeignKey("zones.zone_id"), nullable=True)
     notes = Column(Text)
 
 class SubstrateBatch(Base):

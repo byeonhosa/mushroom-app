@@ -19,6 +19,13 @@ class SpawnBatchCreate(BaseModel):
     lot_code: Optional[str] = None
     made_at: Optional[datetime] = None
     incubation_start_at: Optional[datetime] = None
+    grain_dry_kg: Optional[float] = Field(default=None, ge=0)
+    grain_water_kg: Optional[float] = Field(default=None, ge=0)
+    supplement_kg: Optional[float] = Field(default=None, ge=0)
+    lc_vendor: Optional[str] = None
+    lc_code: Optional[str] = None
+    sterilization_run_code: Optional[str] = None
+    incubation_zone_id: Optional[int] = None
     notes: Optional[str] = None
 
 class SpawnBatchUpdate(BaseModel):
@@ -28,6 +35,13 @@ class SpawnBatchUpdate(BaseModel):
     lot_code: Optional[str] = None
     made_at: Optional[datetime] = None
     incubation_start_at: Optional[datetime] = None
+    grain_dry_kg: Optional[float] = Field(default=None, ge=0)
+    grain_water_kg: Optional[float] = Field(default=None, ge=0)
+    supplement_kg: Optional[float] = Field(default=None, ge=0)
+    lc_vendor: Optional[str] = None
+    lc_code: Optional[str] = None
+    sterilization_run_code: Optional[str] = None
+    incubation_zone_id: Optional[int] = None
     notes: Optional[str] = None
 
 class SpawnBatchOut(BaseModel):
@@ -38,6 +52,13 @@ class SpawnBatchOut(BaseModel):
     lot_code: Optional[str] = None
     made_at: Optional[datetime] = None
     incubation_start_at: Optional[datetime] = None
+    grain_dry_kg: Optional[float] = None
+    grain_water_kg: Optional[float] = None
+    supplement_kg: Optional[float] = None
+    lc_vendor: Optional[str] = None
+    lc_code: Optional[str] = None
+    sterilization_run_code: Optional[str] = None
+    incubation_zone_id: Optional[int] = None
     notes: Optional[str] = None
     class Config: from_attributes = True
 

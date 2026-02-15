@@ -13,6 +13,13 @@ type SpawnBatchForm = {
   lot_code: string;
   made_at: string;
   incubation_start_at: string;
+  grain_dry_kg: string;
+  grain_water_kg: string;
+  supplement_kg: string;
+  lc_vendor: string;
+  lc_code: string;
+  sterilization_run_code: string;
+  incubation_zone_id: string;
   notes: string;
 };
 
@@ -23,10 +30,31 @@ const emptyForm: SpawnBatchForm = {
   lot_code: "",
   made_at: "",
   incubation_start_at: "",
+  grain_dry_kg: "",
+  grain_water_kg: "",
+  supplement_kg: "",
+  lc_vendor: "",
+  lc_code: "",
+  sterilization_run_code: "",
+  incubation_zone_id: "",
   notes: "",
 };
 
+function toNullableNumber(raw: string): number | null {
+  if (!raw.trim()) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function toNullableInt(raw: string): number | null {
+  if (!raw.trim()) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.trunc(n);
+}
+
 function toPayload(form: SpawnBatchForm) {
+  const isInHouse = form.spawn_type === "IN_HOUSE_GRAIN";
   return {
     spawn_type: form.spawn_type,
     strain_code: form.strain_code.trim(),
@@ -34,6 +62,13 @@ function toPayload(form: SpawnBatchForm) {
     lot_code: form.lot_code.trim() || null,
     made_at: form.made_at ? new Date(form.made_at).toISOString() : null,
     incubation_start_at: form.incubation_start_at ? new Date(form.incubation_start_at).toISOString() : null,
+    grain_dry_kg: isInHouse ? toNullableNumber(form.grain_dry_kg) : null,
+    grain_water_kg: isInHouse ? toNullableNumber(form.grain_water_kg) : null,
+    supplement_kg: isInHouse ? toNullableNumber(form.supplement_kg) : null,
+    lc_vendor: isInHouse ? (form.lc_vendor.trim() || null) : null,
+    lc_code: isInHouse ? (form.lc_code.trim() || null) : null,
+    sterilization_run_code: isInHouse ? (form.sterilization_run_code.trim() || null) : null,
+    incubation_zone_id: isInHouse ? toNullableInt(form.incubation_zone_id) : null,
     notes: form.notes.trim() || null,
   };
 }
@@ -63,6 +98,13 @@ export default function SpawnBatchesPage() {
         lot_code: row.lot_code ?? "",
         made_at: toDateTimeLocal(row.made_at),
         incubation_start_at: toDateTimeLocal(row.incubation_start_at),
+        grain_dry_kg: row.grain_dry_kg == null ? "" : String(row.grain_dry_kg),
+        grain_water_kg: row.grain_water_kg == null ? "" : String(row.grain_water_kg),
+        supplement_kg: row.supplement_kg == null ? "" : String(row.supplement_kg),
+        lc_vendor: row.lc_vendor ?? "",
+        lc_code: row.lc_code ?? "",
+        sterilization_run_code: row.sterilization_run_code ?? "",
+        incubation_zone_id: row.incubation_zone_id == null ? "" : String(row.incubation_zone_id),
         notes: row.notes ?? "",
       };
     }
@@ -145,6 +187,71 @@ export default function SpawnBatchesPage() {
             onChange={(e) => setCreateForm((p) => ({ ...p, incubation_start_at: e.target.value }))}
           />
         </label>
+        {createForm.spawn_type === "IN_HOUSE_GRAIN" && (
+          <>
+            <label>
+              Grain Dry (kg)
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                value={createForm.grain_dry_kg}
+                onChange={(e) => setCreateForm((p) => ({ ...p, grain_dry_kg: e.target.value }))}
+              />
+            </label>
+            <label>
+              Grain Water (kg)
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                value={createForm.grain_water_kg}
+                onChange={(e) => setCreateForm((p) => ({ ...p, grain_water_kg: e.target.value }))}
+              />
+            </label>
+            <label>
+              Supplement (kg)
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                value={createForm.supplement_kg}
+                onChange={(e) => setCreateForm((p) => ({ ...p, supplement_kg: e.target.value }))}
+              />
+            </label>
+            <label>
+              LC Vendor
+              <input
+                value={createForm.lc_vendor}
+                onChange={(e) => setCreateForm((p) => ({ ...p, lc_vendor: e.target.value }))}
+              />
+            </label>
+            <label>
+              LC Code
+              <input
+                value={createForm.lc_code}
+                onChange={(e) => setCreateForm((p) => ({ ...p, lc_code: e.target.value }))}
+              />
+            </label>
+            <label>
+              Sterilization Run Code
+              <input
+                value={createForm.sterilization_run_code}
+                onChange={(e) => setCreateForm((p) => ({ ...p, sterilization_run_code: e.target.value }))}
+              />
+            </label>
+            <label>
+              Incubation Zone ID
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={createForm.incubation_zone_id}
+                onChange={(e) => setCreateForm((p) => ({ ...p, incubation_zone_id: e.target.value }))}
+              />
+            </label>
+          </>
+        )}
         <label>
           Notes
           <input value={createForm.notes} onChange={(e) => setCreateForm((p) => ({ ...p, notes: e.target.value }))} />
@@ -163,6 +270,13 @@ export default function SpawnBatchesPage() {
             <th>Lot</th>
             <th>Made At</th>
             <th>Incubation Start</th>
+            <th>Grain Dry kg</th>
+            <th>Grain Water kg</th>
+            <th>Supplement kg</th>
+            <th>LC Vendor</th>
+            <th>LC Code</th>
+            <th>Sterilization Run</th>
+            <th>Incubation Zone ID</th>
             <th>Notes</th>
             <th></th>
           </tr>
@@ -244,6 +358,109 @@ export default function SpawnBatchesPage() {
                       }))
                     }
                   />
+                </td>
+                <td>
+                  {form.spawn_type === "IN_HOUSE_GRAIN" && (
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={form.grain_dry_kg}
+                      onChange={(e) =>
+                        setEditForms((p) => ({
+                          ...p,
+                          [item.spawn_batch_id]: { ...p[item.spawn_batch_id], grain_dry_kg: e.target.value },
+                        }))
+                      }
+                    />
+                  )}
+                </td>
+                <td>
+                  {form.spawn_type === "IN_HOUSE_GRAIN" && (
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={form.grain_water_kg}
+                      onChange={(e) =>
+                        setEditForms((p) => ({
+                          ...p,
+                          [item.spawn_batch_id]: { ...p[item.spawn_batch_id], grain_water_kg: e.target.value },
+                        }))
+                      }
+                    />
+                  )}
+                </td>
+                <td>
+                  {form.spawn_type === "IN_HOUSE_GRAIN" && (
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={form.supplement_kg}
+                      onChange={(e) =>
+                        setEditForms((p) => ({
+                          ...p,
+                          [item.spawn_batch_id]: { ...p[item.spawn_batch_id], supplement_kg: e.target.value },
+                        }))
+                      }
+                    />
+                  )}
+                </td>
+                <td>
+                  {form.spawn_type === "IN_HOUSE_GRAIN" && (
+                    <input
+                      value={form.lc_vendor}
+                      onChange={(e) =>
+                        setEditForms((p) => ({
+                          ...p,
+                          [item.spawn_batch_id]: { ...p[item.spawn_batch_id], lc_vendor: e.target.value },
+                        }))
+                      }
+                    />
+                  )}
+                </td>
+                <td>
+                  {form.spawn_type === "IN_HOUSE_GRAIN" && (
+                    <input
+                      value={form.lc_code}
+                      onChange={(e) =>
+                        setEditForms((p) => ({
+                          ...p,
+                          [item.spawn_batch_id]: { ...p[item.spawn_batch_id], lc_code: e.target.value },
+                        }))
+                      }
+                    />
+                  )}
+                </td>
+                <td>
+                  {form.spawn_type === "IN_HOUSE_GRAIN" && (
+                    <input
+                      value={form.sterilization_run_code}
+                      onChange={(e) =>
+                        setEditForms((p) => ({
+                          ...p,
+                          [item.spawn_batch_id]: { ...p[item.spawn_batch_id], sterilization_run_code: e.target.value },
+                        }))
+                      }
+                    />
+                  )}
+                </td>
+                <td>
+                  {form.spawn_type === "IN_HOUSE_GRAIN" && (
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={form.incubation_zone_id}
+                      onChange={(e) =>
+                        setEditForms((p) => ({
+                          ...p,
+                          [item.spawn_batch_id]: { ...p[item.spawn_batch_id], incubation_zone_id: e.target.value },
+                        }))
+                      }
+                    />
+                  )}
                 </td>
                 <td>
                   <input
