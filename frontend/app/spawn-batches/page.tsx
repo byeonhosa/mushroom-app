@@ -40,6 +40,19 @@ const emptyForm: SpawnBatchForm = {
   notes: "",
 };
 
+function clearInHouseFields(form: SpawnBatchForm): SpawnBatchForm {
+  return {
+    ...form,
+    grain_dry_kg: "",
+    grain_water_kg: "",
+    supplement_kg: "",
+    lc_vendor: "",
+    lc_code: "",
+    sterilization_run_code: "",
+    incubation_zone_id: "",
+  };
+}
+
 function toNullableNumber(raw: string): number | null {
   if (!raw.trim()) return null;
   const n = Number(raw);
@@ -62,13 +75,17 @@ function toPayload(form: SpawnBatchForm) {
     lot_code: form.lot_code.trim() || null,
     made_at: form.made_at ? new Date(form.made_at).toISOString() : null,
     incubation_start_at: form.incubation_start_at ? new Date(form.incubation_start_at).toISOString() : null,
-    grain_dry_kg: isInHouse ? toNullableNumber(form.grain_dry_kg) : null,
-    grain_water_kg: isInHouse ? toNullableNumber(form.grain_water_kg) : null,
-    supplement_kg: isInHouse ? toNullableNumber(form.supplement_kg) : null,
-    lc_vendor: isInHouse ? (form.lc_vendor.trim() || null) : null,
-    lc_code: isInHouse ? (form.lc_code.trim() || null) : null,
-    sterilization_run_code: isInHouse ? (form.sterilization_run_code.trim() || null) : null,
-    incubation_zone_id: isInHouse ? toNullableInt(form.incubation_zone_id) : null,
+    ...(isInHouse
+      ? {
+          grain_dry_kg: toNullableNumber(form.grain_dry_kg),
+          grain_water_kg: toNullableNumber(form.grain_water_kg),
+          supplement_kg: toNullableNumber(form.supplement_kg),
+          lc_vendor: form.lc_vendor.trim() || null,
+          lc_code: form.lc_code.trim() || null,
+          sterilization_run_code: form.sterilization_run_code.trim() || null,
+          incubation_zone_id: toNullableInt(form.incubation_zone_id),
+        }
+      : {}),
     notes: form.notes.trim() || null,
   };
 }
@@ -148,7 +165,12 @@ export default function SpawnBatchesPage() {
           Spawn Type
           <select
             value={createForm.spawn_type}
-            onChange={(e) => setCreateForm((p) => ({ ...p, spawn_type: e.target.value as SpawnType }))}
+            onChange={(e) =>
+              setCreateForm((p) => {
+                const next = { ...p, spawn_type: e.target.value as SpawnType };
+                return next.spawn_type === "IN_HOUSE_GRAIN" ? next : clearInHouseFields(next);
+              })
+            }
           >
             <option value="PURCHASED_BLOCK">PURCHASED_BLOCK</option>
             <option value="IN_HOUSE_GRAIN">IN_HOUSE_GRAIN</option>
@@ -200,7 +222,7 @@ export default function SpawnBatchesPage() {
               />
             </label>
             <label>
-              Grain Water (kg)
+              water added to dry grain (no-soak/no-simmer)
               <input
                 type="number"
                 min="0"
@@ -271,7 +293,7 @@ export default function SpawnBatchesPage() {
             <th>Made At</th>
             <th>Incubation Start</th>
             <th>Grain Dry kg</th>
-            <th>Grain Water kg</th>
+            <th>Water added to dry grain (no-soak/no-simmer)</th>
             <th>Supplement kg</th>
             <th>LC Vendor</th>
             <th>LC Code</th>
@@ -294,7 +316,13 @@ export default function SpawnBatchesPage() {
                     onChange={(e) =>
                       setEditForms((p) => ({
                         ...p,
-                        [item.spawn_batch_id]: { ...p[item.spawn_batch_id], spawn_type: e.target.value as SpawnType },
+                        [item.spawn_batch_id]:
+                          e.target.value === "IN_HOUSE_GRAIN"
+                            ? { ...p[item.spawn_batch_id], spawn_type: e.target.value as SpawnType }
+                            : clearInHouseFields({
+                                ...p[item.spawn_batch_id],
+                                spawn_type: e.target.value as SpawnType,
+                              }),
                       }))
                     }
                   >
