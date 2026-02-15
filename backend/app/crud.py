@@ -3,6 +3,26 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 from . import models
 
+IN_HOUSE_ONLY_SPAWN_FIELDS = (
+    "grain_dry_kg",
+    "grain_water_kg",
+    "supplement_kg",
+    "lc_vendor",
+    "lc_code",
+    "sterilization_run_code",
+    "incubation_zone_id",
+)
+
+
+def _normalize_spawn_batch_data(data: dict, existing: models.SpawnBatch | None = None) -> dict:
+    normalized = dict(data)
+    spawn_type = normalized.get("spawn_type", existing.spawn_type if existing else None)
+    if spawn_type == models.SpawnType.PURCHASED_BLOCK.value:
+        for field in IN_HOUSE_ONLY_SPAWN_FIELDS:
+            normalized[field] = None
+    return normalized
+
+
 def create_fill_profile(db: Session, name: str, dry: float, water: float, notes: str | None):
     fp = models.FillProfile(name=name, target_dry_kg_per_bag=dry, target_water_kg_per_bag=water, notes=notes)
     db.add(fp); db.commit(); db.refresh(fp)
@@ -12,7 +32,7 @@ def list_fill_profiles(db: Session):
     return db.execute(select(models.FillProfile).order_by(models.FillProfile.fill_profile_id)).scalars().all()
 
 def create_spawn_batch(db: Session, data: dict):
-    spawn_batch = models.SpawnBatch(**data)
+    spawn_batch = models.SpawnBatch(**_normalize_spawn_batch_data(data))
     db.add(spawn_batch)
     db.commit()
     db.refresh(spawn_batch)
@@ -27,7 +47,7 @@ def update_spawn_batch(db: Session, spawn_batch_id: int, data: dict):
     spawn_batch = db.get(models.SpawnBatch, spawn_batch_id)
     if not spawn_batch:
         return None
-    for k, v in data.items():
+    for k, v in _normalize_spawn_batch_data(data, spawn_batch).items():
         setattr(spawn_batch, k, v)
     db.commit()
     db.refresh(spawn_batch)

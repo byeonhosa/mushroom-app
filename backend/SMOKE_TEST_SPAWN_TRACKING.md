@@ -27,16 +27,18 @@ Open a second terminal for the requests below.
 curl -sS http://127.0.0.1:8000/api/health
 ```
 
+Purchased spawn example (no in-house-only fields):
+
 ```bash
-SPAWN_JSON=$(curl -sS -X POST http://127.0.0.1:8000/api/spawn-batches \
+PURCHASED_SPAWN_JSON=$(curl -sS -X POST http://127.0.0.1:8000/api/spawn-batches \
   -H "Content-Type: application/json" \
   -d '{"spawn_type":"PURCHASED_BLOCK","strain_code":"LM","vendor":"MycoVendor","lot_code":"LOT-001","notes":"smoke"}')
-echo "$SPAWN_JSON"
-SPAWN_ID=$(echo "$SPAWN_JSON" | sed -n 's/.*"spawn_batch_id":\([0-9]\+\).*/\1/p')
+echo "$PURCHASED_SPAWN_JSON"
+PURCHASED_SPAWN_ID=$(echo "$PURCHASED_SPAWN_JSON" | sed -n 's/.*"spawn_batch_id":\([0-9]\+\).*/\1/p')
 ```
 
 ```bash
-curl -sS -X PATCH "http://127.0.0.1:8000/api/spawn-batches/${SPAWN_ID}" \
+curl -sS -X PATCH "http://127.0.0.1:8000/api/spawn-batches/${PURCHASED_SPAWN_ID}" \
   -H "Content-Type: application/json" \
   -d '{"vendor":"MycoVendor-Updated"}'
 ```
@@ -47,7 +49,7 @@ curl -sS http://127.0.0.1:8000/api/spawn-batches
 
 ## 4) Batch + inoculation attribution
 
-Create an in-house grain spawn batch (includes Iteration A fields):
+In-house grain spawn example (includes in-house-only fields):
 
 ```bash
 INHOUSE_SPAWN_JSON=$(curl -sS -X POST http://127.0.0.1:8000/api/spawn-batches \
