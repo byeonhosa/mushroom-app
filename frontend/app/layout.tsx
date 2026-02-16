@@ -11,6 +11,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/batches">Batches</a>
               <a href="/batches/new">New Batch</a>
               <a href="/spawn-batches">Spawn Batches</a>
+              <a href="/sterilization-runs">Sterilization Runs</a>
+              <a href="/grain-types">Grain Types</a>
+              <a href="/ingredients">Ingredients</a>
               <a href="/pasteurization-runs">Pasteurization Runs</a>
             </nav>
           </div>

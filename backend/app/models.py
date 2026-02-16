@@ -42,6 +42,28 @@ class SubstrateRecipeVersion(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     notes = Column(Text)
 
+class Ingredient(Base):
+    __tablename__ = "ingredients"
+    ingredient_id = Column(Integer, primary_key=True)
+    name = Column(String(120), nullable=False, unique=True)
+    category = Column(String(120), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    lots = relationship("IngredientLot", back_populates="ingredient")
+
+class IngredientLot(Base):
+    __tablename__ = "ingredient_lots"
+    ingredient_lot_id = Column(Integer, primary_key=True)
+    ingredient_id = Column(Integer, ForeignKey("ingredients.ingredient_id"), nullable=False)
+    vendor = Column(String(120), nullable=True)
+    lot_code = Column(String(120), nullable=True)
+    received_at = Column(DateTime(timezone=True), nullable=True)
+    unit_cost_per_kg = Column(Numeric(12, 4), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    ingredient = relationship("Ingredient", back_populates="lots")
+    batch_addins = relationship("SubstrateBatchAddin", back_populates="ingredient_lot")
+
 class ThermalRun(Base):
     __tablename__ = "thermal_runs"
     thermal_run_id = Column(Integer, primary_key=True)
@@ -58,6 +80,24 @@ class PasteurizationRun(Base):
     unloaded_at = Column(DateTime(timezone=True), nullable=False)
     notes = Column(Text)
 
+class SterilizationRun(Base):
+    __tablename__ = "sterilization_runs"
+    sterilization_run_id = Column(Integer, primary_key=True)
+    run_code = Column(String(120), nullable=False, unique=True)
+    cycle_start_at = Column(DateTime(timezone=True), nullable=True)
+    cycle_end_at = Column(DateTime(timezone=True), nullable=True)
+    unloaded_at = Column(DateTime(timezone=True), nullable=False)
+    temp_c = Column(Numeric(6, 2), nullable=True)
+    psi = Column(Numeric(6, 2), nullable=True)
+    hold_minutes = Column(Integer, nullable=True)
+    notes = Column(Text, nullable=True)
+
+class GrainType(Base):
+    __tablename__ = "grain_types"
+    grain_type_id = Column(Integer, primary_key=True)
+    name = Column(String(80), nullable=False, unique=True)
+    notes = Column(Text, nullable=True)
+
 class SpawnBatch(Base):
     __tablename__ = "spawn_batches"
     spawn_batch_id = Column(Integer, primary_key=True)
@@ -73,8 +113,16 @@ class SpawnBatch(Base):
     lc_vendor = Column(String(120), nullable=True)
     lc_code = Column(String(120), nullable=True)
     sterilization_run_code = Column(String(120), nullable=True)
+    sterilization_run_id = Column(Integer, ForeignKey("sterilization_runs.sterilization_run_id"), nullable=True)
+    grain_type_id = Column(Integer, ForeignKey("grain_types.grain_type_id"), nullable=True)
+    grain_kg = Column(Numeric(10, 3), nullable=True)
+    vermiculite_kg = Column(Numeric(10, 3), nullable=True)
+    water_kg = Column(Numeric(10, 3), nullable=True)
     incubation_zone_id = Column(Integer, ForeignKey("zones.zone_id"), nullable=True)
     notes = Column(Text)
+
+    sterilization_run = relationship("SterilizationRun")
+    grain_type = relationship("GrainType")
 
 class SubstrateBatch(Base):
     __tablename__ = "substrate_batches"
@@ -103,6 +151,19 @@ class SubstrateBatch(Base):
     fill_profile = relationship("FillProfile")
     inoculation = relationship("BatchInoculation", back_populates="substrate_batch", uselist=False)
     bags = relationship("SubstrateBag", back_populates="batch", cascade="all, delete-orphan")
+    addins = relationship("SubstrateBatchAddin", back_populates="substrate_batch", cascade="all, delete-orphan")
+
+class SubstrateBatchAddin(Base):
+    __tablename__ = "substrate_batch_addins"
+    substrate_batch_addin_id = Column(Integer, primary_key=True)
+    substrate_batch_id = Column(Integer, ForeignKey("substrate_batches.substrate_batch_id", ondelete="CASCADE"), nullable=False)
+    ingredient_lot_id = Column(Integer, ForeignKey("ingredient_lots.ingredient_lot_id"), nullable=False)
+    dry_kg = Column(Numeric(12, 4), nullable=True)
+    pct_of_base_dry = Column(Numeric(8, 4), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    substrate_batch = relationship("SubstrateBatch", back_populates="addins")
+    ingredient_lot = relationship("IngredientLot", back_populates="batch_addins")
 
 class BatchInoculation(Base):
     __tablename__ = "batch_inoculations"

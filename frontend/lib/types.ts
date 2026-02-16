@@ -25,6 +25,24 @@ export type PasteurizationRun = {
   notes?: string | null;
 };
 
+export type SterilizationRun = {
+  sterilization_run_id: number;
+  run_code: string;
+  cycle_start_at?: string | null;
+  cycle_end_at?: string | null;
+  unloaded_at: string;
+  temp_c?: number | null;
+  psi?: number | null;
+  hold_minutes?: number | null;
+  notes?: string | null;
+};
+
+export type GrainType = {
+  grain_type_id: number;
+  name: string;
+  notes?: string | null;
+};
+
 export type SpawnBatch = {
   spawn_batch_id: number;
   spawn_type: "PURCHASED_BLOCK" | "IN_HOUSE_GRAIN";
@@ -33,14 +51,43 @@ export type SpawnBatch = {
   lot_code?: string | null;
   made_at?: string | null;
   incubation_start_at?: string | null;
-  grain_dry_kg?: number | null;
-  grain_water_kg?: number | null;
+  sterilization_run_id?: number | null;
+  grain_type_id?: number | null;
+  grain_kg?: number | null;
+  vermiculite_kg?: number | null;
+  water_kg?: number | null;
   supplement_kg?: number | null;
-  lc_vendor?: string | null;
-  lc_code?: string | null;
-  sterilization_run_code?: string | null;
-  incubation_zone_id?: number | null;
+  hydration_ratio?: number | null;
+  expected_added_water_wb_pct?: number | null;
   notes?: string | null;
+};
+
+export type Ingredient = {
+  ingredient_id: number;
+  name: string;
+  category?: string | null;
+  notes?: string | null;
+};
+
+export type IngredientLot = {
+  ingredient_lot_id: number;
+  ingredient_id: number;
+  vendor?: string | null;
+  lot_code?: string | null;
+  received_at?: string | null;
+  unit_cost_per_kg?: number | null;
+  notes?: string | null;
+  ingredient?: Ingredient | null;
+};
+
+export type SubstrateBatchAddin = {
+  substrate_batch_addin_id: number;
+  substrate_batch_id: number;
+  ingredient_lot_id: number;
+  dry_kg?: number | null;
+  pct_of_base_dry?: number | null;
+  notes?: string | null;
+  ingredient_lot: IngredientLot;
 };
 
 export type BatchInoculation = {

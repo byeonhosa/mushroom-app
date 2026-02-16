@@ -25,6 +25,11 @@ class SpawnBatchCreate(BaseModel):
     lc_vendor: Optional[str] = None
     lc_code: Optional[str] = None
     sterilization_run_code: Optional[str] = None
+    sterilization_run_id: Optional[int] = None
+    grain_type_id: Optional[int] = None
+    grain_kg: Optional[float] = Field(default=None, ge=0)
+    vermiculite_kg: Optional[float] = Field(default=None, ge=0)
+    water_kg: Optional[float] = Field(default=None, ge=0)
     incubation_zone_id: Optional[int] = None
     notes: Optional[str] = None
 
@@ -41,6 +46,11 @@ class SpawnBatchUpdate(BaseModel):
     lc_vendor: Optional[str] = None
     lc_code: Optional[str] = None
     sterilization_run_code: Optional[str] = None
+    sterilization_run_id: Optional[int] = None
+    grain_type_id: Optional[int] = None
+    grain_kg: Optional[float] = Field(default=None, ge=0)
+    vermiculite_kg: Optional[float] = Field(default=None, ge=0)
+    water_kg: Optional[float] = Field(default=None, ge=0)
     incubation_zone_id: Optional[int] = None
     notes: Optional[str] = None
 
@@ -58,8 +68,120 @@ class SpawnBatchOut(BaseModel):
     lc_vendor: Optional[str] = None
     lc_code: Optional[str] = None
     sterilization_run_code: Optional[str] = None
+    sterilization_run_id: Optional[int] = None
+    grain_type_id: Optional[int] = None
+    grain_kg: Optional[float] = None
+    vermiculite_kg: Optional[float] = None
+    water_kg: Optional[float] = None
     incubation_zone_id: Optional[int] = None
+    hydration_ratio: Optional[float] = None
+    expected_added_water_wb_pct: Optional[float] = None
     notes: Optional[str] = None
+    class Config: from_attributes = True
+
+class GrainTypeCreate(BaseModel):
+    name: str
+    notes: Optional[str] = None
+
+class GrainTypeUpdate(BaseModel):
+    name: Optional[str] = None
+    notes: Optional[str] = None
+
+class GrainTypeOut(BaseModel):
+    grain_type_id: int
+    name: str
+    notes: Optional[str] = None
+    class Config: from_attributes = True
+
+class SterilizationRunCreate(BaseModel):
+    run_code: str
+    cycle_start_at: Optional[datetime] = None
+    cycle_end_at: Optional[datetime] = None
+    unloaded_at: datetime
+    temp_c: Optional[float] = None
+    psi: Optional[float] = None
+    hold_minutes: Optional[int] = None
+    notes: Optional[str] = None
+
+class SterilizationRunUpdate(BaseModel):
+    cycle_start_at: Optional[datetime] = None
+    cycle_end_at: Optional[datetime] = None
+    unloaded_at: Optional[datetime] = None
+    temp_c: Optional[float] = None
+    psi: Optional[float] = None
+    hold_minutes: Optional[int] = None
+    notes: Optional[str] = None
+
+class SterilizationRunOut(BaseModel):
+    sterilization_run_id: int
+    run_code: str
+    cycle_start_at: Optional[datetime] = None
+    cycle_end_at: Optional[datetime] = None
+    unloaded_at: datetime
+    temp_c: Optional[float] = None
+    psi: Optional[float] = None
+    hold_minutes: Optional[int] = None
+    notes: Optional[str] = None
+    class Config: from_attributes = True
+
+class IngredientCreate(BaseModel):
+    name: str
+    category: Optional[str] = None
+    notes: Optional[str] = None
+
+class IngredientUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    notes: Optional[str] = None
+
+class IngredientOut(BaseModel):
+    ingredient_id: int
+    name: str
+    category: Optional[str] = None
+    notes: Optional[str] = None
+    class Config: from_attributes = True
+
+class IngredientLotCreate(BaseModel):
+    ingredient_id: int
+    vendor: Optional[str] = None
+    lot_code: Optional[str] = None
+    received_at: Optional[datetime] = None
+    unit_cost_per_kg: Optional[float] = None
+    notes: Optional[str] = None
+
+class IngredientLotUpdate(BaseModel):
+    ingredient_id: Optional[int] = None
+    vendor: Optional[str] = None
+    lot_code: Optional[str] = None
+    received_at: Optional[datetime] = None
+    unit_cost_per_kg: Optional[float] = None
+    notes: Optional[str] = None
+
+class IngredientLotOut(BaseModel):
+    ingredient_lot_id: int
+    ingredient_id: int
+    vendor: Optional[str] = None
+    lot_code: Optional[str] = None
+    received_at: Optional[datetime] = None
+    unit_cost_per_kg: Optional[float] = None
+    notes: Optional[str] = None
+    ingredient: Optional[IngredientOut] = None
+    class Config: from_attributes = True
+
+class SubstrateBatchAddinCreate(BaseModel):
+    ingredient_lot_id: int
+    dry_kg: Optional[float] = Field(default=None, ge=0)
+    pct_of_base_dry: Optional[float] = Field(default=None, ge=0)
+    notes: Optional[str] = None
+
+class SubstrateBatchAddinOut(BaseModel):
+    substrate_batch_addin_id: int
+    substrate_batch_id: int
+    ingredient_lot_id: int
+    dry_kg: Optional[float] = None
+    pct_of_base_dry: Optional[float] = None
+    notes: Optional[str] = None
+    ingredient_lot: IngredientLotOut
     class Config: from_attributes = True
 
 class SubstrateBatchCreate(BaseModel):
