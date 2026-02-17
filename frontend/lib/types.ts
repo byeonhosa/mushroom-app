@@ -18,14 +18,18 @@ export type SubstrateBatch = {
 
 export type Batch = SubstrateBatch;
 
-export type Harvest = {
-  harvest_event_id?: number;
-  substrate_batch_id: number;
-  bag_id?: string;
-  flush_number: 1 | 2;
-  harvested_kg: number;
-  harvested_at: string;
+export type MixLot = {
+  mix_lot_id: number;
+  lot_code: string;
   notes?: string | null;
+  created_at: string;
+};
+
+export type SpawnRecipe = {
+  spawn_recipe_id: number;
+  recipe_code: string;
+  notes?: string | null;
+  created_at: string;
 };
 
 export type PasteurizationRun = {
@@ -120,11 +124,37 @@ export type SubstrateBag = {
 
 export type HarvestEvent = {
   harvest_event_id: number;
-  bag_id: string;
+  block_id?: number | null;
+  bag_id?: string | null;
   flush_number: 1 | 2;
   fresh_weight_kg: number;
   harvested_at: string;
   notes?: string | null;
+};
+
+export type Block = {
+  block_id: number;
+  block_code: string;
+  block_type: "SPAWN" | "SUBSTRATE";
+  mix_lot_id?: number | null;
+  pasteurization_run_id?: number | null;
+  sterilization_run_id?: number | null;
+  spawn_recipe_id?: number | null;
+  substrate_batch_id?: number | null;
+  spawn_batch_id?: number | null;
+  status?: string | null;
+  notes?: string | null;
+  created_at: string;
+};
+
+export type Inoculation = {
+  inoculation_id: number;
+  child_block_id: number;
+  parent_spawn_block_id: number;
+  inoculated_at: string;
+  notes?: string | null;
+  child_block_code?: string | null;
+  parent_spawn_block_code?: string | null;
 };
 
 export type BagDetail = SubstrateBag & { harvest_events: HarvestEvent[] };

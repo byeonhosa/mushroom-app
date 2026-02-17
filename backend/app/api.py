@@ -21,6 +21,100 @@ def fill_profiles(db: Session = Depends(get_db)):
 def create_fill_profile(payload: schemas.FillProfileCreate, db: Session = Depends(get_db)):
     return crud.create_fill_profile(db, payload.name, payload.target_dry_kg_per_bag, payload.target_water_kg_per_bag, payload.notes)
 
+@router.get("/mix-lots", response_model=list[schemas.MixLotOut])
+def list_mix_lots(db: Session = Depends(get_db)):
+    return crud.list_mix_lots(db)
+
+@router.post("/mix-lots", response_model=schemas.MixLotOut)
+def create_mix_lot(payload: schemas.MixLotCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_mix_lot(db, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Mix lot code already exists.")
+        raise
+
+@router.get("/spawn-recipes", response_model=list[schemas.SpawnRecipeOut])
+def list_spawn_recipes(db: Session = Depends(get_db)):
+    return crud.list_spawn_recipes(db)
+
+@router.post("/spawn-recipes", response_model=schemas.SpawnRecipeOut)
+def create_spawn_recipe(payload: schemas.SpawnRecipeCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_spawn_recipe(db, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Spawn recipe code already exists.")
+        raise
+
+@router.post("/blocks", response_model=schemas.BlockOut)
+def create_block(payload: schemas.BlockCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_block(db, payload.model_dump(exclude_unset=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Block code already exists.")
+        raise
+
+@router.get("/blocks", response_model=list[schemas.BlockOut])
+def list_blocks(
+    block_type: Literal["SPAWN", "SUBSTRATE"] | None = None,
+    mix_lot_id: int | None = None,
+    pasteurization_run_id: int | None = None,
+    sterilization_run_id: int | None = None,
+    limit: int = 200,
+    db: Session = Depends(get_db),
+):
+    return crud.list_blocks(
+        db,
+        block_type=block_type,
+        mix_lot_id=mix_lot_id,
+        pasteurization_run_id=pasteurization_run_id,
+        sterilization_run_id=sterilization_run_id,
+        limit=limit,
+    )
+
+@router.get("/blocks/{block_id}", response_model=schemas.BlockOut)
+def get_block(block_id: int, db: Session = Depends(get_db)):
+    row = crud.get_block(db, block_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Block not found")
+    return row
+
+@router.get("/batches/{substrate_batch_id}/blocks", response_model=list[schemas.BlockOut])
+def list_blocks_for_substrate_batch(substrate_batch_id: int, db: Session = Depends(get_db)):
+    return crud.list_blocks_for_substrate_batch(db, substrate_batch_id)
+
+@router.get("/spawn-batches/{spawn_batch_id}/blocks", response_model=list[schemas.BlockOut])
+def list_blocks_for_spawn_batch(spawn_batch_id: int, db: Session = Depends(get_db)):
+    return crud.list_blocks_for_spawn_batch(db, spawn_batch_id)
+
+@router.post("/inoculations", response_model=schemas.InoculationOut)
+def create_inoculation(payload: schemas.InoculationCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_inoculation(db, payload.model_dump(exclude_unset=True))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Block already has an inoculation record.")
+        raise
+
+@router.get("/blocks/{block_id}/inoculation", response_model=schemas.InoculationOut)
+def get_inoculation_for_child_block(block_id: int, db: Session = Depends(get_db)):
+    row = crud.get_inoculation_for_child_block(db, block_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Inoculation not found")
+    return row
+
+@router.get("/spawn-blocks/{spawn_block_id}/children", response_model=list[schemas.BlockOut])
+def list_children_for_spawn_block(spawn_block_id: int, db: Session = Depends(get_db)):
+    return crud.list_children_for_spawn_block(db, spawn_block_id)
+
 @router.get("/grain-types", response_model=list[schemas.GrainTypeOut])
 def list_grain_types(db: Session = Depends(get_db)):
     return crud.list_grain_types(db)
@@ -287,11 +381,19 @@ def bag_detail(bag_id: str, db: Session = Depends(get_db)):
 
 @router.post("/harvest-events", response_model=schemas.HarvestEventOut)
 def create_harvest(payload: schemas.HarvestEventCreate, db: Session = Depends(get_db)):
-    return crud.create_harvest_event(db, payload.model_dump(exclude_unset=True))
-
-@router.post("/harvests", response_model=schemas.HarvestOut)
-def create_harvest_from_batch(payload: schemas.HarvestCreate, db: Session = Depends(get_db)):
     try:
-        return crud.create_harvest_from_batch(db, payload.model_dump(exclude_unset=True))
+        return crud.create_harvest_event(db, payload.model_dump(exclude_unset=True))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/blocks/{block_id}/harvest-events", response_model=list[schemas.HarvestEventOut])
+def list_harvest_events_for_block(block_id: int, db: Session = Depends(get_db)):
+    try:
+        block = crud.get_block(db, block_id)
+        if not block:
+            raise HTTPException(status_code=404, detail="Block not found")
+        return crud.list_harvest_events_for_block(db, block_id)
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))

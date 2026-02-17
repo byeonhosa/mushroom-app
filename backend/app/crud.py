@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import IntegrityError
+import re
+from datetime import datetime, timezone
 from . import models
 
 IN_HOUSE_ONLY_SPAWN_FIELDS = (
@@ -85,6 +88,26 @@ def create_fill_profile(db: Session, name: str, dry: float, water: float, notes:
 
 def list_fill_profiles(db: Session):
     return db.execute(select(models.FillProfile).order_by(models.FillProfile.fill_profile_id)).scalars().all()
+
+def list_mix_lots(db: Session):
+    return db.execute(select(models.MixLot).order_by(models.MixLot.mix_lot_id.desc())).scalars().all()
+
+def create_mix_lot(db: Session, data: dict):
+    item = models.MixLot(**data)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+def list_spawn_recipes(db: Session):
+    return db.execute(select(models.SpawnRecipe).order_by(models.SpawnRecipe.spawn_recipe_id.desc())).scalars().all()
+
+def create_spawn_recipe(db: Session, data: dict):
+    item = models.SpawnRecipe(**data)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
 
 def list_grain_types(db: Session):
     return db.execute(
@@ -185,6 +208,150 @@ def list_ingredient_lots(db: Session, ingredient_id: int | None = None):
     if ingredient_id is not None:
         stmt = stmt.where(models.IngredientLot.ingredient_id == ingredient_id)
     return db.execute(stmt).scalars().all()
+
+def _validate_block_refs(db: Session, data: dict):
+    checks = (
+        ("mix_lot_id", models.MixLot, "Invalid mix_lot_id: {}"),
+        ("pasteurization_run_id", models.PasteurizationRun, "Invalid pasteurization_run_id: {}"),
+        ("sterilization_run_id", models.SterilizationRun, "Invalid sterilization_run_id: {}"),
+        ("spawn_recipe_id", models.SpawnRecipe, "Invalid spawn_recipe_id: {}"),
+        ("substrate_batch_id", models.SubstrateBatch, "Invalid substrate_batch_id: {}"),
+        ("spawn_batch_id", models.SpawnBatch, "Invalid spawn_batch_id: {}"),
+    )
+    for key, model, msg in checks:
+        value = data.get(key)
+        if value is not None and not db.get(model, value):
+            raise ValueError(msg.format(value))
+
+def _generate_block_code(db: Session, block_type: str) -> str:
+    prefix = "SP" if block_type == "SPAWN" else "SB"
+    day = datetime.now(timezone.utc).strftime("%Y%m%d")
+    stem = f"{prefix}-{day}-"
+    pattern = f"{stem}%"
+    rows = db.execute(
+        select(models.Block.block_code).where(models.Block.block_code.like(pattern))
+    ).scalars().all()
+    max_seq = 0
+    for code in rows:
+        m = re.match(rf"^{re.escape(stem)}(\d{{4}})$", code or "")
+        if m:
+            max_seq = max(max_seq, int(m.group(1)))
+    return f"{stem}{max_seq + 1:04d}"
+
+def create_block(db: Session, data: dict):
+    payload = dict(data)
+    block_type = payload["block_type"]
+    if block_type not in ("SPAWN", "SUBSTRATE"):
+        raise ValueError("block_type must be SPAWN or SUBSTRATE")
+    _validate_block_refs(db, payload)
+    if block_type == "SPAWN":
+        payload["mix_lot_id"] = None
+        payload["pasteurization_run_id"] = None
+    else:
+        payload["sterilization_run_id"] = None
+    payload["block_code"] = payload.get("block_code") or _generate_block_code(db, block_type)
+    block = models.Block(**payload)
+    db.add(block)
+    db.commit()
+    db.refresh(block)
+    return block
+
+def list_blocks(
+    db: Session,
+    block_type: str | None = None,
+    mix_lot_id: int | None = None,
+    pasteurization_run_id: int | None = None,
+    sterilization_run_id: int | None = None,
+    limit: int = 200,
+):
+    stmt = select(models.Block)
+    if block_type:
+        stmt = stmt.where(models.Block.block_type == block_type)
+    if mix_lot_id is not None:
+        stmt = stmt.where(models.Block.mix_lot_id == mix_lot_id)
+    if pasteurization_run_id is not None:
+        stmt = stmt.where(models.Block.pasteurization_run_id == pasteurization_run_id)
+    if sterilization_run_id is not None:
+        stmt = stmt.where(models.Block.sterilization_run_id == sterilization_run_id)
+    stmt = stmt.order_by(models.Block.block_id.desc()).limit(max(1, min(limit, 1000)))
+    return db.execute(stmt).scalars().all()
+
+def get_block(db: Session, block_id: int):
+    return db.get(models.Block, block_id)
+
+def list_blocks_for_substrate_batch(db: Session, substrate_batch_id: int):
+    return db.execute(
+        select(models.Block)
+        .where(models.Block.substrate_batch_id == substrate_batch_id)
+        .order_by(models.Block.block_id.desc())
+    ).scalars().all()
+
+def list_blocks_for_spawn_batch(db: Session, spawn_batch_id: int):
+    return db.execute(
+        select(models.Block)
+        .where(models.Block.spawn_batch_id == spawn_batch_id)
+        .order_by(models.Block.block_id.desc())
+    ).scalars().all()
+
+def create_inoculation(db: Session, data: dict):
+    child = db.get(models.Block, data["child_block_id"])
+    if not child:
+        raise LookupError("Child block not found")
+    parent = db.get(models.Block, data["parent_spawn_block_id"])
+    if not parent:
+        raise LookupError("Parent spawn block not found")
+    if child.block_type != "SUBSTRATE":
+        raise ValueError("child_block_id must reference a SUBSTRATE block")
+    if parent.block_type != "SPAWN":
+        raise ValueError("parent_spawn_block_id must reference a SPAWN block")
+    inoc = models.Inoculation(**data)
+    db.add(inoc)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise
+    db.refresh(inoc)
+    return {
+        "inoculation_id": inoc.inoculation_id,
+        "child_block_id": inoc.child_block_id,
+        "parent_spawn_block_id": inoc.parent_spawn_block_id,
+        "inoculated_at": inoc.inoculated_at,
+        "notes": inoc.notes,
+        "child_block_code": child.block_code,
+        "parent_spawn_block_code": parent.block_code,
+    }
+
+def get_inoculation_for_child_block(db: Session, block_id: int):
+    inoc = db.execute(
+        select(models.Inoculation).where(models.Inoculation.child_block_id == block_id)
+    ).scalar_one_or_none()
+    if not inoc:
+        return None
+    child = db.get(models.Block, inoc.child_block_id)
+    parent = db.get(models.Block, inoc.parent_spawn_block_id)
+    return {
+        "inoculation_id": inoc.inoculation_id,
+        "child_block_id": inoc.child_block_id,
+        "parent_spawn_block_id": inoc.parent_spawn_block_id,
+        "inoculated_at": inoc.inoculated_at,
+        "notes": inoc.notes,
+        "child_block_code": child.block_code if child else None,
+        "parent_spawn_block_code": parent.block_code if parent else None,
+    }
+
+def list_children_for_spawn_block(db: Session, spawn_block_id: int):
+    inocs = db.execute(
+        select(models.Inoculation).where(models.Inoculation.parent_spawn_block_id == spawn_block_id)
+        .order_by(models.Inoculation.inoculation_id.desc())
+    ).scalars().all()
+    child_ids = [i.child_block_id for i in inocs]
+    if not child_ids:
+        return []
+    blocks = db.execute(
+        select(models.Block).where(models.Block.block_id.in_(child_ids)).order_by(models.Block.block_id.desc())
+    ).scalars().all()
+    return blocks
 
 def create_ingredient_lot(db: Session, data: dict):
     ingredient_lot = models.IngredientLot(**data)
@@ -447,46 +614,38 @@ def get_bag_detail(db: Session, bag_id: str):
     return bag
 
 def create_harvest_event(db: Session, data: dict):
-    ev = models.HarvestEvent(**data)
+    block = db.get(models.Block, data["block_id"])
+    if not block:
+        raise LookupError("Block not found")
+    if block.block_type != "SUBSTRATE":
+        raise ValueError("Harvest events can only be recorded for SUBSTRATE blocks")
+
+    bag_id = None
+    if block.substrate_batch_id is not None:
+        bag = db.execute(
+            select(models.SubstrateBag)
+            .where(models.SubstrateBag.substrate_batch_id == block.substrate_batch_id)
+            .order_by(models.SubstrateBag.bag_id.asc())
+        ).scalars().first()
+        bag_id = bag.bag_id if bag else None
+
+    ev = models.HarvestEvent(
+        block_id=block.block_id,
+        bag_id=bag_id,
+        flush_number=data["flush_number"],
+        fresh_weight_kg=data["fresh_weight_kg"],
+        harvested_at=data.get("harvested_at"),
+        notes=data.get("notes"),
+    )
     db.add(ev); db.commit(); db.refresh(ev)
     return ev
 
-def create_harvest_from_batch(db: Session, data: dict):
-    substrate_batch_id = data["substrate_batch_id"]
-    batch = db.get(models.SubstrateBatch, substrate_batch_id)
-    if not batch:
-        raise LookupError("Substrate batch not found")
-
-    bag_id = str(substrate_batch_id)
-    bag = db.get(models.SubstrateBag, bag_id)
-    if not bag:
-        bag = db.execute(
-            select(models.SubstrateBag)
-            .where(models.SubstrateBag.substrate_batch_id == substrate_batch_id)
-            .order_by(models.SubstrateBag.bag_id.asc())
-        ).scalars().first()
-    if not bag:
-        raise LookupError("No substrate bag found for substrate batch")
-
-    harvest_event_data = {
-        "bag_id": bag.bag_id,
-        "flush_number": data["flush_number"],
-        "fresh_weight_kg": data["harvested_kg"],
-        "notes": data.get("notes"),
-    }
-    if data.get("harvested_at") is not None:
-        harvest_event_data["harvested_at"] = data["harvested_at"]
-
-    ev = create_harvest_event(db, harvest_event_data)
-    return {
-        "harvest_event_id": ev.harvest_event_id,
-        "substrate_batch_id": substrate_batch_id,
-        "bag_id": ev.bag_id,
-        "flush_number": ev.flush_number,
-        "harvested_kg": float(ev.fresh_weight_kg),
-        "harvested_at": ev.harvested_at,
-        "notes": ev.notes,
-    }
+def list_harvest_events_for_block(db: Session, block_id: int):
+    return db.execute(
+        select(models.HarvestEvent)
+        .where(models.HarvestEvent.block_id == block_id)
+        .order_by(models.HarvestEvent.harvested_at.desc(), models.HarvestEvent.harvest_event_id.desc())
+    ).scalars().all()
 
 def batch_metrics(db: Session, substrate_batch_id: int):
     batch = db.get(models.SubstrateBatch, substrate_batch_id)

@@ -42,6 +42,20 @@ class SubstrateRecipeVersion(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     notes = Column(Text)
 
+class MixLot(Base):
+    __tablename__ = "mix_lots"
+    mix_lot_id = Column(Integer, primary_key=True)
+    lot_code = Column(String(120), nullable=False, unique=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class SpawnRecipe(Base):
+    __tablename__ = "spawn_recipes"
+    spawn_recipe_id = Column(Integer, primary_key=True)
+    recipe_code = Column(String(120), nullable=False, unique=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
 class Ingredient(Base):
     __tablename__ = "ingredients"
     ingredient_id = Column(Integer, primary_key=True)
@@ -97,6 +111,43 @@ class GrainType(Base):
     grain_type_id = Column(Integer, primary_key=True)
     name = Column(String(80), nullable=False, unique=True)
     notes = Column(Text, nullable=True)
+
+class Block(Base):
+    __tablename__ = "blocks"
+    block_id = Column(Integer, primary_key=True)
+    block_code = Column(String(120), nullable=False, unique=True)
+    block_type = Column(String(20), nullable=False)
+    mix_lot_id = Column(Integer, ForeignKey("mix_lots.mix_lot_id", ondelete="SET NULL"), nullable=True)
+    pasteurization_run_id = Column(Integer, ForeignKey("pasteurization_runs.pasteurization_run_id", ondelete="SET NULL"), nullable=True)
+    sterilization_run_id = Column(Integer, ForeignKey("sterilization_runs.sterilization_run_id", ondelete="SET NULL"), nullable=True)
+    spawn_recipe_id = Column(Integer, ForeignKey("spawn_recipes.spawn_recipe_id", ondelete="SET NULL"), nullable=True)
+    substrate_batch_id = Column(Integer, ForeignKey("substrate_batches.substrate_batch_id", ondelete="SET NULL"), nullable=True)
+    spawn_batch_id = Column(Integer, ForeignKey("spawn_batches.spawn_batch_id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(30), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    mix_lot = relationship("MixLot")
+    pasteurization_run = relationship("PasteurizationRun")
+    sterilization_run = relationship("SterilizationRun")
+    spawn_recipe = relationship("SpawnRecipe")
+    substrate_batch = relationship("SubstrateBatch")
+    spawn_batch = relationship("SpawnBatch")
+
+class Inoculation(Base):
+    __tablename__ = "inoculations"
+    inoculation_id = Column(Integer, primary_key=True)
+    child_block_id = Column(Integer, ForeignKey("blocks.block_id", ondelete="CASCADE"), nullable=False)
+    parent_spawn_block_id = Column(Integer, ForeignKey("blocks.block_id", ondelete="RESTRICT"), nullable=False)
+    inoculated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    notes = Column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("child_block_id", name="uq_inoculations_child_block_id"),
+    )
+
+    child_block = relationship("Block", foreign_keys=[child_block_id])
+    parent_spawn_block = relationship("Block", foreign_keys=[parent_spawn_block_id])
 
 class SpawnBatch(Base):
     __tablename__ = "spawn_batches"
@@ -193,7 +244,8 @@ class SubstrateBag(Base):
 class HarvestEvent(Base):
     __tablename__ = "harvest_events"
     harvest_event_id = Column(Integer, primary_key=True)
-    bag_id = Column(String(64), ForeignKey("substrate_bags.bag_id"), nullable=False)
+    bag_id = Column(String(64), ForeignKey("substrate_bags.bag_id"), nullable=True)
+    block_id = Column(Integer, ForeignKey("blocks.block_id"), nullable=True)
     harvested_at = Column(DateTime(timezone=True), server_default=func.now())
     flush_number = Column(Integer, nullable=False)
     fresh_weight_kg = Column(Numeric(10, 3), nullable=False)
@@ -204,3 +256,4 @@ class HarvestEvent(Base):
     )
 
     bag = relationship("SubstrateBag", back_populates="harvest_events")
+    block = relationship("Block")

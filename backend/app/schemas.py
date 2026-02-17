@@ -12,6 +12,70 @@ class FillProfileOut(FillProfileCreate):
     fill_profile_id: int
     class Config: from_attributes = True
 
+class MixLotCreate(BaseModel):
+    lot_code: str
+    notes: Optional[str] = None
+
+class MixLotOut(BaseModel):
+    mix_lot_id: int
+    lot_code: str
+    notes: Optional[str] = None
+    created_at: datetime
+    class Config: from_attributes = True
+
+class SpawnRecipeCreate(BaseModel):
+    recipe_code: str
+    notes: Optional[str] = None
+
+class SpawnRecipeOut(BaseModel):
+    spawn_recipe_id: int
+    recipe_code: str
+    notes: Optional[str] = None
+    created_at: datetime
+    class Config: from_attributes = True
+
+class BlockCreate(BaseModel):
+    block_type: Literal["SPAWN", "SUBSTRATE"]
+    block_code: Optional[str] = None
+    mix_lot_id: Optional[int] = None
+    pasteurization_run_id: Optional[int] = None
+    sterilization_run_id: Optional[int] = None
+    spawn_recipe_id: Optional[int] = None
+    substrate_batch_id: Optional[int] = None
+    spawn_batch_id: Optional[int] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+class BlockOut(BaseModel):
+    block_id: int
+    block_code: str
+    block_type: Literal["SPAWN", "SUBSTRATE"]
+    mix_lot_id: Optional[int] = None
+    pasteurization_run_id: Optional[int] = None
+    sterilization_run_id: Optional[int] = None
+    spawn_recipe_id: Optional[int] = None
+    substrate_batch_id: Optional[int] = None
+    spawn_batch_id: Optional[int] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    class Config: from_attributes = True
+
+class InoculationCreate(BaseModel):
+    child_block_id: int
+    parent_spawn_block_id: int
+    inoculated_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class InoculationOut(BaseModel):
+    inoculation_id: int
+    child_block_id: int
+    parent_spawn_block_id: int
+    inoculated_at: datetime
+    notes: Optional[str] = None
+    child_block_code: Optional[str] = None
+    parent_spawn_block_code: Optional[str] = None
+
 class SpawnBatchCreate(BaseModel):
     spawn_type: Literal["PURCHASED_BLOCK", "IN_HOUSE_GRAIN"]
     strain_code: str
@@ -234,31 +298,21 @@ class SubstrateBagOut(BaseModel):
     class Config: from_attributes = True
 
 class HarvestEventCreate(BaseModel):
-    bag_id: str
-    flush_number: int
+    block_id: int
+    flush_number: Literal[1, 2]
+    fresh_weight_kg: float = Field(..., gt=0)
+    harvested_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class HarvestEventOut(BaseModel):
+    harvest_event_id: int
+    block_id: Optional[int] = None
+    bag_id: Optional[str] = None
+    flush_number: Literal[1, 2]
     fresh_weight_kg: float
-    harvested_at: Optional[datetime] = None
-    notes: Optional[str] = None
-
-class HarvestEventOut(HarvestEventCreate):
-    harvest_event_id: int
-    class Config: from_attributes = True
-
-class HarvestCreate(BaseModel):
-    substrate_batch_id: int
-    flush_number: Literal[1, 2]
-    harvested_kg: float = Field(..., gt=0)
-    harvested_at: Optional[datetime] = None
-    notes: Optional[str] = None
-
-class HarvestOut(BaseModel):
-    harvest_event_id: int
-    substrate_batch_id: int
-    bag_id: str
-    flush_number: Literal[1, 2]
-    harvested_kg: float
     harvested_at: datetime
     notes: Optional[str] = None
+    class Config: from_attributes = True
 
 class BagDetailOut(SubstrateBagOut):
     harvest_events: List[HarvestEventOut] = []
