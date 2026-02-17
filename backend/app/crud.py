@@ -451,6 +451,43 @@ def create_harvest_event(db: Session, data: dict):
     db.add(ev); db.commit(); db.refresh(ev)
     return ev
 
+def create_harvest_from_batch(db: Session, data: dict):
+    substrate_batch_id = data["substrate_batch_id"]
+    batch = db.get(models.SubstrateBatch, substrate_batch_id)
+    if not batch:
+        raise LookupError("Substrate batch not found")
+
+    bag_id = str(substrate_batch_id)
+    bag = db.get(models.SubstrateBag, bag_id)
+    if not bag:
+        bag = db.execute(
+            select(models.SubstrateBag)
+            .where(models.SubstrateBag.substrate_batch_id == substrate_batch_id)
+            .order_by(models.SubstrateBag.bag_id.asc())
+        ).scalars().first()
+    if not bag:
+        raise LookupError("No substrate bag found for substrate batch")
+
+    harvest_event_data = {
+        "bag_id": bag.bag_id,
+        "flush_number": data["flush_number"],
+        "fresh_weight_kg": data["harvested_kg"],
+        "notes": data.get("notes"),
+    }
+    if data.get("harvested_at") is not None:
+        harvest_event_data["harvested_at"] = data["harvested_at"]
+
+    ev = create_harvest_event(db, harvest_event_data)
+    return {
+        "harvest_event_id": ev.harvest_event_id,
+        "substrate_batch_id": substrate_batch_id,
+        "bag_id": ev.bag_id,
+        "flush_number": ev.flush_number,
+        "harvested_kg": float(ev.fresh_weight_kg),
+        "harvested_at": ev.harvested_at,
+        "notes": ev.notes,
+    }
+
 def batch_metrics(db: Session, substrate_batch_id: int):
     batch = db.get(models.SubstrateBatch, substrate_batch_id)
     if not batch:

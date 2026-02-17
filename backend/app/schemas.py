@@ -244,6 +244,22 @@ class HarvestEventOut(HarvestEventCreate):
     harvest_event_id: int
     class Config: from_attributes = True
 
+class HarvestCreate(BaseModel):
+    substrate_batch_id: int
+    flush_number: Literal[1, 2]
+    harvested_kg: float = Field(..., gt=0)
+    harvested_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class HarvestOut(BaseModel):
+    harvest_event_id: int
+    substrate_batch_id: int
+    bag_id: str
+    flush_number: Literal[1, 2]
+    harvested_kg: float
+    harvested_at: datetime
+    notes: Optional[str] = None
+
 class BagDetailOut(SubstrateBagOut):
     harvest_events: List[HarvestEventOut] = []
 

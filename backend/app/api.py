@@ -288,3 +288,10 @@ def bag_detail(bag_id: str, db: Session = Depends(get_db)):
 @router.post("/harvest-events", response_model=schemas.HarvestEventOut)
 def create_harvest(payload: schemas.HarvestEventCreate, db: Session = Depends(get_db)):
     return crud.create_harvest_event(db, payload.model_dump(exclude_unset=True))
+
+@router.post("/harvests", response_model=schemas.HarvestOut)
+def create_harvest_from_batch(payload: schemas.HarvestCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_harvest_from_batch(db, payload.model_dump(exclude_unset=True))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))

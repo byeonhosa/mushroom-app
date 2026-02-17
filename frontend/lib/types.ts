@@ -16,6 +16,18 @@ export type SubstrateBatch = {
   notes?: string | null;
 };
 
+export type Batch = SubstrateBatch;
+
+export type Harvest = {
+  harvest_event_id?: number;
+  substrate_batch_id: number;
+  bag_id?: string;
+  flush_number: 1 | 2;
+  harvested_kg: number;
+  harvested_at: string;
+  notes?: string | null;
+};
+
 export type PasteurizationRun = {
   pasteurization_run_id: number;
   run_code: string;
