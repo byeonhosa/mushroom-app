@@ -32,6 +32,15 @@ export type SpawnRecipe = {
   created_at: string;
 };
 
+export type MushroomSpecies = {
+  species_id: number;
+  code: string;
+  name: string;
+  latin_name?: string | null;
+  notes?: string | null;
+  is_active: boolean;
+};
+
 export type PasteurizationRun = {
   pasteurization_run_id: number;
   run_code: string;
@@ -136,6 +145,7 @@ export type Block = {
   block_id: number;
   block_code: string;
   block_type: "SPAWN" | "SUBSTRATE";
+  species_id: number;
   mix_lot_id?: number | null;
   pasteurization_run_id?: number | null;
   sterilization_run_id?: number | null;

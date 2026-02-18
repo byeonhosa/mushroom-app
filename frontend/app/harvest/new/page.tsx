@@ -8,6 +8,7 @@ export default function NewHarvestPage() {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [blockId, setBlockId] = useState("");
   const [flushNumber, setFlushNumber] = useState<1 | 2>(1);
+  const [allowedFlushes, setAllowedFlushes] = useState<Array<1 | 2>>([1, 2]);
   const [freshWeightKg, setFreshWeightKg] = useState("");
   const [notes, setNotes] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
@@ -22,6 +23,24 @@ export default function NewHarvestPage() {
       .catch((e) => setError(e?.message || String(e)));
   }, []);
 
+  useEffect(() => {
+    if (!blockId) {
+      setAllowedFlushes([1, 2]);
+      setFlushNumber(1);
+      return;
+    }
+    apiGet<HarvestEvent[]>(`/blocks/${blockId}/harvest-events`)
+      .then((events) => {
+        const used = new Set(events.map((e) => e.flush_number));
+        const nextAllowed = [1, 2].filter((f) => !used.has(f as 1 | 2)) as Array<1 | 2>;
+        setAllowedFlushes(nextAllowed);
+        setFlushNumber(nextAllowed[0] ?? 1);
+      })
+      .catch((e) => setError(e?.message || String(e)));
+  }, [blockId]);
+
+  const canSubmit = blockId !== "" && allowedFlushes.length > 0;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -34,9 +53,13 @@ export default function NewHarvestPage() {
         harvested_at: new Date().toISOString(),
         notes: notes.trim() || null,
       });
+      const events = await apiGet<HarvestEvent[]>(`/blocks/${blockId}/harvest-events`);
+      const used = new Set(events.map((ev) => ev.flush_number));
+      const nextAllowed = [1, 2].filter((f) => !used.has(f as 1 | 2)) as Array<1 | 2>;
+      setAllowedFlushes(nextAllowed);
+      setFlushNumber(nextAllowed[0] ?? 1);
       setFreshWeightKg("");
       setNotes("");
-      setFlushNumber(1);
       setSuccess("Harvest recorded.");
     } catch (e: any) {
       setError(e?.message || String(e));
@@ -48,6 +71,9 @@ export default function NewHarvestPage() {
       <h1>New Harvest</h1>
       {success && <p style={{ background: "#e9f8ed", border: "1px solid #9fd3ab", padding: 10, borderRadius: 8 }}>{success}</p>}
       {error && <p className="error">{error}</p>}
+      {blockId && allowedFlushes.length === 0 && (
+        <p className="error">This block already has flush 1 and flush 2 recorded.</p>
+      )}
 
       <form className="form" onSubmit={onSubmit}>
         <label>
@@ -63,9 +89,10 @@ export default function NewHarvestPage() {
         </label>
         <label>
           Flush
-          <select value={flushNumber} onChange={(e) => setFlushNumber(Number(e.target.value) as 1 | 2)}>
-            <option value={1}>1</option>
-            <option value={2}>2</option>
+          <select value={flushNumber} onChange={(e) => setFlushNumber(Number(e.target.value) as 1 | 2)} disabled={allowedFlushes.length === 0}>
+            {allowedFlushes.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -84,7 +111,7 @@ export default function NewHarvestPage() {
           Notes
           <input value={notes} onChange={(e) => setNotes(e.target.value)} />
         </label>
-        <button className="btn" type="submit">Save Harvest</button>
+        <button className="btn" type="submit" disabled={!canSubmit}>Save Harvest</button>
       </form>
     </div>
   );

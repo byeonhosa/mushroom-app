@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiGet } from "../../../lib/api";
-import type { Block, HarvestEvent, Inoculation } from "../../../lib/types";
+import type { Block, HarvestEvent, Inoculation, MushroomSpecies } from "../../../lib/types";
 
 export default function BlockDetailPage() {
   const params = useParams();
   const blockId = typeof params?.blockId === "string" ? params.blockId : Array.isArray(params?.blockId) ? params?.blockId[0] : "";
   const [block, setBlock] = useState<Block | null>(null);
+  const [speciesRows, setSpeciesRows] = useState<MushroomSpecies[]>([]);
   const [inoculation, setInoculation] = useState<Inoculation | null>(null);
   const [harvestEvents, setHarvestEvents] = useState<HarvestEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +20,8 @@ export default function BlockDetailPage() {
       try {
         const row = await apiGet<Block>(`/blocks/${blockId}`);
         setBlock(row);
+        const allSpecies = await apiGet<MushroomSpecies[]>("/species?active_only=false");
+        setSpeciesRows(allSpecies);
         if (row?.block_type === "SUBSTRATE") {
           try {
             const inoc = await apiGet<Inoculation>(`/blocks/${blockId}/inoculation`);
@@ -45,6 +48,7 @@ export default function BlockDetailPage() {
         <>
           <p><strong>Code:</strong> {block.block_code}</p>
           <p><strong>Type:</strong> {block.block_type}</p>
+          <p><strong>Species:</strong> {speciesRows.find((s) => s.species_id === block.species_id)?.name ?? block.species_id}</p>
           <p><strong>Mix Lot:</strong> {block.mix_lot_id ?? ""}</p>
           <p><strong>Pasteurization Run:</strong> {block.pasteurization_run_id ?? ""}</p>
           <p><strong>Sterilization Run:</strong> {block.sterilization_run_id ?? ""}</p>

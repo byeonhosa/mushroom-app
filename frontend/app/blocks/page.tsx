@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { apiGet } from "../../lib/api";
-import type { Block } from "../../lib/types";
+import type { Block, MushroomSpecies } from "../../lib/types";
 
 type BlockTypeFilter = "" | "SPAWN" | "SUBSTRATE";
 
 export default function BlocksPage() {
   const [items, setItems] = useState<Block[]>([]);
+  const [speciesRows, setSpeciesRows] = useState<MushroomSpecies[]>([]);
   const [blockType, setBlockType] = useState<BlockTypeFilter>("");
   const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +21,13 @@ export default function BlocksPage() {
   }
 
   useEffect(() => {
-    refresh().catch((e) => setError(e?.message || String(e)));
+    Promise.all([
+      refresh(),
+      apiGet<MushroomSpecies[]>("/species?active_only=false").then(setSpeciesRows),
+    ]).catch((e) => setError(e?.message || String(e)));
   }, []);
+
+  const speciesNameById = Object.fromEntries(speciesRows.map((s) => [s.species_id, `${s.code} - ${s.name}`]));
 
   return (
     <div className="card">
@@ -50,6 +56,7 @@ export default function BlocksPage() {
             <th>ID</th>
             <th>Code</th>
             <th>Type</th>
+            <th>Species</th>
             <th>Mix Lot</th>
             <th>Pasteurization Run</th>
             <th>Sterilization Run</th>
@@ -63,6 +70,7 @@ export default function BlocksPage() {
               <td>{b.block_id}</td>
               <td><a href={`/blocks/${b.block_id}`}>{b.block_code}</a></td>
               <td>{b.block_type}</td>
+              <td>{speciesNameById[b.species_id] ?? b.species_id}</td>
               <td>{b.mix_lot_id ?? ""}</td>
               <td>{b.pasteurization_run_id ?? ""}</td>
               <td>{b.sterilization_run_id ?? ""}</td>
