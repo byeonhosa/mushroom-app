@@ -40,11 +40,20 @@ def _seed_substrate_batch(db):
     return batch
 
 
+def _seed_species(db):
+    species = models.MushroomSpecies(code="UNKNOWN", name="Unknown", is_active=True)
+    db.add(species)
+    db.commit()
+    db.refresh(species)
+    return species
+
+
 def test_block_code_generation_unique_per_day_prefix():
     db = _session()
     try:
-        b1 = crud.create_block(db, {"block_type": "SPAWN"})
-        b2 = crud.create_block(db, {"block_type": "SPAWN"})
+        species = _seed_species(db)
+        b1 = crud.create_block(db, {"block_type": "SPAWN", "species_id": species.species_id})
+        b2 = crud.create_block(db, {"block_type": "SPAWN", "species_id": species.species_id})
         assert b1.block_code.startswith("SP-")
         assert b2.block_code.startswith("SP-")
         assert b1.block_code != b2.block_code
@@ -55,8 +64,9 @@ def test_block_code_generation_unique_per_day_prefix():
 def test_inoculation_unique_child_constraint():
     db = _session()
     try:
-        parent = crud.create_block(db, {"block_type": "SPAWN"})
-        child = crud.create_block(db, {"block_type": "SUBSTRATE"})
+        species = _seed_species(db)
+        parent = crud.create_block(db, {"block_type": "SPAWN", "species_id": species.species_id})
+        child = crud.create_block(db, {"block_type": "SUBSTRATE", "species_id": species.species_id})
         first = crud.create_inoculation(
             db, {"child_block_id": child.block_id, "parent_spawn_block_id": parent.block_id}
         )
@@ -72,10 +82,11 @@ def test_inoculation_unique_child_constraint():
 def test_harvest_event_validation_and_creation():
     db = _session()
     try:
+        species = _seed_species(db)
         with pytest.raises(ValidationError):
             schemas.HarvestEventCreate(flush_number=1, fresh_weight_kg=0.5)  # missing block_id
 
-        spawn_block = crud.create_block(db, {"block_type": "SPAWN"})
+        spawn_block = crud.create_block(db, {"block_type": "SPAWN", "species_id": species.species_id})
         with pytest.raises(ValueError):
             crud.create_harvest_event(
                 db, {"block_id": spawn_block.block_id, "flush_number": 1, "fresh_weight_kg": 0.5}
@@ -83,7 +94,7 @@ def test_harvest_event_validation_and_creation():
 
         batch = _seed_substrate_batch(db)
         substrate_block = crud.create_block(
-            db, {"block_type": "SUBSTRATE", "substrate_batch_id": batch.substrate_batch_id}
+            db, {"block_type": "SUBSTRATE", "species_id": species.species_id, "substrate_batch_id": batch.substrate_batch_id}
         )
         event = crud.create_harvest_event(
             db,

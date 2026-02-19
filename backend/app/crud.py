@@ -109,6 +109,29 @@ def create_spawn_recipe(db: Session, data: dict):
     db.refresh(item)
     return item
 
+def list_species(db: Session, active_only: bool = True):
+    stmt = select(models.MushroomSpecies).order_by(models.MushroomSpecies.name.asc(), models.MushroomSpecies.species_id.asc())
+    if active_only:
+        stmt = stmt.where(models.MushroomSpecies.is_active.is_(True))
+    return db.execute(stmt).scalars().all()
+
+def create_species(db: Session, data: dict):
+    item = models.MushroomSpecies(**data)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+def update_species(db: Session, species_id: int, data: dict):
+    item = db.get(models.MushroomSpecies, species_id)
+    if not item:
+        return None
+    for k, v in data.items():
+        setattr(item, k, v)
+    db.commit()
+    db.refresh(item)
+    return item
+
 def list_grain_types(db: Session):
     return db.execute(
         select(models.GrainType).order_by(models.GrainType.name.asc(), models.GrainType.grain_type_id.asc())
@@ -211,6 +234,7 @@ def list_ingredient_lots(db: Session, ingredient_id: int | None = None):
 
 def _validate_block_refs(db: Session, data: dict):
     checks = (
+        ("species_id", models.MushroomSpecies, "Invalid species_id: {}"),
         ("mix_lot_id", models.MixLot, "Invalid mix_lot_id: {}"),
         ("pasteurization_run_id", models.PasteurizationRun, "Invalid pasteurization_run_id: {}"),
         ("sterilization_run_id", models.SterilizationRun, "Invalid sterilization_run_id: {}"),
@@ -243,6 +267,8 @@ def create_block(db: Session, data: dict):
     block_type = payload["block_type"]
     if block_type not in ("SPAWN", "SUBSTRATE"):
         raise ValueError("block_type must be SPAWN or SUBSTRATE")
+    if payload.get("species_id") is None:
+        raise ValueError("species_id is required")
     _validate_block_refs(db, payload)
     if block_type == "SPAWN":
         payload["mix_lot_id"] = None
@@ -259,6 +285,7 @@ def create_block(db: Session, data: dict):
 def list_blocks(
     db: Session,
     block_type: str | None = None,
+    species_id: int | None = None,
     mix_lot_id: int | None = None,
     pasteurization_run_id: int | None = None,
     sterilization_run_id: int | None = None,
@@ -267,6 +294,8 @@ def list_blocks(
     stmt = select(models.Block)
     if block_type:
         stmt = stmt.where(models.Block.block_type == block_type)
+    if species_id is not None:
+        stmt = stmt.where(models.Block.species_id == species_id)
     if mix_lot_id is not None:
         stmt = stmt.where(models.Block.mix_lot_id == mix_lot_id)
     if pasteurization_run_id is not None:

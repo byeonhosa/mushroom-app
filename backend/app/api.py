@@ -47,6 +47,31 @@ def create_spawn_recipe(payload: schemas.SpawnRecipeCreate, db: Session = Depend
             raise HTTPException(status_code=409, detail="Spawn recipe code already exists.")
         raise
 
+@router.get("/species", response_model=list[schemas.MushroomSpeciesOut])
+def list_species(active_only: bool = True, db: Session = Depends(get_db)):
+    return crud.list_species(db, active_only=active_only)
+
+@router.post("/species", response_model=schemas.MushroomSpeciesOut)
+def create_species(payload: schemas.MushroomSpeciesCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_species(db, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Species code already exists.")
+        raise
+
+@router.patch("/species/{species_id}", response_model=schemas.MushroomSpeciesOut)
+def update_species(species_id: int, payload: schemas.MushroomSpeciesUpdate, db: Session = Depends(get_db)):
+    try:
+        species = crud.update_species(db, species_id, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Species code already exists.")
+        raise
+    if not species:
+        raise HTTPException(404, "Species not found")
+    return species
+
 @router.post("/blocks", response_model=schemas.BlockOut)
 def create_block(payload: schemas.BlockCreate, db: Session = Depends(get_db)):
     try:
@@ -61,6 +86,7 @@ def create_block(payload: schemas.BlockCreate, db: Session = Depends(get_db)):
 @router.get("/blocks", response_model=list[schemas.BlockOut])
 def list_blocks(
     block_type: Literal["SPAWN", "SUBSTRATE"] | None = None,
+    species_id: int | None = None,
     mix_lot_id: int | None = None,
     pasteurization_run_id: int | None = None,
     sterilization_run_id: int | None = None,
@@ -70,6 +96,7 @@ def list_blocks(
     return crud.list_blocks(
         db,
         block_type=block_type,
+        species_id=species_id,
         mix_lot_id=mix_lot_id,
         pasteurization_run_id=pasteurization_run_id,
         sterilization_run_id=sterilization_run_id,
@@ -387,6 +414,11 @@ def create_harvest(payload: schemas.HarvestEventCreate, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError as e:
+        msg = str(e.orig)
+        if isinstance(e.orig, UniqueViolation) or "uq_harvest_events_block_flush" in msg or "harvest_events.block_id, harvest_events.flush_number" in msg:
+            raise HTTPException(status_code=409, detail="Flush already recorded for this block.")
+        raise
 
 @router.get("/blocks/{block_id}/harvest-events", response_model=list[schemas.HarvestEventOut])
 def list_harvest_events_for_block(block_id: int, db: Session = Depends(get_db)):

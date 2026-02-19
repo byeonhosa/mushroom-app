@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import (
-    Column, String, Integer, DateTime, ForeignKey, Numeric, Text, Enum, CheckConstraint, UniqueConstraint
+    Column, String, Integer, DateTime, ForeignKey, Numeric, Text, Enum, CheckConstraint, UniqueConstraint, Boolean
 )
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
@@ -112,11 +112,21 @@ class GrainType(Base):
     name = Column(String(80), nullable=False, unique=True)
     notes = Column(Text, nullable=True)
 
+class MushroomSpecies(Base):
+    __tablename__ = "mushroom_species"
+    species_id = Column(Integer, primary_key=True)
+    code = Column(String(40), nullable=False, unique=True)
+    name = Column(String(120), nullable=False)
+    latin_name = Column(String(160), nullable=True)
+    notes = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+
 class Block(Base):
     __tablename__ = "blocks"
     block_id = Column(Integer, primary_key=True)
     block_code = Column(String(120), nullable=False, unique=True)
     block_type = Column(String(20), nullable=False)
+    species_id = Column(Integer, ForeignKey("mushroom_species.species_id"), nullable=False)
     mix_lot_id = Column(Integer, ForeignKey("mix_lots.mix_lot_id", ondelete="SET NULL"), nullable=True)
     pasteurization_run_id = Column(Integer, ForeignKey("pasteurization_runs.pasteurization_run_id", ondelete="SET NULL"), nullable=True)
     sterilization_run_id = Column(Integer, ForeignKey("sterilization_runs.sterilization_run_id", ondelete="SET NULL"), nullable=True)
@@ -131,6 +141,7 @@ class Block(Base):
     pasteurization_run = relationship("PasteurizationRun")
     sterilization_run = relationship("SterilizationRun")
     spawn_recipe = relationship("SpawnRecipe")
+    species = relationship("MushroomSpecies")
     substrate_batch = relationship("SubstrateBatch")
     spawn_batch = relationship("SpawnBatch")
 
@@ -253,6 +264,7 @@ class HarvestEvent(Base):
 
     __table_args__ = (
         CheckConstraint("flush_number IN (1,2)", name="ck_flush_number_1_2"),
+        UniqueConstraint("block_id", "flush_number", name="uq_harvest_events_block_flush"),
     )
 
     bag = relationship("SubstrateBag", back_populates="harvest_events")

@@ -36,6 +36,7 @@ class SpawnRecipeOut(BaseModel):
 
 class BlockCreate(BaseModel):
     block_type: Literal["SPAWN", "SUBSTRATE"]
+    species_id: int
     block_code: Optional[str] = None
     mix_lot_id: Optional[int] = None
     pasteurization_run_id: Optional[int] = None
@@ -50,6 +51,7 @@ class BlockOut(BaseModel):
     block_id: int
     block_code: str
     block_type: Literal["SPAWN", "SUBSTRATE"]
+    species_id: int
     mix_lot_id: Optional[int] = None
     pasteurization_run_id: Optional[int] = None
     sterilization_run_id: Optional[int] = None
@@ -59,6 +61,29 @@ class BlockOut(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
+    class Config: from_attributes = True
+
+class MushroomSpeciesCreate(BaseModel):
+    code: str
+    name: str
+    latin_name: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = True
+
+class MushroomSpeciesUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    latin_name: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class MushroomSpeciesOut(BaseModel):
+    species_id: int
+    code: str
+    name: str
+    latin_name: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: bool
     class Config: from_attributes = True
 
 class InoculationCreate(BaseModel):
