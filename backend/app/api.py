@@ -1,29 +1,51 @@
+from typing import Literal
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from psycopg.errors import UniqueViolation
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from datetime import datetime
-from typing import Literal
+
 from .db import get_db
 from . import schemas, crud
 
 router = APIRouter()
 
+
 @router.get("/health")
 def health():
     return {"ok": True}
+
+
+# --- Reference data ---
 
 @router.get("/fill-profiles", response_model=list[schemas.FillProfileOut])
 def fill_profiles(db: Session = Depends(get_db)):
     return crud.list_fill_profiles(db)
 
+
 @router.post("/fill-profiles", response_model=schemas.FillProfileOut)
 def create_fill_profile(payload: schemas.FillProfileCreate, db: Session = Depends(get_db)):
-    return crud.create_fill_profile(db, payload.name, payload.target_dry_kg_per_bag, payload.target_water_kg_per_bag, payload.notes)
+    return crud.create_fill_profile(
+        db, payload.name, payload.target_dry_kg_per_bag,
+        payload.target_water_kg_per_bag, payload.notes
+    )
+
+
+@router.get("/substrate-recipe-versions", response_model=list[schemas.SubstrateRecipeVersionOut])
+def list_substrate_recipe_versions(db: Session = Depends(get_db)):
+    return crud.list_substrate_recipe_versions(db)
+
+
+@router.get("/spawn-recipes", response_model=list[schemas.SpawnRecipeOut])
+def list_spawn_recipes(db: Session = Depends(get_db)):
+    return crud.list_spawn_recipes(db)
+
 
 @router.get("/mix-lots", response_model=list[schemas.MixLotOut])
 def list_mix_lots(db: Session = Depends(get_db)):
     return crud.list_mix_lots(db)
+
 
 @router.post("/mix-lots", response_model=schemas.MixLotOut)
 def create_mix_lot(payload: schemas.MixLotCreate, db: Session = Depends(get_db)):
@@ -31,25 +53,14 @@ def create_mix_lot(payload: schemas.MixLotCreate, db: Session = Depends(get_db))
         return crud.create_mix_lot(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Mix lot code already exists.")
+            raise HTTPException(409, "Mix lot code already exists.")
         raise
 
-@router.get("/spawn-recipes", response_model=list[schemas.SpawnRecipeOut])
-def list_spawn_recipes(db: Session = Depends(get_db)):
-    return crud.list_spawn_recipes(db)
-
-@router.post("/spawn-recipes", response_model=schemas.SpawnRecipeOut)
-def create_spawn_recipe(payload: schemas.SpawnRecipeCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_spawn_recipe(db, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Spawn recipe code already exists.")
-        raise
 
 @router.get("/species", response_model=list[schemas.MushroomSpeciesOut])
 def list_species(active_only: bool = True, db: Session = Depends(get_db)):
     return crud.list_species(db, active_only=active_only)
+
 
 @router.post("/species", response_model=schemas.MushroomSpeciesOut)
 def create_species(payload: schemas.MushroomSpeciesCreate, db: Session = Depends(get_db)):
@@ -57,94 +68,14 @@ def create_species(payload: schemas.MushroomSpeciesCreate, db: Session = Depends
         return crud.create_species(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Species code already exists.")
+            raise HTTPException(409, "Species code already exists.")
         raise
 
-@router.patch("/species/{species_id}", response_model=schemas.MushroomSpeciesOut)
-def update_species(species_id: int, payload: schemas.MushroomSpeciesUpdate, db: Session = Depends(get_db)):
-    try:
-        species = crud.update_species(db, species_id, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Species code already exists.")
-        raise
-    if not species:
-        raise HTTPException(404, "Species not found")
-    return species
-
-@router.post("/blocks", response_model=schemas.BlockOut)
-def create_block(payload: schemas.BlockCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_block(db, payload.model_dump(exclude_unset=True))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Block code already exists.")
-        raise
-
-@router.get("/blocks", response_model=list[schemas.BlockOut])
-def list_blocks(
-    block_type: Literal["SPAWN", "SUBSTRATE"] | None = None,
-    species_id: int | None = None,
-    mix_lot_id: int | None = None,
-    pasteurization_run_id: int | None = None,
-    sterilization_run_id: int | None = None,
-    limit: int = 200,
-    db: Session = Depends(get_db),
-):
-    return crud.list_blocks(
-        db,
-        block_type=block_type,
-        species_id=species_id,
-        mix_lot_id=mix_lot_id,
-        pasteurization_run_id=pasteurization_run_id,
-        sterilization_run_id=sterilization_run_id,
-        limit=limit,
-    )
-
-@router.get("/blocks/{block_id}", response_model=schemas.BlockOut)
-def get_block(block_id: int, db: Session = Depends(get_db)):
-    row = crud.get_block(db, block_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="Block not found")
-    return row
-
-@router.get("/batches/{substrate_batch_id}/blocks", response_model=list[schemas.BlockOut])
-def list_blocks_for_substrate_batch(substrate_batch_id: int, db: Session = Depends(get_db)):
-    return crud.list_blocks_for_substrate_batch(db, substrate_batch_id)
-
-@router.get("/spawn-batches/{spawn_batch_id}/blocks", response_model=list[schemas.BlockOut])
-def list_blocks_for_spawn_batch(spawn_batch_id: int, db: Session = Depends(get_db)):
-    return crud.list_blocks_for_spawn_batch(db, spawn_batch_id)
-
-@router.post("/inoculations", response_model=schemas.InoculationOut)
-def create_inoculation(payload: schemas.InoculationCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_inoculation(db, payload.model_dump(exclude_unset=True))
-    except LookupError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Block already has an inoculation record.")
-        raise
-
-@router.get("/blocks/{block_id}/inoculation", response_model=schemas.InoculationOut)
-def get_inoculation_for_child_block(block_id: int, db: Session = Depends(get_db)):
-    row = crud.get_inoculation_for_child_block(db, block_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="Inoculation not found")
-    return row
-
-@router.get("/spawn-blocks/{spawn_block_id}/children", response_model=list[schemas.BlockOut])
-def list_children_for_spawn_block(spawn_block_id: int, db: Session = Depends(get_db)):
-    return crud.list_children_for_spawn_block(db, spawn_block_id)
 
 @router.get("/grain-types", response_model=list[schemas.GrainTypeOut])
 def list_grain_types(db: Session = Depends(get_db)):
     return crud.list_grain_types(db)
+
 
 @router.post("/grain-types", response_model=schemas.GrainTypeOut)
 def create_grain_type(payload: schemas.GrainTypeCreate, db: Session = Depends(get_db)):
@@ -152,148 +83,16 @@ def create_grain_type(payload: schemas.GrainTypeCreate, db: Session = Depends(ge
         return crud.create_grain_type(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Grain type name already exists.")
+            raise HTTPException(409, "Grain type already exists.")
         raise
 
-@router.patch("/grain-types/{grain_type_id}", response_model=schemas.GrainTypeOut)
-def update_grain_type(grain_type_id: int, payload: schemas.GrainTypeUpdate, db: Session = Depends(get_db)):
-    try:
-        grain_type = crud.update_grain_type(db, grain_type_id, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Grain type name already exists.")
-        raise
-    if not grain_type:
-        raise HTTPException(404, "Grain type not found")
-    return grain_type
 
-@router.get("/sterilization-runs", response_model=list[schemas.SterilizationRunOut])
-def list_sterilization_runs(
-    run_code_contains: str | None = None,
-    unloaded_from: datetime | None = None,
-    unloaded_to: datetime | None = None,
-    sort_by: Literal["sterilization_run_id", "run_code", "unloaded_at"] = "sterilization_run_id",
-    sort_order: Literal["asc", "desc"] = "desc",
-    db: Session = Depends(get_db),
-):
-    return crud.list_sterilization_runs(
-        db,
-        run_code_contains=run_code_contains,
-        unloaded_from=unloaded_from,
-        unloaded_to=unloaded_to,
-        sort_by=sort_by,
-        sort_order=sort_order,
-    )
-
-@router.post("/sterilization-runs", response_model=schemas.SterilizationRunOut)
-def create_sterilization_run(payload: schemas.SterilizationRunCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_sterilization_run(db, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Run code already exists. Choose a unique run code.")
-        raise
-
-@router.get("/sterilization-runs/{run_id}", response_model=schemas.SterilizationRunOut)
-def get_sterilization_run(run_id: int, db: Session = Depends(get_db)):
-    run = crud.get_sterilization_run(db, run_id)
-    if not run:
-        raise HTTPException(404, "Sterilization run not found")
-    return run
-
-@router.patch("/sterilization-runs/{run_id}", response_model=schemas.SterilizationRunOut)
-def update_sterilization_run(run_id: int, payload: schemas.SterilizationRunUpdate, db: Session = Depends(get_db)):
-    run = crud.update_sterilization_run(db, run_id, payload.model_dump(exclude_unset=True))
-    if not run:
-        raise HTTPException(404, "Sterilization run not found")
-    return run
-
-@router.get("/ingredients", response_model=list[schemas.IngredientOut])
-def list_ingredients(db: Session = Depends(get_db)):
-    return crud.list_ingredients(db)
-
-@router.post("/ingredients", response_model=schemas.IngredientOut)
-def create_ingredient(payload: schemas.IngredientCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_ingredient(db, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Ingredient name already exists.")
-        raise
-
-@router.patch("/ingredients/{ingredient_id}", response_model=schemas.IngredientOut)
-def update_ingredient(ingredient_id: int, payload: schemas.IngredientUpdate, db: Session = Depends(get_db)):
-    try:
-        ingredient = crud.update_ingredient(db, ingredient_id, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Ingredient name already exists.")
-        raise
-    if not ingredient:
-        raise HTTPException(404, "Ingredient not found")
-    return ingredient
-
-@router.get("/ingredient-lots", response_model=list[schemas.IngredientLotOut])
-def list_ingredient_lots(ingredient_id: int | None = None, db: Session = Depends(get_db)):
-    return crud.list_ingredient_lots(db, ingredient_id)
-
-@router.post("/ingredient-lots", response_model=schemas.IngredientLotOut)
-def create_ingredient_lot(payload: schemas.IngredientLotCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_ingredient_lot(db, payload.model_dump(exclude_unset=True))
-    except IntegrityError:
-        raise HTTPException(status_code=400, detail="Invalid ingredient_lot payload.")
-
-@router.patch("/ingredient-lots/{ingredient_lot_id}", response_model=schemas.IngredientLotOut)
-def update_ingredient_lot(ingredient_lot_id: int, payload: schemas.IngredientLotUpdate, db: Session = Depends(get_db)):
-    try:
-        ingredient_lot = crud.update_ingredient_lot(db, ingredient_lot_id, payload.model_dump(exclude_unset=True))
-    except IntegrityError:
-        raise HTTPException(status_code=400, detail="Invalid ingredient_lot payload.")
-    if not ingredient_lot:
-        raise HTTPException(404, "Ingredient lot not found")
-    return ingredient_lot
-
-@router.get("/spawn-batches", response_model=list[schemas.SpawnBatchOut])
-def list_spawn_batches(
-    spawn_type: Literal["PURCHASED_BLOCK", "IN_HOUSE_GRAIN"] | None = None,
-    strain_contains: str | None = None,
-    grain_type_id: int | None = None,
-    sterilization_run_id: int | None = None,
-    sort_by: Literal["spawn_batch_id", "made_at", "incubation_start_at", "strain_code"] = "spawn_batch_id",
-    sort_order: Literal["asc", "desc"] = "desc",
-    db: Session = Depends(get_db),
-):
-    return crud.list_spawn_batches(
-        db,
-        spawn_type=spawn_type,
-        strain_contains=strain_contains,
-        grain_type_id=grain_type_id,
-        sterilization_run_id=sterilization_run_id,
-        sort_by=sort_by,
-        sort_order=sort_order,
-    )
-
-@router.post("/spawn-batches", response_model=schemas.SpawnBatchOut)
-def create_spawn_batch(payload: schemas.SpawnBatchCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_spawn_batch(db, payload.model_dump(exclude_unset=True))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.patch("/spawn-batches/{spawn_batch_id}", response_model=schemas.SpawnBatchOut)
-def update_spawn_batch(spawn_batch_id: int, payload: schemas.SpawnBatchUpdate, db: Session = Depends(get_db)):
-    try:
-        spawn_batch = crud.update_spawn_batch(db, spawn_batch_id, payload.model_dump(exclude_unset=True))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    if not spawn_batch:
-        raise HTTPException(404, "Spawn batch not found")
-    return spawn_batch
+# --- Pasteurization runs ---
 
 @router.get("/pasteurization-runs", response_model=list[schemas.PasteurizationRunOut])
 def list_pasteurization_runs(db: Session = Depends(get_db)):
     return crud.list_pasteurization_runs(db)
+
 
 @router.post("/pasteurization-runs", response_model=schemas.PasteurizationRunOut)
 def create_pasteurization_run(payload: schemas.PasteurizationRunCreate, db: Session = Depends(get_db)):
@@ -301,131 +100,221 @@ def create_pasteurization_run(payload: schemas.PasteurizationRunCreate, db: Sess
         return crud.create_pasteurization_run(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Run code already exists. Choose a unique run code.")
+            raise HTTPException(409, "Run code already exists.")
         raise
+
 
 @router.get("/pasteurization-runs/{run_id}", response_model=schemas.PasteurizationRunOut)
 def get_pasteurization_run(run_id: int, db: Session = Depends(get_db)):
-    run = crud.get_pasteurization_run(db, run_id)
-    if not run:
+    r = crud.get_pasteurization_run(db, run_id)
+    if not r:
         raise HTTPException(404, "Pasteurization run not found")
-    return run
+    return r
 
-@router.patch("/pasteurization-runs/{run_id}", response_model=schemas.PasteurizationRunOut)
-def update_pasteurization_run(run_id: int, payload: schemas.PasteurizationRunUpdate, db: Session = Depends(get_db)):
-    run = crud.update_pasteurization_run(db, run_id, payload.model_dump(exclude_unset=True))
-    if not run:
-        raise HTTPException(404, "Pasteurization run not found")
-    return run
 
-@router.get("/batches", response_model=list[schemas.SubstrateBatchOut])
-def list_batches(db: Session = Depends(get_db)):
-    return crud.list_batches(db)
+# --- Sterilization runs ---
 
-@router.post("/batches", response_model=schemas.SubstrateBatchOut)
-def create_batch(payload: schemas.SubstrateBatchCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_substrate_batch(db, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        # Unique batch name violation -> 409 conflict
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Batch name already exists. Choose a unique batch name.")
-        raise
-
-@router.get("/batch-inoculations", response_model=list[schemas.BatchInoculationDetailOut])
-def list_batch_inoculations(substrate_batch_id: int | None = None, db: Session = Depends(get_db)):
-    return crud.list_batch_inoculations(db, substrate_batch_id)
-
-@router.post("/batch-inoculations", response_model=schemas.BatchInoculationDetailOut)
-def create_batch_inoculation(payload: schemas.BatchInoculationCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_batch_inoculation(db, payload.model_dump(exclude_unset=True))
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Batch already has an inoculation record.")
-        raise
-
-@router.patch("/batch-inoculations/{batch_inoculation_id}", response_model=schemas.BatchInoculationDetailOut)
-def update_batch_inoculation(
-    batch_inoculation_id: int,
-    payload: schemas.BatchInoculationUpdate,
-    db: Session = Depends(get_db)
+@router.get("/sterilization-runs", response_model=list[schemas.SterilizationRunOut])
+def list_sterilization_runs(
+    run_code_contains: str | None = None,
+    sort_by: str = "sterilization_run_id",
+    sort_order: str = "desc",
+    db: Session = Depends(get_db),
 ):
+    return crud.list_sterilization_runs(db, run_code_contains=run_code_contains, sort_by=sort_by, sort_order=sort_order)
+
+
+@router.post("/sterilization-runs", response_model=schemas.SterilizationRunOut)
+def create_sterilization_run(payload: schemas.SterilizationRunCreate, db: Session = Depends(get_db)):
     try:
-        inoc = crud.update_batch_inoculation(db, batch_inoculation_id, payload.model_dump(exclude_unset=True))
+        return crud.create_sterilization_run(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
-            raise HTTPException(status_code=409, detail="Batch already has an inoculation record.")
+            raise HTTPException(409, "Run code already exists.")
         raise
-    if not inoc:
-        raise HTTPException(404, "Batch inoculation not found")
-    return inoc
 
-@router.get("/batches/{batch_id}/inoculation", response_model=schemas.BatchInoculationDetailOut)
-def get_batch_inoculation(batch_id: int, db: Session = Depends(get_db)):
-    inoc = crud.get_batch_inoculation_for_batch(db, batch_id)
-    if not inoc:
-        raise HTTPException(404, "Batch inoculation not found")
-    return inoc
 
-@router.get("/batches/{batch_id}/bags", response_model=list[schemas.SubstrateBagOut])
-def list_batch_bags(batch_id: int, db: Session = Depends(get_db)):
-    return crud.get_bags_for_batch(db, batch_id)
+@router.get("/sterilization-runs/{run_id}", response_model=schemas.SterilizationRunOut)
+def get_sterilization_run(run_id: int, db: Session = Depends(get_db)):
+    r = crud.get_sterilization_run(db, run_id)
+    if not r:
+        raise HTTPException(404, "Sterilization run not found")
+    return r
 
-@router.get("/batches/{batch_id}/metrics", response_model=schemas.BatchMetricsOut)
-def get_batch_metrics(batch_id: int, db: Session = Depends(get_db)):
-    m = crud.batch_metrics(db, batch_id)
-    if not m:
-        raise HTTPException(404, "Batch not found")
-    return m
 
-@router.get("/batches/{batch_id}/addins", response_model=list[schemas.SubstrateBatchAddinOut])
-def list_batch_addins(batch_id: int, db: Session = Depends(get_db)):
-    return crud.list_substrate_batch_addins(db, batch_id)
+# --- Bags ---
 
-@router.post("/batches/{batch_id}/addins", response_model=schemas.SubstrateBatchAddinOut)
-def create_batch_addin(batch_id: int, payload: schemas.SubstrateBatchAddinCreate, db: Session = Depends(get_db)):
+@router.post("/bags/spawn", response_model=list[schemas.BagOut])
+def create_spawn_bags(payload: schemas.BagCreateSpawn, db: Session = Depends(get_db)):
     try:
-        return crud.create_substrate_batch_addin(db, batch_id, payload.model_dump(exclude_unset=True))
-    except LookupError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        bags = crud.create_spawn_bags(
+            db, payload.sterilization_run_id, payload.species_id, payload.bag_count
+        )
+        return bags
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(400, str(e))
 
-@router.delete("/batches/{batch_id}/addins/{substrate_batch_addin_id}")
-def delete_batch_addin(batch_id: int, substrate_batch_addin_id: int, db: Session = Depends(get_db)):
-    deleted = crud.delete_substrate_batch_addin(db, batch_id, substrate_batch_addin_id)
-    if not deleted:
-        raise HTTPException(404, "Batch add-in not found")
-    return {"ok": True}
+
+@router.post("/bags/substrate", response_model=list[schemas.BagOut])
+def create_substrate_bags(payload: schemas.BagCreateSubstrate, db: Session = Depends(get_db)):
+    try:
+        bags = crud.create_substrate_bags(
+            db, payload.pasteurization_run_id, payload.species_id, payload.bag_count
+        )
+        return bags
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.get("/bags", response_model=list[schemas.BagOut])
+def list_bags(
+    bag_type: str | None = None,
+    species_id: int | None = None,
+    pasteurization_run_id: int | None = None,
+    sterilization_run_id: int | None = None,
+    status: str | None = None,
+    limit: int = 500,
+    db: Session = Depends(get_db),
+):
+    return crud.list_bags(
+        db,
+        bag_type=bag_type,
+        species_id=species_id,
+        pasteurization_run_id=pasteurization_run_id,
+        sterilization_run_id=sterilization_run_id,
+        status=status,
+        limit=limit,
+    )
+
 
 @router.get("/bags/{bag_id}", response_model=schemas.BagDetailOut)
-def bag_detail(bag_id: str, db: Session = Depends(get_db)):
+def get_bag(bag_id: str, db: Session = Depends(get_db)):
     bag = crud.get_bag_detail(db, bag_id)
     if not bag:
         raise HTTPException(404, "Bag not found")
     return bag
 
-@router.post("/harvest-events", response_model=schemas.HarvestEventOut)
-def create_harvest(payload: schemas.HarvestEventCreate, db: Session = Depends(get_db)):
+
+# --- Event recording (scan flow) ---
+
+@router.post("/bags/{bag_id}/incubation-start", response_model=schemas.BagOut)
+def record_incubation_start(bag_id: str, db: Session = Depends(get_db)):
+    bag = crud.update_bag_incubation_start(db, bag_id)
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    return bag
+
+
+@router.post("/bags/{bag_id}/fruiting-start", response_model=schemas.BagOut)
+def record_fruiting_start(bag_id: str, db: Session = Depends(get_db)):
     try:
-        return crud.create_harvest_event(db, payload.model_dump(exclude_unset=True))
-    except LookupError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        bag = crud.update_bag_fruiting_start(db, bag_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(400, str(e))
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    return bag
+
+
+class DisposalBody(BaseModel):
+    disposal_reason: Literal["CONTAMINATION", "FINAL_HARVEST"]
+
+
+@router.post("/bags/{bag_id}/disposal", response_model=schemas.BagOut)
+def record_disposal(
+    bag_id: str,
+    payload: DisposalBody,
+    db: Session = Depends(get_db),
+):
+    bag = crud.update_bag_disposal(db, bag_id, payload.disposal_reason)
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    return bag
+
+
+# --- Inoculations ---
+
+@router.post("/inoculations", response_model=schemas.InoculationOut)
+def create_inoculation(payload: schemas.InoculationCreate, db: Session = Depends(get_db)):
+    try:
+        inoc = crud.create_inoculation(
+            db,
+            payload.substrate_bag_id,
+            payload.spawn_bag_id,
+            inoculated_at=payload.inoculated_at,
+        )
+        return inoc
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     except IntegrityError as e:
-        msg = str(e.orig)
-        if isinstance(e.orig, UniqueViolation) or "uq_harvest_events_block_flush" in msg or "harvest_events.block_id, harvest_events.flush_number" in msg:
-            raise HTTPException(status_code=409, detail="Flush already recorded for this block.")
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(409, "Substrate bag already inoculated.")
         raise
 
-@router.get("/blocks/{block_id}/harvest-events", response_model=list[schemas.HarvestEventOut])
-def list_harvest_events_for_block(block_id: int, db: Session = Depends(get_db)):
+
+@router.get("/bags/{bag_id}/inoculation", response_model=schemas.InoculationOut)
+def get_inoculation_for_bag(bag_id: str, db: Session = Depends(get_db)):
+    inoc = crud.get_inoculation_for_substrate_bag(db, bag_id)
+    if not inoc:
+        raise HTTPException(404, "Inoculation not found")
+    return inoc
+
+
+# --- Harvest events ---
+
+@router.post("/harvest-events", response_model=schemas.HarvestEventOut)
+def create_harvest_event(payload: schemas.HarvestEventCreate, db: Session = Depends(get_db)):
     try:
-        block = crud.get_block(db, block_id)
-        if not block:
-            raise HTTPException(status_code=404, detail="Block not found")
-        return crud.list_harvest_events_for_block(db, block_id)
+        return crud.create_harvest_event(
+            db,
+            payload.bag_id,
+            payload.flush_number,
+            payload.fresh_weight_kg,
+            harvested_at=payload.harvested_at,
+            notes=payload.notes,
+        )
     except LookupError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except IntegrityError as e:
+        raise HTTPException(409, "Flush already recorded for this bag.")
+
+
+@router.get("/bags/{bag_id}/harvest-events", response_model=list[schemas.HarvestEventOut])
+def list_harvest_events(bag_id: str, db: Session = Depends(get_db)):
+    return crud.list_harvest_events_for_bag(db, bag_id)
+
+
+# --- Labels (QR + human-readable) ---
+
+@router.get("/labels/{bag_id}/qr")
+def get_label_qr(bag_id: str, db: Session = Depends(get_db)):
+    """Return QR code image for a bag (SVG or PNG)."""
+    bag = crud.get_bag(db, bag_id)
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    try:
+        import qrcode
+        import io
+        qr = qrcode.QRCode(version=1, box_size=10, border=2)
+        qr.add_data(bag_id)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="image/png")
+    except ImportError:
+        raise HTTPException(501, "QR code generation not available (install qrcode[pil])")
+
+
+@router.get("/labels/{bag_id}")
+def get_label_data(bag_id: str, db: Session = Depends(get_db)):
+    """Return bag_id for label (QR content + human-readable text)."""
+    bag = crud.get_bag(db, bag_id)
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    return {"bag_id": bag_id}

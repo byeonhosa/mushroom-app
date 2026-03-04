@@ -1,19 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { apiGet, apiPatch, apiPost } from "../../lib/api";
-import type { SterilizationRun } from "../../lib/types";
+import { useEffect, useState } from "react";
+import { apiGet, apiPost } from "../../lib/api";
+import type { SterilizationRun, SpawnRecipe, GrainType } from "../../lib/types";
 
 function toIsoOrNull(value: string): string | null {
   if (!value) return null;
   return new Date(value).toISOString();
-}
-
-function toLocalInputValue(value?: string | null): string {
-  if (!value) return "";
-  const date = new Date(value);
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function toNullableNumber(raw: string): number | null {
@@ -31,14 +24,17 @@ function toNullableInt(raw: string): number | null {
 
 export default function SterilizationRunsPage() {
   const [runs, setRuns] = useState<SterilizationRun[]>([]);
+  const [spawnRecipes, setSpawnRecipes] = useState<SpawnRecipe[]>([]);
+  const [grainTypes, setGrainTypes] = useState<GrainType[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [filterRunCodeContains, setFilterRunCodeContains] = useState("");
-  const [filterUnloadedFrom, setFilterUnloadedFrom] = useState("");
-  const [filterUnloadedTo, setFilterUnloadedTo] = useState("");
   const [sortBy, setSortBy] = useState<"sterilization_run_id" | "run_code" | "unloaded_at">("sterilization_run_id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [createRunCode, setCreateRunCode] = useState("");
+  const [createSpawnRecipeId, setCreateSpawnRecipeId] = useState<number | "">("");
+  const [createGrainTypeId, setCreateGrainTypeId] = useState<number | "">("");
+  const [createBagCount, setCreateBagCount] = useState(1);
   const [createCycleStart, setCreateCycleStart] = useState("");
   const [createCycleEnd, setCreateCycleEnd] = useState("");
   const [createUnloadedAt, setCreateUnloadedAt] = useState("");
@@ -47,52 +43,40 @@ export default function SterilizationRunsPage() {
   const [createHoldMinutes, setCreateHoldMinutes] = useState("");
   const [createNotes, setCreateNotes] = useState("");
 
-  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
-  const selectedRun = useMemo(
-    () => runs.find((r) => r.sterilization_run_id === selectedRunId) || null,
-    [runs, selectedRunId]
-  );
-  const [editCycleStart, setEditCycleStart] = useState("");
-  const [editCycleEnd, setEditCycleEnd] = useState("");
-  const [editUnloadedAt, setEditUnloadedAt] = useState("");
-  const [editTempC, setEditTempC] = useState("");
-  const [editPsi, setEditPsi] = useState("");
-  const [editHoldMinutes, setEditHoldMinutes] = useState("");
-  const [editNotes, setEditNotes] = useState("");
-
   async function loadRuns() {
     const params = new URLSearchParams();
     if (filterRunCodeContains.trim()) params.set("run_code_contains", filterRunCodeContains.trim());
-    if (filterUnloadedFrom) params.set("unloaded_from", new Date(filterUnloadedFrom).toISOString());
-    if (filterUnloadedTo) params.set("unloaded_to", new Date(filterUnloadedTo).toISOString());
     params.set("sort_by", sortBy);
     params.set("sort_order", sortOrder);
-    const data = await apiGet<SterilizationRun[]>(`/sterilization-runs?${params.toString()}`);
-    setRuns(data);
-    if (!selectedRunId && data.length > 0) setSelectedRunId(data[0].sterilization_run_id);
+    const [r, spr, gt] = await Promise.all([
+      apiGet<SterilizationRun[]>(`/sterilization-runs?${params.toString()}`),
+      apiGet<SpawnRecipe[]>("/spawn-recipes"),
+      apiGet<GrainType[]>("/grain-types"),
+    ]);
+    setRuns(r);
+    setSpawnRecipes(spr);
+    setGrainTypes(gt);
+    if (spr.length > 0 && !createSpawnRecipeId) setCreateSpawnRecipeId(spr[0].spawn_recipe_id);
+    if (gt.length > 0 && !createGrainTypeId) setCreateGrainTypeId(gt[0].grain_type_id);
   }
 
   useEffect(() => {
     loadRuns().catch((e) => setError(String(e)));
-  }, [filterRunCodeContains, filterUnloadedFrom, filterUnloadedTo, sortBy, sortOrder]);
-
-  useEffect(() => {
-    if (!selectedRun) return;
-    setEditCycleStart(toLocalInputValue(selectedRun.cycle_start_at));
-    setEditCycleEnd(toLocalInputValue(selectedRun.cycle_end_at));
-    setEditUnloadedAt(toLocalInputValue(selectedRun.unloaded_at));
-    setEditTempC(selectedRun.temp_c == null ? "" : String(selectedRun.temp_c));
-    setEditPsi(selectedRun.psi == null ? "" : String(selectedRun.psi));
-    setEditHoldMinutes(selectedRun.hold_minutes == null ? "" : String(selectedRun.hold_minutes));
-    setEditNotes(selectedRun.notes || "");
-  }, [selectedRun]);
+  }, [filterRunCodeContains, sortBy, sortOrder]);
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (createSpawnRecipeId === "" || createGrainTypeId === "") {
+      setError("Select spawn recipe and grain type.");
+      return;
+    }
     try {
       await apiPost<SterilizationRun>("/sterilization-runs", {
         run_code: createRunCode.trim(),
+        spawn_recipe_id: createSpawnRecipeId,
+        grain_type_id: createGrainTypeId,
+        bag_count: createBagCount,
         cycle_start_at: toIsoOrNull(createCycleStart),
         cycle_end_at: toIsoOrNull(createCycleEnd),
         unloaded_at: new Date(createUnloadedAt).toISOString(),
@@ -102,6 +86,9 @@ export default function SterilizationRunsPage() {
         notes: createNotes.trim() || null,
       });
       setCreateRunCode("");
+      setCreateSpawnRecipeId(spawnRecipes[0]?.spawn_recipe_id ?? "");
+      setCreateGrainTypeId(grainTypes[0]?.grain_type_id ?? "");
+      setCreateBagCount(1);
       setCreateCycleStart("");
       setCreateCycleEnd("");
       setCreateUnloadedAt("");
@@ -109,26 +96,6 @@ export default function SterilizationRunsPage() {
       setCreatePsi("");
       setCreateHoldMinutes("");
       setCreateNotes("");
-      await loadRuns();
-    } catch (e: any) {
-      setError(e?.message || String(e));
-    }
-  }
-
-  async function onUpdate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedRun) return;
-    setError(null);
-    try {
-      await apiPatch<SterilizationRun>(`/sterilization-runs/${selectedRun.sterilization_run_id}`, {
-        cycle_start_at: toIsoOrNull(editCycleStart),
-        cycle_end_at: toIsoOrNull(editCycleEnd),
-        unloaded_at: editUnloadedAt ? new Date(editUnloadedAt).toISOString() : null,
-        temp_c: toNullableNumber(editTempC),
-        psi: toNullableNumber(editPsi),
-        hold_minutes: toNullableInt(editHoldMinutes),
-        notes: editNotes.trim() || null,
-      });
       await loadRuns();
     } catch (e: any) {
       setError(e?.message || String(e));
@@ -144,14 +111,6 @@ export default function SterilizationRunsPage() {
           <label>
             Run code contains
             <input value={filterRunCodeContains} onChange={(e) => setFilterRunCodeContains(e.target.value)} />
-          </label>
-          <label>
-            Unloaded from
-            <input type="datetime-local" value={filterUnloadedFrom} onChange={(e) => setFilterUnloadedFrom(e.target.value)} />
-          </label>
-          <label>
-            Unloaded to
-            <input type="datetime-local" value={filterUnloadedTo} onChange={(e) => setFilterUnloadedTo(e.target.value)} />
           </label>
           <label>
             Sort by
@@ -179,6 +138,28 @@ export default function SterilizationRunsPage() {
               placeholder="e.g., AUTO-2026-02-15-A"
               required
             />
+          </label>
+          <label>
+            Spawn Recipe
+            <select value={createSpawnRecipeId} onChange={(e) => setCreateSpawnRecipeId(Number(e.target.value) || "")} required>
+              <option value="">Select</option>
+              {spawnRecipes.map((r) => (
+                <option key={r.spawn_recipe_id} value={r.spawn_recipe_id}>{r.recipe_code}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Grain Type
+            <select value={createGrainTypeId} onChange={(e) => setCreateGrainTypeId(Number(e.target.value) || "")} required>
+              <option value="">Select</option>
+              {grainTypes.map((g) => (
+                <option key={g.grain_type_id} value={g.grain_type_id}>{g.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Bag Count
+            <input type="number" min={1} value={createBagCount} onChange={(e) => setCreateBagCount(Number(e.target.value) || 1)} required />
           </label>
           <label>
             Cycle Start (optional)
@@ -224,11 +205,7 @@ export default function SterilizationRunsPage() {
           </thead>
           <tbody>
             {runs.map((run) => (
-              <tr
-                key={run.sterilization_run_id}
-                onClick={() => setSelectedRunId(run.sterilization_run_id)}
-                style={{ cursor: "pointer", background: selectedRunId === run.sterilization_run_id ? "#f2f7ff" : "transparent" }}
-              >
+              <tr key={run.sterilization_run_id}>
                 <td>{run.sterilization_run_id}</td>
                 <td>{run.run_code}</td>
                 <td>{new Date(run.unloaded_at).toLocaleString()}</td>
@@ -237,43 +214,6 @@ export default function SterilizationRunsPage() {
           </tbody>
         </table>
       </div>
-
-      {selectedRun && (
-        <div className="card">
-          <h2>Edit Selected Run: {selectedRun.run_code}</h2>
-          <form onSubmit={onUpdate} className="form">
-            <label>
-              Cycle Start
-              <input type="datetime-local" value={editCycleStart} onChange={(e) => setEditCycleStart(e.target.value)} />
-            </label>
-            <label>
-              Cycle End
-              <input type="datetime-local" value={editCycleEnd} onChange={(e) => setEditCycleEnd(e.target.value)} />
-            </label>
-            <label>
-              Unloaded At
-              <input type="datetime-local" value={editUnloadedAt} onChange={(e) => setEditUnloadedAt(e.target.value)} />
-            </label>
-            <label>
-              Temp C
-              <input type="number" step="0.01" value={editTempC} onChange={(e) => setEditTempC(e.target.value)} />
-            </label>
-            <label>
-              PSI
-              <input type="number" step="0.01" value={editPsi} onChange={(e) => setEditPsi(e.target.value)} />
-            </label>
-            <label>
-              Hold Minutes
-              <input type="number" step="1" min="0" value={editHoldMinutes} onChange={(e) => setEditHoldMinutes(e.target.value)} />
-            </label>
-            <label>
-              Notes
-              <input value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
-            </label>
-            <button className="btn" type="submit">Update Run</button>
-          </form>
-        </div>
-      )}
 
       {error && <p className="error">{error}</p>}
     </div>

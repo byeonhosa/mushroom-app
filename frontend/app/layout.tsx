@@ -8,16 +8,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="container row">
             <a className="brand" href="/">Mushroom Farm App</a>
             <nav className="nav">
-              <a href="/blocks">Blocks</a>
-              <a href="/blocks/new">New Block</a>
-              <a href="/inoculations/new">New Inoculation</a>
-              <a href="/harvest/new">New Harvest</a>
-              <a href="/species">Species (admin)</a>
-              <a href="/spawn-batches">Spawn Batches</a>
-              <a href="/sterilization-runs">Sterilization Runs</a>
-              <a href="/grain-types">Grain Types</a>
-              <a href="/ingredients">Ingredients</a>
-              <a href="/pasteurization-runs">Pasteurization Runs</a>
+              <a href="/bags">Bags</a>
+              <a href="/bags/create/spawn">Create Spawn Bags</a>
+              <a href="/bags/create/substrate">Record Substrate Bags</a>
+              <a href="/events/incubation">Incubation Start</a>
+              <a href="/events/inoculation">Inoculation</a>
+              <a href="/events/fruiting">Fruiting Start</a>
+              <a href="/events/harvest">Harvest</a>
+              <a href="/events/disposal">Disposal</a>
+              <a href="/species">Species</a>
+              <a href="/pasteurization-runs">Pasteurization</a>
+              <a href="/sterilization-runs">Sterilization</a>
+              <a href="/mix-lots">Mix Lots</a>
             </nav>
           </div>
         </header>

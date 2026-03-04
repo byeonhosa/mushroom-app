@@ -11,8 +11,19 @@ body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #f6f7f9
 .form { display: grid; gap: 12px; }
 .form input, .form select { padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
 .error { color: #b00020; }
+.success { color: #0a7; }
+.workflow-note { background: #f0f7ff; padding: 10px 12px; border-radius: 8px; font-size: 0.9em; color: #333; }
 .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
 .kpi { font-size: 22px; font-weight: 700; }
 .kpiLabel { color: #666; font-size: 12px; }
 .list { list-style: none; padding: 0; }
 .list li { padding: 6px 0; border-bottom: 1px dashed #eee; }
+
+.label-sheet { display: grid; grid-template-columns: repeat(4, 1in); gap: 0.1in; margin-top: 16px; }
+.label-1x1 { width: 1in; height: 1in; border: 1px dashed #ccc; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; }
+.label-text { font-size: 8px; word-break: break-all; text-align: center; margin-top: 2px; }
+@media print {
+  .no-print { display: none !important; }
+  .label-sheet { gap: 0; }
+  .label-1x1 { border: none; }
+}

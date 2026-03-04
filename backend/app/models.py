@@ -1,31 +1,46 @@
 import enum
 from sqlalchemy import (
-    Column, String, Integer, DateTime, ForeignKey, Numeric, Text, Enum, CheckConstraint, UniqueConstraint, Boolean
+    Column, String, Integer, DateTime, ForeignKey, Numeric, Text, Boolean, UniqueConstraint
 )
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
 
 Base = declarative_base()
 
-class ZoneType(str, enum.Enum):
-    INCUBATION = "INCUBATION"
-    FRUITING = "FRUITING"
-    MIXING = "MIXING"
-    OTHER = "OTHER"
 
-class SpawnType(str, enum.Enum):
-    PURCHASED_BLOCK = "PURCHASED_BLOCK"
-    IN_HOUSE_GRAIN = "IN_HOUSE_GRAIN"
+class BagType(str, enum.Enum):
+    SPAWN = "SPAWN"
+    SUBSTRATE = "SUBSTRATE"
 
-class ThermalProcessType(str, enum.Enum):
-    PASTEURIZATION_STEAM = "PASTEURIZATION_STEAM"
-    STERILIZATION_AUTOCLAVE = "STERILIZATION_AUTOCLAVE"
+
+class DisposalReason(str, enum.Enum):
+    CONTAMINATION = "CONTAMINATION"
+    FINAL_HARVEST = "FINAL_HARVEST"
+
 
 class Zone(Base):
     __tablename__ = "zones"
     zone_id = Column(Integer, primary_key=True)
     name = Column(String(120), nullable=False, unique=True)
-    zone_type = Column(Enum(ZoneType), nullable=False, default=ZoneType.OTHER)
+    zone_type = Column(String(20), nullable=False)
+
+
+class SubstrateRecipeVersion(Base):
+    __tablename__ = "substrate_recipe_versions"
+    substrate_recipe_version_id = Column(Integer, primary_key=True)
+    name = Column(String(120), nullable=False, unique=True)
+    recipe_code = Column(String(20), nullable=False, unique=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    notes = Column(Text)
+
+
+class SpawnRecipe(Base):
+    __tablename__ = "spawn_recipes"
+    spawn_recipe_id = Column(Integer, primary_key=True)
+    recipe_code = Column(String(40), nullable=False, unique=True)
+    notes = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
 
 class FillProfile(Base):
     __tablename__ = "fill_profiles"
@@ -35,237 +50,171 @@ class FillProfile(Base):
     target_water_kg_per_bag = Column(Numeric(10, 3), nullable=False)
     notes = Column(Text)
 
-class SubstrateRecipeVersion(Base):
-    __tablename__ = "substrate_recipe_versions"
-    substrate_recipe_version_id = Column(Integer, primary_key=True)
-    name = Column(String(120), nullable=False, unique=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    notes = Column(Text)
 
 class MixLot(Base):
     __tablename__ = "mix_lots"
     mix_lot_id = Column(Integer, primary_key=True)
     lot_code = Column(String(120), nullable=False, unique=True)
-    notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    substrate_recipe_version_id = Column(Integer, ForeignKey("substrate_recipe_versions.substrate_recipe_version_id"), nullable=False)
+    fill_profile_id = Column(Integer, ForeignKey("fill_profiles.fill_profile_id"), nullable=False)
+    mixed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    notes = Column(Text)
 
-class SpawnRecipe(Base):
-    __tablename__ = "spawn_recipes"
-    spawn_recipe_id = Column(Integer, primary_key=True)
-    recipe_code = Column(String(120), nullable=False, unique=True)
-    notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    substrate_recipe_version = relationship("SubstrateRecipeVersion")
+    fill_profile = relationship("FillProfile")
+    addins = relationship("MixLotAddin", back_populates="mix_lot", cascade="all, delete-orphan")
+
 
 class Ingredient(Base):
     __tablename__ = "ingredients"
     ingredient_id = Column(Integer, primary_key=True)
     name = Column(String(120), nullable=False, unique=True)
-    category = Column(String(120), nullable=True)
-    notes = Column(Text, nullable=True)
+    category = Column(String(120))
+    notes = Column(Text)
 
     lots = relationship("IngredientLot", back_populates="ingredient")
+
 
 class IngredientLot(Base):
     __tablename__ = "ingredient_lots"
     ingredient_lot_id = Column(Integer, primary_key=True)
     ingredient_id = Column(Integer, ForeignKey("ingredients.ingredient_id"), nullable=False)
-    vendor = Column(String(120), nullable=True)
-    lot_code = Column(String(120), nullable=True)
-    received_at = Column(DateTime(timezone=True), nullable=True)
-    unit_cost_per_kg = Column(Numeric(12, 4), nullable=True)
-    notes = Column(Text, nullable=True)
+    vendor = Column(String(120))
+    lot_code = Column(String(120))
+    received_at = Column(DateTime(timezone=True))
+    unit_cost_per_kg = Column(Numeric(12, 4))
+    notes = Column(Text)
 
     ingredient = relationship("Ingredient", back_populates="lots")
-    batch_addins = relationship("SubstrateBatchAddin", back_populates="ingredient_lot")
 
-class ThermalRun(Base):
-    __tablename__ = "thermal_runs"
-    thermal_run_id = Column(Integer, primary_key=True)
-    process_type = Column(Enum(ThermalProcessType), nullable=False)
-    unloaded_at = Column(DateTime(timezone=True), nullable=False)
+
+class MixLotAddin(Base):
+    __tablename__ = "mix_lot_addins"
+    mix_lot_addin_id = Column(Integer, primary_key=True)
+    mix_lot_id = Column(Integer, ForeignKey("mix_lots.mix_lot_id", ondelete="CASCADE"), nullable=False)
+    ingredient_lot_id = Column(Integer, ForeignKey("ingredient_lots.ingredient_lot_id"), nullable=False)
+    dry_kg = Column(Numeric(12, 4))
+    pct_of_base_dry = Column(Numeric(8, 4))
     notes = Column(Text)
 
-class PasteurizationRun(Base):
-    __tablename__ = "pasteurization_runs"
-    pasteurization_run_id = Column(Integer, primary_key=True)
-    run_code = Column(String(120), nullable=False, unique=True)
-    steam_start_at = Column(DateTime(timezone=True), nullable=True)
-    steam_end_at = Column(DateTime(timezone=True), nullable=True)
-    unloaded_at = Column(DateTime(timezone=True), nullable=False)
-    notes = Column(Text)
+    mix_lot = relationship("MixLot", back_populates="addins")
 
-class SterilizationRun(Base):
-    __tablename__ = "sterilization_runs"
-    sterilization_run_id = Column(Integer, primary_key=True)
-    run_code = Column(String(120), nullable=False, unique=True)
-    cycle_start_at = Column(DateTime(timezone=True), nullable=True)
-    cycle_end_at = Column(DateTime(timezone=True), nullable=True)
-    unloaded_at = Column(DateTime(timezone=True), nullable=False)
-    temp_c = Column(Numeric(6, 2), nullable=True)
-    psi = Column(Numeric(6, 2), nullable=True)
-    hold_minutes = Column(Integer, nullable=True)
-    notes = Column(Text, nullable=True)
 
 class GrainType(Base):
     __tablename__ = "grain_types"
     grain_type_id = Column(Integer, primary_key=True)
     name = Column(String(80), nullable=False, unique=True)
-    notes = Column(Text, nullable=True)
+    notes = Column(Text)
+
 
 class MushroomSpecies(Base):
     __tablename__ = "mushroom_species"
     species_id = Column(Integer, primary_key=True)
     code = Column(String(40), nullable=False, unique=True)
     name = Column(String(120), nullable=False)
-    latin_name = Column(String(160), nullable=True)
-    notes = Column(Text, nullable=True)
+    latin_name = Column(String(160))
+    notes = Column(Text)
     is_active = Column(Boolean, nullable=False, default=True)
 
-class Block(Base):
-    __tablename__ = "blocks"
-    block_id = Column(Integer, primary_key=True)
-    block_code = Column(String(120), nullable=False, unique=True)
-    block_type = Column(String(20), nullable=False)
-    species_id = Column(Integer, ForeignKey("mushroom_species.species_id"), nullable=False)
-    mix_lot_id = Column(Integer, ForeignKey("mix_lots.mix_lot_id", ondelete="SET NULL"), nullable=True)
-    pasteurization_run_id = Column(Integer, ForeignKey("pasteurization_runs.pasteurization_run_id", ondelete="SET NULL"), nullable=True)
-    sterilization_run_id = Column(Integer, ForeignKey("sterilization_runs.sterilization_run_id", ondelete="SET NULL"), nullable=True)
-    spawn_recipe_id = Column(Integer, ForeignKey("spawn_recipes.spawn_recipe_id", ondelete="SET NULL"), nullable=True)
-    substrate_batch_id = Column(Integer, ForeignKey("substrate_batches.substrate_batch_id", ondelete="SET NULL"), nullable=True)
-    spawn_batch_id = Column(Integer, ForeignKey("spawn_batches.spawn_batch_id", ondelete="SET NULL"), nullable=True)
-    status = Column(String(30), nullable=True)
-    notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class PasteurizationRun(Base):
+    __tablename__ = "pasteurization_runs"
+    pasteurization_run_id = Column(Integer, primary_key=True)
+    run_code = Column(String(120), nullable=False, unique=True)
+    mix_lot_id = Column(Integer, ForeignKey("mix_lots.mix_lot_id"), nullable=False)
+    substrate_recipe_version_id = Column(Integer, ForeignKey("substrate_recipe_versions.substrate_recipe_version_id"), nullable=False)
+    steam_start_at = Column(DateTime(timezone=True))
+    steam_end_at = Column(DateTime(timezone=True))
+    unloaded_at = Column(DateTime(timezone=True), nullable=False)
+    bag_count = Column(Integer, nullable=False)
+    notes = Column(Text)
 
     mix_lot = relationship("MixLot")
+    substrate_recipe_version = relationship("SubstrateRecipeVersion")
+
+
+class SterilizationRun(Base):
+    __tablename__ = "sterilization_runs"
+    sterilization_run_id = Column(Integer, primary_key=True)
+    run_code = Column(String(120), nullable=False, unique=True)
+    spawn_recipe_id = Column(Integer, ForeignKey("spawn_recipes.spawn_recipe_id"), nullable=False)
+    grain_type_id = Column(Integer, ForeignKey("grain_types.grain_type_id"), nullable=False)
+    cycle_start_at = Column(DateTime(timezone=True))
+    cycle_end_at = Column(DateTime(timezone=True))
+    unloaded_at = Column(DateTime(timezone=True), nullable=False)
+    bag_count = Column(Integer, nullable=False)
+    temp_c = Column(Numeric(6, 2))
+    psi = Column(Numeric(6, 2))
+    hold_minutes = Column(Integer)
+    notes = Column(Text)
+
+    spawn_recipe = relationship("SpawnRecipe")
+    grain_type = relationship("GrainType")
+
+
+class Bag(Base):
+    __tablename__ = "bags"
+    bag_id = Column(String(80), primary_key=True)
+    bag_type = Column(String(20), nullable=False)  # SPAWN or SUBSTRATE
+    species_id = Column(Integer, ForeignKey("mushroom_species.species_id"), nullable=False)
+    pasteurization_run_id = Column(Integer, ForeignKey("pasteurization_runs.pasteurization_run_id", ondelete="SET NULL"))
+    sterilization_run_id = Column(Integer, ForeignKey("sterilization_runs.sterilization_run_id", ondelete="SET NULL"))
+    mix_lot_id = Column(Integer, ForeignKey("mix_lots.mix_lot_id", ondelete="SET NULL"))
+    substrate_recipe_version_id = Column(Integer, ForeignKey("substrate_recipe_versions.substrate_recipe_version_id", ondelete="SET NULL"))
+    spawn_recipe_id = Column(Integer, ForeignKey("spawn_recipes.spawn_recipe_id", ondelete="SET NULL"))
+    grain_type_id = Column(Integer, ForeignKey("grain_types.grain_type_id", ondelete="SET NULL"))
+    parent_spawn_bag_id = Column(String(80), ForeignKey("bags.bag_id", ondelete="SET NULL"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    inoculated_at = Column(DateTime(timezone=True))
+    incubation_start_at = Column(DateTime(timezone=True))
+    fruiting_start_at = Column(DateTime(timezone=True))
+    disposed_at = Column(DateTime(timezone=True))
+    disposal_reason = Column(String(20))
+    consumed_at = Column(DateTime(timezone=True))
+    status = Column(String(40), nullable=False, default="FILLED")
+    notes = Column(Text)
+
+    species = relationship("MushroomSpecies")
     pasteurization_run = relationship("PasteurizationRun")
     sterilization_run = relationship("SterilizationRun")
+    mix_lot = relationship("MixLot")
+    substrate_recipe_version = relationship("SubstrateRecipeVersion")
     spawn_recipe = relationship("SpawnRecipe")
-    species = relationship("MushroomSpecies")
-    substrate_batch = relationship("SubstrateBatch")
-    spawn_batch = relationship("SpawnBatch")
+    grain_type = relationship("GrainType")
+    parent_spawn_bag = relationship("Bag", remote_side=[bag_id])
+    inoculation = relationship(
+        "Inoculation",
+        back_populates="substrate_bag",
+        uselist=False,
+        primaryjoin="Bag.bag_id == Inoculation.substrate_bag_id",
+        foreign_keys="Inoculation.substrate_bag_id",
+    )
+    harvest_events = relationship("HarvestEvent", back_populates="bag", cascade="all, delete-orphan")
+
 
 class Inoculation(Base):
     __tablename__ = "inoculations"
     inoculation_id = Column(Integer, primary_key=True)
-    child_block_id = Column(Integer, ForeignKey("blocks.block_id", ondelete="CASCADE"), nullable=False)
-    parent_spawn_block_id = Column(Integer, ForeignKey("blocks.block_id", ondelete="RESTRICT"), nullable=False)
+    substrate_bag_id = Column(String(80), ForeignKey("bags.bag_id", ondelete="CASCADE"), nullable=False, unique=True)
+    spawn_bag_id = Column(String(80), ForeignKey("bags.bag_id", ondelete="RESTRICT"), nullable=False)
     inoculated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    notes = Column(Text, nullable=True)
-
-    __table_args__ = (
-        UniqueConstraint("child_block_id", name="uq_inoculations_child_block_id"),
-    )
-
-    child_block = relationship("Block", foreign_keys=[child_block_id])
-    parent_spawn_block = relationship("Block", foreign_keys=[parent_spawn_block_id])
-
-class SpawnBatch(Base):
-    __tablename__ = "spawn_batches"
-    spawn_batch_id = Column(Integer, primary_key=True)
-    spawn_type = Column(Enum(SpawnType), nullable=False)
-    strain_code = Column(String(30), nullable=False)
-    vendor = Column(String(120), nullable=True)
-    lot_code = Column(String(120), nullable=True)
-    made_at = Column(DateTime(timezone=True), nullable=True)
-    incubation_start_at = Column(DateTime(timezone=True), nullable=True)
-    grain_dry_kg = Column(Numeric(10, 3), nullable=True)
-    grain_water_kg = Column(Numeric(10, 3), nullable=True)
-    supplement_kg = Column(Numeric(10, 3), nullable=True)
-    lc_vendor = Column(String(120), nullable=True)
-    lc_code = Column(String(120), nullable=True)
-    sterilization_run_code = Column(String(120), nullable=True)
-    sterilization_run_id = Column(Integer, ForeignKey("sterilization_runs.sterilization_run_id"), nullable=True)
-    grain_type_id = Column(Integer, ForeignKey("grain_types.grain_type_id"), nullable=True)
-    grain_kg = Column(Numeric(10, 3), nullable=True)
-    vermiculite_kg = Column(Numeric(10, 3), nullable=True)
-    water_kg = Column(Numeric(10, 3), nullable=True)
-    incubation_zone_id = Column(Integer, ForeignKey("zones.zone_id"), nullable=True)
     notes = Column(Text)
 
-    sterilization_run = relationship("SterilizationRun")
-    grain_type = relationship("GrainType")
+    substrate_bag = relationship("Bag", foreign_keys=[substrate_bag_id], back_populates="inoculation")
+    spawn_bag = relationship("Bag", foreign_keys=[spawn_bag_id])
 
-class SubstrateBatch(Base):
-    __tablename__ = "substrate_batches"
-    substrate_batch_id = Column(Integer, primary_key=True)
-    name = Column(String(120), nullable=False, unique=True)
-    substrate_recipe_version_id = Column(Integer, ForeignKey("substrate_recipe_versions.substrate_recipe_version_id"), nullable=False)
-    fill_profile_id = Column(Integer, ForeignKey("fill_profiles.fill_profile_id"), nullable=False)
-    bag_count = Column(Integer, nullable=False)
-
-    mixed_at = Column(DateTime(timezone=True), server_default=func.now())
-    mix_zone_id = Column(Integer, ForeignKey("zones.zone_id"), nullable=True)
-
-    incubation_zone_id = Column(Integer, ForeignKey("zones.zone_id"), nullable=True)
-    incubation_start_at = Column(DateTime(timezone=True), nullable=True)
-    fruiting_zone_id = Column(Integer, ForeignKey("zones.zone_id"), nullable=True)
-
-    thermal_run_id = Column(Integer, ForeignKey("thermal_runs.thermal_run_id"), nullable=True)
-    pasteurization_run_id = Column(Integer, ForeignKey("pasteurization_runs.pasteurization_run_id"), nullable=True)
-
-    sample_moisture_wb_pct = Column(Numeric(6, 3), nullable=True)
-    sample_wet_weight_kg = Column(Numeric(10, 3), nullable=True)
-
-    notes = Column(Text)
-
-    recipe = relationship("SubstrateRecipeVersion")
-    fill_profile = relationship("FillProfile")
-    inoculation = relationship("BatchInoculation", back_populates="substrate_batch", uselist=False)
-    bags = relationship("SubstrateBag", back_populates="batch", cascade="all, delete-orphan")
-    addins = relationship("SubstrateBatchAddin", back_populates="substrate_batch", cascade="all, delete-orphan")
-
-class SubstrateBatchAddin(Base):
-    __tablename__ = "substrate_batch_addins"
-    substrate_batch_addin_id = Column(Integer, primary_key=True)
-    substrate_batch_id = Column(Integer, ForeignKey("substrate_batches.substrate_batch_id", ondelete="CASCADE"), nullable=False)
-    ingredient_lot_id = Column(Integer, ForeignKey("ingredient_lots.ingredient_lot_id"), nullable=False)
-    dry_kg = Column(Numeric(12, 4), nullable=True)
-    pct_of_base_dry = Column(Numeric(8, 4), nullable=True)
-    notes = Column(Text, nullable=True)
-
-    substrate_batch = relationship("SubstrateBatch", back_populates="addins")
-    ingredient_lot = relationship("IngredientLot", back_populates="batch_addins")
-
-class BatchInoculation(Base):
-    __tablename__ = "batch_inoculations"
-    batch_inoculation_id = Column(Integer, primary_key=True)
-    substrate_batch_id = Column(Integer, ForeignKey("substrate_batches.substrate_batch_id"), nullable=False)
-    spawn_batch_id = Column(Integer, ForeignKey("spawn_batches.spawn_batch_id"), nullable=False)
-    inoculated_at = Column(DateTime(timezone=True), server_default=func.now())
-    spawn_blocks_used = Column(Integer, nullable=True)
-
-    __table_args__ = (
-        UniqueConstraint("substrate_batch_id", name="uq_batch_inoculations_substrate_batch_id"),
-    )
-
-    spawn_batch = relationship("SpawnBatch")
-    substrate_batch = relationship("SubstrateBatch", back_populates="inoculation")
-
-class SubstrateBag(Base):
-    __tablename__ = "substrate_bags"
-    bag_id = Column(String(64), primary_key=True)
-    substrate_batch_id = Column(Integer, ForeignKey("substrate_batches.substrate_batch_id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    status = Column(String(40), nullable=False, default="INCUBATING")
-
-    batch = relationship("SubstrateBatch", back_populates="bags")
-    harvest_events = relationship("HarvestEvent", back_populates="bag", cascade="all, delete-orphan")
 
 class HarvestEvent(Base):
     __tablename__ = "harvest_events"
     harvest_event_id = Column(Integer, primary_key=True)
-    bag_id = Column(String(64), ForeignKey("substrate_bags.bag_id"), nullable=True)
-    block_id = Column(Integer, ForeignKey("blocks.block_id"), nullable=True)
-    harvested_at = Column(DateTime(timezone=True), server_default=func.now())
+    bag_id = Column(String(80), ForeignKey("bags.bag_id", ondelete="CASCADE"), nullable=False)
     flush_number = Column(Integer, nullable=False)
     fresh_weight_kg = Column(Numeric(10, 3), nullable=False)
+    harvested_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     notes = Column(Text)
 
     __table_args__ = (
-        CheckConstraint("flush_number IN (1,2)", name="ck_flush_number_1_2"),
-        UniqueConstraint("block_id", "flush_number", name="uq_harvest_events_block_flush"),
+        UniqueConstraint("bag_id", "flush_number", name="uq_harvest_events_bag_flush"),
     )
 
-    bag = relationship("SubstrateBag", back_populates="harvest_events")
-    block = relationship("Block")
+    bag = relationship("Bag", back_populates="harvest_events")

@@ -1,91 +1,71 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { apiGet, apiPatch, apiPost } from "../../lib/api";
-import type { PasteurizationRun } from "../../lib/types";
+import { useEffect, useState } from "react";
+import { apiGet, apiPost } from "../../lib/api";
+import type { PasteurizationRun, MixLot, SubstrateRecipeVersion } from "../../lib/types";
 
 function toIsoOrNull(value: string): string | null {
   if (!value) return null;
   return new Date(value).toISOString();
 }
 
-function toLocalInputValue(value?: string | null): string {
-  if (!value) return "";
-  const date = new Date(value);
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
-}
-
 export default function PasteurizationRunsPage() {
   const [runs, setRuns] = useState<PasteurizationRun[]>([]);
+  const [mixLots, setMixLots] = useState<MixLot[]>([]);
+  const [recipes, setRecipes] = useState<SubstrateRecipeVersion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createRunCode, setCreateRunCode] = useState("");
+  const [createMixLotId, setCreateMixLotId] = useState<number | "">("");
+  const [createRecipeId, setCreateRecipeId] = useState<number | "">("");
+  const [createBagCount, setCreateBagCount] = useState(1);
   const [createSteamStart, setCreateSteamStart] = useState("");
   const [createSteamEnd, setCreateSteamEnd] = useState("");
   const [createUnloadedAt, setCreateUnloadedAt] = useState("");
   const [createNotes, setCreateNotes] = useState("");
 
-  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
-  const selectedRun = useMemo(
-    () => runs.find(r => r.pasteurization_run_id === selectedRunId) || null,
-    [runs, selectedRunId]
-  );
-  const [editSteamStart, setEditSteamStart] = useState("");
-  const [editSteamEnd, setEditSteamEnd] = useState("");
-  const [editUnloadedAt, setEditUnloadedAt] = useState("");
-  const [editNotes, setEditNotes] = useState("");
-
   async function loadRuns() {
-    const data = await apiGet<PasteurizationRun[]>("/pasteurization-runs");
-    setRuns(data);
-    if (!selectedRunId && data.length > 0) setSelectedRunId(data[0].pasteurization_run_id);
+    const [r, m, rec] = await Promise.all([
+      apiGet<PasteurizationRun[]>("/pasteurization-runs"),
+      apiGet<MixLot[]>("/mix-lots"),
+      apiGet<SubstrateRecipeVersion[]>("/substrate-recipe-versions"),
+    ]);
+    setRuns(r);
+    setMixLots(m);
+    setRecipes(rec);
+    if (m.length > 0 && !createMixLotId) setCreateMixLotId(m[0].mix_lot_id);
+    if (rec.length > 0 && !createRecipeId) setCreateRecipeId(rec[0].substrate_recipe_version_id);
   }
 
   useEffect(() => {
     loadRuns().catch(e => setError(String(e)));
   }, []);
 
-  useEffect(() => {
-    if (!selectedRun) return;
-    setEditSteamStart(toLocalInputValue(selectedRun.steam_start_at));
-    setEditSteamEnd(toLocalInputValue(selectedRun.steam_end_at));
-    setEditUnloadedAt(toLocalInputValue(selectedRun.unloaded_at));
-    setEditNotes(selectedRun.notes || "");
-  }, [selectedRun]);
-
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (createMixLotId === "" || createRecipeId === "") {
+      setError("Select mix lot and substrate recipe.");
+      return;
+    }
     try {
       await apiPost<PasteurizationRun>("/pasteurization-runs", {
         run_code: createRunCode,
+        mix_lot_id: createMixLotId,
+        substrate_recipe_version_id: createRecipeId,
         steam_start_at: toIsoOrNull(createSteamStart),
         steam_end_at: toIsoOrNull(createSteamEnd),
         unloaded_at: new Date(createUnloadedAt).toISOString(),
+        bag_count: createBagCount,
         notes: createNotes || null
       });
       setCreateRunCode("");
+      setCreateMixLotId(mixLots[0]?.mix_lot_id ?? "");
+      setCreateRecipeId(recipes[0]?.substrate_recipe_version_id ?? "");
+      setCreateBagCount(1);
       setCreateSteamStart("");
       setCreateSteamEnd("");
       setCreateUnloadedAt("");
       setCreateNotes("");
-      await loadRuns();
-    } catch (e: any) {
-      setError(e?.message || String(e));
-    }
-  }
-
-  async function onUpdate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedRun) return;
-    setError(null);
-    try {
-      await apiPatch<PasteurizationRun>(`/pasteurization-runs/${selectedRun.pasteurization_run_id}`, {
-        steam_start_at: toIsoOrNull(editSteamStart),
-        steam_end_at: toIsoOrNull(editSteamEnd),
-        unloaded_at: editUnloadedAt ? new Date(editUnloadedAt).toISOString() : null,
-        notes: editNotes || null
-      });
       await loadRuns();
     } catch (e: any) {
       setError(e?.message || String(e));
@@ -100,6 +80,28 @@ export default function PasteurizationRunsPage() {
           <label>
             Run Code
             <input value={createRunCode} onChange={e => setCreateRunCode(e.target.value)} placeholder="e.g., PS-2026-02-15-A" required />
+          </label>
+          <label>
+            Mix Lot
+            <select value={createMixLotId} onChange={e => setCreateMixLotId(Number(e.target.value) || "")} required>
+              <option value="">Select</option>
+              {mixLots.map(m => (
+                <option key={m.mix_lot_id} value={m.mix_lot_id}>{m.lot_code}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Substrate Recipe
+            <select value={createRecipeId} onChange={e => setCreateRecipeId(Number(e.target.value) || "")} required>
+              <option value="">Select</option>
+              {recipes.map(r => (
+                <option key={r.substrate_recipe_version_id} value={r.substrate_recipe_version_id}>{r.name} ({r.recipe_code})</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Bag Count
+            <input type="number" min={1} value={createBagCount} onChange={e => setCreateBagCount(Number(e.target.value) || 1)} required />
           </label>
           <label>
             Steam Start (optional)
@@ -133,11 +135,7 @@ export default function PasteurizationRunsPage() {
           </thead>
           <tbody>
             {runs.map(run => (
-              <tr
-                key={run.pasteurization_run_id}
-                onClick={() => setSelectedRunId(run.pasteurization_run_id)}
-                style={{ cursor: "pointer", background: selectedRunId === run.pasteurization_run_id ? "#f2f7ff" : "transparent" }}
-              >
+              <tr key={run.pasteurization_run_id}>
                 <td>{run.pasteurization_run_id}</td>
                 <td>{run.run_code}</td>
                 <td>{new Date(run.unloaded_at).toLocaleString()}</td>
@@ -146,31 +144,6 @@ export default function PasteurizationRunsPage() {
           </tbody>
         </table>
       </div>
-
-      {selectedRun && (
-        <div className="card">
-          <h2>Edit Selected Run: {selectedRun.run_code}</h2>
-          <form onSubmit={onUpdate} className="form">
-            <label>
-              Steam Start
-              <input type="datetime-local" value={editSteamStart} onChange={e => setEditSteamStart(e.target.value)} />
-            </label>
-            <label>
-              Steam End
-              <input type="datetime-local" value={editSteamEnd} onChange={e => setEditSteamEnd(e.target.value)} />
-            </label>
-            <label>
-              Unloaded At
-              <input type="datetime-local" value={editUnloadedAt} onChange={e => setEditUnloadedAt(e.target.value)} />
-            </label>
-            <label>
-              Notes
-              <input value={editNotes} onChange={e => setEditNotes(e.target.value)} />
-            </label>
-            <button className="btn" type="submit">Update Run</button>
-          </form>
-        </div>
-      )}
 
       {error && <p className="error">{error}</p>}
     </div>
