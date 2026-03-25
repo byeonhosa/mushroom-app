@@ -371,3 +371,77 @@ def test_duplicate_flush_and_contamination_disposal_guardrails_use_bag_refs():
         assert contaminated_bag.disposal_reason == "CONTAMINATION"
     finally:
         db.close()
+
+
+def test_run_bag_creation_guardrails_prevent_overfilling_planned_counts():
+    db = _session()
+    try:
+        spawn_recipe = _seed_spawn_recipe(db)
+        grain_type = _seed_grain_type(db)
+        sterilization_run = models.SterilizationRun(
+            run_code="STER-LIMIT",
+            spawn_recipe_id=spawn_recipe.spawn_recipe_id,
+            grain_type_id=grain_type.grain_type_id,
+            unloaded_at=datetime.now(timezone.utc),
+            bag_count=2,
+        )
+        db.add(sterilization_run)
+
+        substrate_recipe = _seed_substrate_recipe(db, recipe_code="MM-LIMIT")
+        fill_profile = _seed_fill_profile(db)
+        mix_lot = models.MixLot(
+            lot_code="LOT-LIMIT",
+            substrate_recipe_version_id=substrate_recipe.substrate_recipe_version_id,
+            fill_profile_id=fill_profile.fill_profile_id,
+        )
+        db.add(mix_lot)
+        db.commit()
+        db.refresh(sterilization_run)
+        db.refresh(mix_lot)
+
+        pasteurization_run = models.PasteurizationRun(
+            run_code="PAST-LIMIT",
+            mix_lot_id=mix_lot.mix_lot_id,
+            substrate_recipe_version_id=substrate_recipe.substrate_recipe_version_id,
+            unloaded_at=datetime.now(timezone.utc),
+            bag_count=2,
+        )
+        db.add(pasteurization_run)
+        db.commit()
+        db.refresh(pasteurization_run)
+
+        crud.create_spawn_bags(db, sterilization_run.sterilization_run_id, 2)
+        crud.create_substrate_bags(db, pasteurization_run.pasteurization_run_id, 2)
+
+        with pytest.raises(ValueError, match="planned for 2 bag\\(s\\)"):
+            crud.create_spawn_bags(db, sterilization_run.sterilization_run_id, 1)
+
+        with pytest.raises(ValueError, match="planned for 2 bag\\(s\\)"):
+            crud.create_substrate_bags(db, pasteurization_run.pasteurization_run_id, 1)
+    finally:
+        db.close()
+
+
+def test_final_harvest_disposal_requires_harvested_substrate_bags():
+    db = _session()
+    try:
+        _, spawn_bag, _, substrate_bag = _prepare_inoculated_substrate(db)
+
+        with pytest.raises(ValueError, match="Only substrate bags can be disposed as FINAL_HARVEST"):
+            crud.update_bag_disposal(db, spawn_bag.bag_code, "FINAL_HARVEST")
+
+        with pytest.raises(ValueError, match="requires at least one recorded harvest"):
+            crud.update_bag_disposal(db, substrate_bag.bag_code, "FINAL_HARVEST")
+
+        crud.update_bag_incubation_start(db, substrate_bag.bag_code)
+        crud.update_bag_ready(db, substrate_bag.bag_code)
+        crud.update_bag_fruiting_start(db, substrate_bag.bag_code)
+        crud.create_harvest_event(db, substrate_bag.bag_code, 1, 0.5)
+
+        disposed_bag = crud.update_bag_disposal(db, substrate_bag.bag_code, "FINAL_HARVEST")
+
+        assert disposed_bag is not None
+        assert disposed_bag.status == "DISPOSED"
+        assert disposed_bag.disposal_reason == "FINAL_HARVEST"
+    finally:
+        db.close()

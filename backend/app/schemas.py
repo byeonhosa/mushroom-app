@@ -407,6 +407,9 @@ class SubstrateBagMetricsOut(BaseModel):
     pasteurization_run_code: Optional[str] = None
     parent_spawn_bag_id: Optional[str] = None
     parent_spawn_bag_ref: Optional[str] = None
+    source_liquid_culture_id: Optional[int] = None
+    source_liquid_culture_code: Optional[str] = None
+    spawn_generation: Optional[int] = None
     source_sterilization_run_id: Optional[int] = None
     source_sterilization_run_code: Optional[str] = None
     target_dry_kg: Optional[float] = None
@@ -416,6 +419,37 @@ class SubstrateBagMetricsOut(BaseModel):
     total_harvest_kg: float
     bio_efficiency: Optional[float] = None
     contaminated: bool
+
+
+class ContaminationCaseOut(BaseModel):
+    bag_id: str
+    bag_code: Optional[str] = None
+    bag_ref: str
+    bag_type: Literal["SPAWN", "SUBSTRATE"]
+    status: str
+    disposal_reason: Optional[Literal["CONTAMINATION", "FINAL_HARVEST"]] = None
+    contaminated_at: Optional[datetime] = None
+    species_id: Optional[int] = None
+    species_code: Optional[str] = None
+    species_name: Optional[str] = None
+    sterilization_run_id: Optional[int] = None
+    sterilization_run_code: Optional[str] = None
+    pasteurization_run_id: Optional[int] = None
+    pasteurization_run_code: Optional[str] = None
+    parent_spawn_bag_id: Optional[str] = None
+    parent_spawn_bag_ref: Optional[str] = None
+    source_liquid_culture_id: Optional[int] = None
+    source_liquid_culture_code: Optional[str] = None
+    spawn_generation: Optional[int] = None
+    source_sterilization_run_id: Optional[int] = None
+    source_sterilization_run_code: Optional[str] = None
+
+
+class DataQualityIssueOut(BaseModel):
+    code: str
+    label: str
+    count: int
+    bag_refs: List[str]
 
 
 class LineageChildBagOut(BaseModel):
@@ -466,9 +500,14 @@ class ProductionReportOut(BaseModel):
     summary: ProductionReportSummaryOut
     contamination_by_bag_type: List[ReportGroupOut]
     contamination_by_species: List[ReportGroupOut]
+    contamination_by_liquid_culture: List[ReportGroupOut]
+    contamination_by_inoculation_source_type: List[ReportGroupOut]
+    contamination_by_spawn_generation: List[ReportGroupOut]
     contamination_by_source_sterilization_run: List[ReportGroupOut]
     contamination_by_pasteurization_run: List[ReportGroupOut]
     contamination_by_parent_spawn_bag: List[ReportGroupOut]
+    contaminated_bags: List[ContaminationCaseOut]
+    data_quality_issues: List[DataQualityIssueOut]
     pasteurization_runs: List[PasteurizationRunMetricsOut]
     substrate_bags: List[SubstrateBagMetricsOut]
 
