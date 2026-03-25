@@ -39,28 +39,36 @@ export default function BagsPage() {
             Status
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
               <option value="">All</option>
-              <option value="FILLED">Filled</option>
+              <option value="STERILIZED">Sterilized</option>
+              <option value="PASTEURIZED">Pasteurized</option>
+              <option value="INOCULATED">Inoculated</option>
               <option value="INCUBATING">Incubating</option>
+              <option value="READY">Ready</option>
               <option value="FRUITING">Fruiting</option>
-              <option value="HARVESTED">Harvested</option>
+              <option value="FLUSH_1_COMPLETE">Flush 1 Complete</option>
+              <option value="FLUSH_2_COMPLETE">Flush 2 Complete</option>
               <option value="DISPOSED">Disposed</option>
               <option value="CONTAMINATED">Contaminated</option>
               <option value="CONSUMED">Consumed</option>
             </select>
           </label>
-          <a className="btn" href="/bags/create/spawn">Create Spawn Bags</a>
-          <a className="btn" href="/bags/create/substrate">Record Substrate Bags</a>
+          <a className="btn" href="/bags/create/spawn">Create Spawn Records</a>
+          <a className="btn" href="/events/spawn-inoculation">Spawn Inoculation</a>
+          <a className="btn" href="/bags/create/substrate">Create Substrate Records</a>
+          <a className="btn" href="/events/inoculation">Substrate Inoculation</a>
         </div>
       </div>
       <div className="card">
         <table className="table">
           <thead>
             <tr>
-              <th>Bag ID</th>
+              <th>Bag Ref</th>
               <th>Type</th>
               <th>Status</th>
-              <th>Created</th>
+              <th>Label</th>
+              <th>Inoculated</th>
               <th>Incubation</th>
+              <th>Ready</th>
               <th>Fruiting</th>
             </tr>
           </thead>
@@ -68,12 +76,14 @@ export default function BagsPage() {
             {bags.map((b) => (
               <tr key={b.bag_id}>
                 <td>
-                  <a href={`/bags/${encodeURIComponent(b.bag_id)}`}>{b.bag_id}</a>
+                  <a href={`/bags/${encodeURIComponent(b.bag_ref)}`}>{b.bag_ref}</a>
                 </td>
                 <td>{b.bag_type}</td>
                 <td>{b.status}</td>
-                <td>{new Date(b.created_at).toLocaleDateString()}</td>
+                <td>{b.bag_code ? "Assigned" : "Unlabeled"}</td>
+                <td>{b.inoculated_at ? new Date(b.inoculated_at).toLocaleDateString() : "-"}</td>
                 <td>{b.incubation_start_at ? new Date(b.incubation_start_at).toLocaleDateString() : "-"}</td>
+                <td>{b.ready_at ? new Date(b.ready_at).toLocaleDateString() : "-"}</td>
                 <td>{b.fruiting_start_at ? new Date(b.fruiting_start_at).toLocaleDateString() : "-"}</td>
               </tr>
             ))}

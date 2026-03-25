@@ -1,32 +1,47 @@
 "use client";
 
-import { useState } from "react";
-import { apiPost } from "../../../lib/api";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiGet, apiPost } from "../../../lib/api";
+import type { PasteurizationRun, Bag } from "../../../lib/types";
 
 export default function InoculationPage() {
-  const [substrateBagId, setSubstrateBagId] = useState("");
-  const [spawnBagId, setSpawnBagId] = useState("");
+  const router = useRouter();
+  const [runs, setRuns] = useState<PasteurizationRun[]>([]);
+  const [runId, setRunId] = useState<number | "">("");
+  const [bagCount, setBagCount] = useState(1);
+  const [spawnBagRef, setSpawnBagRef] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const runRows = await apiGet<PasteurizationRun[]>("/pasteurization-runs");
+      setRuns(runRows);
+      if (runRows.length > 0) {
+        setRunId((current) => current || runRows[0].pasteurization_run_id);
+      }
+    })().catch((e) => setError(String(e)));
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
-    const sub = substrateBagId.trim();
-    const spawn = spawnBagId.trim();
-    if (!sub || !spawn) {
-      setError("Enter both substrate and spawn bag IDs.");
+
+    const spawnRef = spawnBagRef.trim();
+    if (runId === "" || !spawnRef) {
+      setError("Select a pasteurization run and enter one ready spawn bag code.");
       return;
     }
+
     try {
-      await apiPost("/inoculations", {
-        substrate_bag_id: sub,
-        spawn_bag_id: spawn,
+      const bags = await apiPost<Bag[]>("/inoculations/batch", {
+        pasteurization_run_id: runId,
+        bag_count: bagCount,
+        spawn_bag_id: spawnRef,
       });
-      setSuccess(`Inoculated ${sub} with spawn ${spawn}`);
-      setSubstrateBagId("");
-      setSpawnBagId("");
+      router.push(
+        `/bags/create/substrate/labels?ids=${bags.map((bag) => encodeURIComponent(bag.bag_ref)).join(",")}`,
+      );
     } catch (e: any) {
       setError(e?.message || String(e));
     }
@@ -34,29 +49,38 @@ export default function InoculationPage() {
 
   return (
     <div className="card">
-      <h1>Inoculation</h1>
-      <p>Scan or enter substrate bag ID and spawn bag ID when inoculating.</p>
+      <h1>Substrate Inoculation</h1>
+      <p>
+        Select the pasteurization run, enter how many unlabeled substrate bag records you are inoculating now, and
+        scan the ready spawn bag that supplied the grain. Printable bag codes are assigned as part of this batch.
+      </p>
       <form onSubmit={submit} className="form">
         <label>
-          Substrate bag ID
+          Ready spawn bag code
           <input
-            value={substrateBagId}
-            onChange={(e) => setSubstrateBagId(e.target.value)}
-            placeholder="e.g. PAST-20260301-001-MM-LM-0001"
+            value={spawnBagRef}
+            onChange={(e) => setSpawnBagRef(e.target.value)}
+            placeholder="e.g. STER-20260324-SR1-LM-0001"
             autoFocus
           />
         </label>
         <label>
-          Spawn bag ID
-          <input
-            value={spawnBagId}
-            onChange={(e) => setSpawnBagId(e.target.value)}
-            placeholder="e.g. STER-20260215-003-SR1-LM-0042"
-          />
+          Pasteurization Run
+          <select value={runId} onChange={(e) => setRunId(Number(e.target.value) || "")} required>
+            <option value="">— Select —</option>
+            {runs.map((run) => (
+              <option key={run.pasteurization_run_id} value={run.pasteurization_run_id}>
+                {run.run_code}
+              </option>
+            ))}
+          </select>
         </label>
-        <button className="btn" type="submit">Record Inoculation</button>
+        <label>
+          Bag count
+          <input type="number" min={1} max={999} value={bagCount} onChange={(e) => setBagCount(Number(e.target.value) || 1)} />
+        </label>
+        <button className="btn" type="submit">Assign Codes &amp; Print Labels</button>
       </form>
-      {success && <p className="success">{success}</p>}
       {error && <p className="error">{error}</p>}
     </div>
   );

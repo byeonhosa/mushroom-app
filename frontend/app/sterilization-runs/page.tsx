@@ -207,7 +207,9 @@ export default function SterilizationRunsPage() {
             {runs.map((run) => (
               <tr key={run.sterilization_run_id}>
                 <td>{run.sterilization_run_id}</td>
-                <td>{run.run_code}</td>
+                <td>
+                  <a href={`/sterilization-runs/${run.sterilization_run_id}`}>{run.run_code}</a>
+                </td>
                 <td>{new Date(run.unloaded_at).toLocaleString()}</td>
               </tr>
             ))}

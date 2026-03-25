@@ -1,33 +1,28 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000/api";
 
-export default function SubstrateLabelsPage() {
+function SubstrateLabelsContent() {
   const searchParams = useSearchParams();
   const idsParam = searchParams.get("ids") || "";
-  const bagIds = idsParam ? idsParam.split(",").map((s) => decodeURIComponent(s.trim())).filter(Boolean) : [];
-  const [loaded, setLoaded] = useState(false);
+  const bagRefs = idsParam ? idsParam.split(",").map((s) => decodeURIComponent(s.trim())).filter(Boolean) : [];
 
-  useEffect(() => {
-    setLoaded(true);
-  }, []);
-
-  if (!loaded || bagIds.length === 0) {
+  if (bagRefs.length === 0) {
     return (
       <div className="card">
         <h1>Print Labels</h1>
-        <p>No bag IDs provided. Record inoculated substrate bags first.</p>
-        <a className="btn" href="/bags/create/substrate">Record Inoculated Substrate Bags</a>
+        <p>No substrate bag codes provided. Run substrate inoculation first.</p>
+        <a className="btn" href="/events/inoculation">Go to Substrate Inoculation</a>
       </div>
     );
   }
 
   return (
     <div className="card">
-      <h1 className="no-print">Print Labels ({bagIds.length} labels)</h1>
+      <h1 className="no-print">Print Labels ({bagRefs.length} labels)</h1>
       <p className="no-print workflow-note">
         Attach labels to bags after inoculation. Then scan each bag to record incubation start.
       </p>
@@ -38,18 +33,33 @@ export default function SubstrateLabelsPage() {
         <a className="btn" href="/bags" style={{ marginLeft: 8 }}>View Bags</a>
       </p>
       <div className="label-sheet">
-        {bagIds.map((id) => (
-          <div key={id} className="label-1x1">
+        {bagRefs.map((bagRef) => (
+          <div key={bagRef} className="label-1x1">
             <img
-              src={`${API_BASE}/labels/${encodeURIComponent(id)}/qr`}
-              alt={id}
+              src={`${API_BASE}/labels/${encodeURIComponent(bagRef)}/qr`}
+              alt={bagRef}
               width={64}
               height={64}
             />
-            <div className="label-text">{id}</div>
+            <div className="label-text">{bagRef}</div>
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+export default function SubstrateLabelsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="card">
+          <h1>Print Labels</h1>
+          <p>Loading labels...</p>
+        </div>
+      }
+    >
+      <SubstrateLabelsContent />
+    </Suspense>
   );
 }

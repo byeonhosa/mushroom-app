@@ -32,6 +32,46 @@ jobs:
       - name: Run tests
         run: pytest -q
 
+  migration-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: mushroom_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mushroom_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/mushroom_ci
+      PYTHONPATH:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements.txt ] && [ -s requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ] && [ -s requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Run migration smoke test
+        run: pytest -q tests/test_migrations.py
+
   frontend-build:
     runs-on: ubuntu-latest
     defaults:
@@ -50,6 +90,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Typecheck frontend
+        run: npm run typecheck
 
       - name: Build frontend
         run: npm run build

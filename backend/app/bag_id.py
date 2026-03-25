@@ -1,24 +1,32 @@
-"""Bag ID generation: STER-{run_code}-{recipe_code}-{species_code}-{seq} or PAST-..."""
+"""Bag identity generation for internal records and printable bag codes."""
+
 import re
-from sqlalchemy.orm import Session
+
 from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from . import models
 
 
-def _next_seq_for_prefix(db: Session, prefix: str) -> int:
-    """Find highest seq for bags matching prefix-{seq} and return next."""
-    pattern = f"{re.escape(prefix)}-%"
-    rows = db.execute(
-        select(models.Bag.bag_id).where(models.Bag.bag_id.like(pattern))
-    ).scalars().all()
+def _next_seq_for_column(db: Session, column, prefix: str) -> int:
+    """Find highest seq for values matching prefix-{seq} and return next."""
+    sql_prefix = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    pattern = f"{sql_prefix}-%"
+    rows = db.execute(select(column).where(column.like(pattern, escape="\\"))).scalars().all()
     max_seq = 0
-    for bid in rows:
-        if not bid:
+    for value in rows:
+        if not value:
             continue
-        m = re.match(rf"^{re.escape(prefix)}-(\d+)$", bid)
-        if m:
-            max_seq = max(max_seq, int(m.group(1)))
+        match = re.match(rf"^{re.escape(prefix)}-(\d+)$", value)
+        if match:
+            max_seq = max(max_seq, int(match.group(1)))
     return max_seq + 1
+
+
+def generate_internal_bag_ids(db: Session, bag_type: str, count: int) -> list[str]:
+    prefix = "SPNREC" if bag_type == "SPAWN" else "SUBREC"
+    start_seq = _next_seq_for_column(db, models.Bag.bag_id, prefix)
+    return [f"{prefix}-{start_seq + offset:04d}" for offset in range(count)]
 
 
 def generate_spawn_bag_ids(
@@ -27,7 +35,7 @@ def generate_spawn_bag_ids(
     species_id: int,
     count: int,
 ) -> list[str]:
-    """Generate `count` unique spawn bag IDs for the given sterilization run and species."""
+    """Generate `count` unique printable spawn bag codes for the given run and species."""
     run = db.get(models.SterilizationRun, sterilization_run_id)
     if not run:
         raise ValueError(f"Sterilization run {sterilization_run_id} not found")
@@ -39,16 +47,9 @@ def generate_spawn_bag_ids(
         raise ValueError(f"Spawn recipe not found for run {sterilization_run_id}")
 
     run_code = _sanitize_run_code(run.run_code)
-    recipe_code = recipe.recipe_code
-    species_code = species.code
-    stem = f"STER-{run_code}-{recipe_code}-{species_code}"
-
-    ids = []
-    start_seq = _next_seq_for_prefix(db, stem)
-    for i in range(count):
-        seq = start_seq + i
-        ids.append(f"{stem}-{seq:04d}")
-    return ids
+    stem = f"STER-{run_code}-{recipe.recipe_code}-{species.code}"
+    start_seq = _next_seq_for_column(db, models.Bag.bag_code, stem)
+    return [f"{stem}-{start_seq + offset:04d}" for offset in range(count)]
 
 
 def generate_substrate_bag_ids(
@@ -57,7 +58,7 @@ def generate_substrate_bag_ids(
     species_id: int,
     count: int,
 ) -> list[str]:
-    """Generate `count` unique substrate bag IDs for the given pasteurization run and species."""
+    """Generate `count` unique printable substrate bag codes for the given run and species."""
     run = db.get(models.PasteurizationRun, pasteurization_run_id)
     if not run:
         raise ValueError(f"Pasteurization run {pasteurization_run_id} not found")
@@ -69,18 +70,10 @@ def generate_substrate_bag_ids(
         raise ValueError(f"Substrate recipe not found for run {pasteurization_run_id}")
 
     run_code = _sanitize_run_code(run.run_code)
-    recipe_code = recipe.recipe_code
-    species_code = species.code
-    stem = f"PAST-{run_code}-{recipe_code}-{species_code}"
-
-    ids = []
-    start_seq = _next_seq_for_prefix(db, stem)
-    for i in range(count):
-        seq = start_seq + i
-        ids.append(f"{stem}-{seq:04d}")
-    return ids
+    stem = f"PAST-{run_code}-{recipe.recipe_code}-{species.code}"
+    start_seq = _next_seq_for_column(db, models.Bag.bag_code, stem)
+    return [f"{stem}-{start_seq + offset:04d}" for offset in range(count)]
 
 
 def _sanitize_run_code(run_code: str) -> str:
-    """Replace spaces/special chars for use in bag ID."""
     return re.sub(r"[^A-Za-z0-9\-]", "-", run_code.strip())[:40]
