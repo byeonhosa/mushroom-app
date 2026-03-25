@@ -4,7 +4,7 @@ import { useState } from "react";
 import { apiPost } from "../../../lib/api";
 import type { Bag } from "../../../lib/types";
 
-export default function IncubationStartPage() {
+export default function ReadyPage() {
   const [bagId, setBagId] = useState("");
   const [result, setResult] = useState<Bag | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function IncubationStartPage() {
       return;
     }
     try {
-      const bag = await apiPost<Bag>(`/bags/${encodeURIComponent(id)}/incubation-start`, {});
+      const bag = await apiPost<Bag>(`/bags/${encodeURIComponent(id)}/ready`, {});
       setResult(bag);
       setBagId("");
     } catch (e: any) {
@@ -29,8 +29,8 @@ export default function IncubationStartPage() {
 
   return (
     <div className="card">
-      <h1>Incubation Start</h1>
-      <p>Scan or enter the bag code when placing a labeled bag into the incubation tent.</p>
+      <h1>Mark Bag Ready</h1>
+      <p>Scan or enter the bag code when a bag is fully colonized and ready for its next step.</p>
       <form onSubmit={submit} className="form">
         <label>
           Bag code
@@ -41,7 +41,7 @@ export default function IncubationStartPage() {
             autoFocus
           />
         </label>
-        <button className="btn" type="submit">Record Incubation Start</button>
+        <button className="btn" type="submit">Record Ready</button>
       </form>
       {result && <p className="success">Recorded: {result.bag_ref} — Status: {result.status}</p>}
       {error && <p className="error">{error}</p>}

@@ -41,10 +41,10 @@ export default function HarvestPage() {
   return (
     <div className="card">
       <h1>Harvest</h1>
-      <p>Scan or enter bag ID and record harvest weight for flush 1 or 2.</p>
+      <p>Scan or enter a fruiting bag code and record harvest weight for flush 1 or 2.</p>
       <form onSubmit={submit} className="form">
         <label>
-          Bag ID
+          Bag code
           <input
             value={bagId}
             onChange={(e) => setBagId(e.target.value)}

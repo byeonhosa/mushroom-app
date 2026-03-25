@@ -72,6 +72,34 @@ def create_species(payload: schemas.MushroomSpeciesCreate, db: Session = Depends
         raise
 
 
+@router.patch("/species/{species_id}", response_model=schemas.MushroomSpeciesOut)
+def update_species(species_id: int, payload: schemas.MushroomSpeciesUpdate, db: Session = Depends(get_db)):
+    try:
+        row = crud.update_species(db, species_id, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(409, "Species code already exists.")
+        raise
+    if not row:
+        raise HTTPException(404, "Species not found")
+    return row
+
+
+@router.get("/liquid-cultures", response_model=list[schemas.LiquidCultureOut])
+def list_liquid_cultures(active_only: bool = True, db: Session = Depends(get_db)):
+    return crud.list_liquid_cultures(db, active_only=active_only)
+
+
+@router.post("/liquid-cultures", response_model=schemas.LiquidCultureOut)
+def create_liquid_culture(payload: schemas.LiquidCultureCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_liquid_culture(db, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(409, "Liquid culture code already exists.")
+        raise
+
+
 @router.get("/grain-types", response_model=list[schemas.GrainTypeOut])
 def list_grain_types(db: Session = Depends(get_db)):
     return crud.list_grain_types(db)
@@ -85,6 +113,39 @@ def create_grain_type(payload: schemas.GrainTypeCreate, db: Session = Depends(ge
         if isinstance(e.orig, UniqueViolation):
             raise HTTPException(409, "Grain type already exists.")
         raise
+
+
+@router.patch("/grain-types/{grain_type_id}", response_model=schemas.GrainTypeOut)
+def update_grain_type(grain_type_id: int, payload: schemas.GrainTypeUpdate, db: Session = Depends(get_db)):
+    try:
+        row = crud.update_grain_type(db, grain_type_id, payload.model_dump(exclude_unset=True))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(409, "Grain type already exists.")
+        raise
+    if not row:
+        raise HTTPException(404, "Grain type not found")
+    return row
+
+
+@router.get("/ingredients", response_model=list[schemas.IngredientOut])
+def list_ingredients(db: Session = Depends(get_db)):
+    return crud.list_ingredients(db)
+
+
+@router.post("/ingredients", response_model=schemas.IngredientOut)
+def create_ingredient(payload: schemas.IngredientCreate, db: Session = Depends(get_db)):
+    return crud.create_ingredient(db, payload.model_dump(exclude_unset=True))
+
+
+@router.get("/ingredient-lots", response_model=list[schemas.IngredientLotOut])
+def list_ingredient_lots(ingredient_id: int | None = None, db: Session = Depends(get_db)):
+    return crud.list_ingredient_lots(db, ingredient_id=ingredient_id)
+
+
+@router.post("/ingredient-lots", response_model=schemas.IngredientLotOut)
+def create_ingredient_lot(payload: schemas.IngredientLotCreate, db: Session = Depends(get_db)):
+    return crud.create_ingredient_lot(db, payload.model_dump(exclude_unset=True))
 
 
 # --- Pasteurization runs ---
@@ -110,6 +171,14 @@ def get_pasteurization_run(run_id: int, db: Session = Depends(get_db)):
     if not r:
         raise HTTPException(404, "Pasteurization run not found")
     return r
+
+
+@router.get("/pasteurization-runs/{run_id}/detail", response_model=schemas.PasteurizationRunDetailOut)
+def get_pasteurization_run_detail(run_id: int, db: Session = Depends(get_db)):
+    detail = crud.get_pasteurization_run_detail(db, run_id)
+    if not detail:
+        raise HTTPException(404, "Pasteurization run not found")
+    return detail
 
 
 # --- Sterilization runs ---
@@ -142,14 +211,20 @@ def get_sterilization_run(run_id: int, db: Session = Depends(get_db)):
     return r
 
 
+@router.get("/sterilization-runs/{run_id}/detail", response_model=schemas.SterilizationRunDetailOut)
+def get_sterilization_run_detail(run_id: int, db: Session = Depends(get_db)):
+    detail = crud.get_sterilization_run_detail(db, run_id)
+    if not detail:
+        raise HTTPException(404, "Sterilization run not found")
+    return detail
+
+
 # --- Bags ---
 
 @router.post("/bags/spawn", response_model=list[schemas.BagOut])
 def create_spawn_bags(payload: schemas.BagCreateSpawn, db: Session = Depends(get_db)):
     try:
-        bags = crud.create_spawn_bags(
-            db, payload.sterilization_run_id, payload.species_id, payload.bag_count
-        )
+        bags = crud.create_spawn_bags(db, payload.sterilization_run_id, payload.bag_count)
         return bags
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -159,7 +234,10 @@ def create_spawn_bags(payload: schemas.BagCreateSpawn, db: Session = Depends(get
 def create_substrate_bags(payload: schemas.BagCreateSubstrate, db: Session = Depends(get_db)):
     try:
         bags = crud.create_substrate_bags(
-            db, payload.pasteurization_run_id, payload.species_id, payload.bag_count
+            db,
+            payload.pasteurization_run_id,
+            payload.bag_count,
+            actual_dry_kg=payload.actual_dry_kg,
         )
         return bags
     except ValueError as e:
@@ -199,7 +277,21 @@ def get_bag(bag_id: str, db: Session = Depends(get_db)):
 
 @router.post("/bags/{bag_id}/incubation-start", response_model=schemas.BagOut)
 def record_incubation_start(bag_id: str, db: Session = Depends(get_db)):
-    bag = crud.update_bag_incubation_start(db, bag_id)
+    try:
+        bag = crud.update_bag_incubation_start(db, bag_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    return bag
+
+
+@router.post("/bags/{bag_id}/ready", response_model=schemas.BagOut)
+def record_ready(bag_id: str, db: Session = Depends(get_db)):
+    try:
+        bag = crud.update_bag_ready(db, bag_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     if not bag:
         raise HTTPException(404, "Bag not found")
     return bag
@@ -232,7 +324,36 @@ def record_disposal(
     return bag
 
 
+@router.patch("/bags/{bag_id}/dry-weight", response_model=schemas.BagOut)
+def update_bag_dry_weight(bag_id: str, payload: schemas.BagDryWeightUpdate, db: Session = Depends(get_db)):
+    try:
+        bag = crud.update_bag_actual_dry_weight(db, bag_id, payload.actual_dry_kg)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    return bag
+
+
 # --- Inoculations ---
+
+@router.post("/spawn-inoculations/batch", response_model=list[schemas.BagOut])
+def inoculate_spawn_bags(payload: schemas.SpawnInoculationBatchCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.inoculate_spawn_bags(
+            db,
+            payload.sterilization_run_id,
+            payload.bag_count,
+            payload.source_type,
+            liquid_culture_id=payload.liquid_culture_id,
+            donor_spawn_bag_ref=payload.donor_spawn_bag_id,
+            inoculated_at=payload.inoculated_at,
+            notes=payload.notes,
+        )
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 @router.post("/inoculations", response_model=schemas.InoculationOut)
 def create_inoculation(payload: schemas.InoculationCreate, db: Session = Depends(get_db)):
@@ -242,6 +363,7 @@ def create_inoculation(payload: schemas.InoculationCreate, db: Session = Depends
             payload.substrate_bag_id,
             payload.spawn_bag_id,
             inoculated_at=payload.inoculated_at,
+            notes=payload.notes,
         )
         return inoc
     except LookupError as e:
@@ -251,6 +373,28 @@ def create_inoculation(payload: schemas.InoculationCreate, db: Session = Depends
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
             raise HTTPException(409, "Substrate bag already inoculated.")
+        raise
+
+
+@router.post("/inoculations/batch", response_model=list[schemas.BagOut])
+def create_inoculation_batch(payload: schemas.InoculationBatchCreate, db: Session = Depends(get_db)):
+    try:
+        bags = crud.create_inoculation_batch(
+            db,
+            payload.pasteurization_run_id,
+            payload.bag_count,
+            payload.spawn_bag_id,
+            inoculated_at=payload.inoculated_at,
+            notes=payload.notes,
+        )
+        return bags
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(409, "One or more substrate bags are already inoculated.")
         raise
 
 
@@ -288,6 +432,13 @@ def list_harvest_events(bag_id: str, db: Session = Depends(get_db)):
     return crud.list_harvest_events_for_bag(db, bag_id)
 
 
+# --- Reporting ---
+
+@router.get("/reports/production", response_model=schemas.ProductionReportOut)
+def get_production_report(db: Session = Depends(get_db)):
+    return crud.get_production_report(db)
+
+
 # --- Labels (QR + human-readable) ---
 
 @router.get("/labels/{bag_id}/qr")
@@ -296,11 +447,12 @@ def get_label_qr(bag_id: str, db: Session = Depends(get_db)):
     bag = crud.get_bag(db, bag_id)
     if not bag:
         raise HTTPException(404, "Bag not found")
+    qr_value = bag.bag_code or bag.bag_ref
     try:
         import qrcode
         import io
         qr = qrcode.QRCode(version=1, box_size=10, border=2)
-        qr.add_data(bag_id)
+        qr.add_data(qr_value)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         buf = io.BytesIO()
@@ -317,4 +469,4 @@ def get_label_data(bag_id: str, db: Session = Depends(get_db)):
     bag = crud.get_bag(db, bag_id)
     if not bag:
         raise HTTPException(404, "Bag not found")
-    return {"bag_id": bag_id}
+    return {"bag_code": bag.bag_code or bag.bag_ref}

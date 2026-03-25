@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # --- Fill profiles ---
@@ -87,9 +87,36 @@ class MushroomSpeciesOut(BaseModel):
     class Config: from_attributes = True
 
 
+# --- Liquid cultures ---
+class LiquidCultureCreate(BaseModel):
+    culture_code: str
+    species_id: int
+    source: Optional[str] = None
+    prepared_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
+class LiquidCultureOut(BaseModel):
+    liquid_culture_id: int
+    culture_code: str
+    species_id: int
+    source: Optional[str] = None
+    prepared_at: Optional[datetime] = None
+    created_at: datetime
+    notes: Optional[str] = None
+    is_active: bool
+    class Config: from_attributes = True
+
+
 # --- Grain types ---
 class GrainTypeCreate(BaseModel):
     name: str
+    notes: Optional[str] = None
+
+
+class GrainTypeUpdate(BaseModel):
+    name: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -158,23 +185,24 @@ class SterilizationRunOut(BaseModel):
 
 # --- Bags ---
 class BagCreateSpawn(BaseModel):
-    """Create spawn bags from a sterilization run."""
+    """Create unlabeled spawn bag records from a sterilization run."""
     sterilization_run_id: int
-    species_id: int
-    bag_count: int = 1
+    bag_count: int = Field(default=1, gt=0)
 
 
 class BagCreateSubstrate(BaseModel):
-    """Create substrate bags from a pasteurization run."""
+    """Create unlabeled substrate bag records from a pasteurization run."""
     pasteurization_run_id: int
-    species_id: int
-    bag_count: int = 1
+    bag_count: int = Field(default=1, gt=0)
+    actual_dry_kg: Optional[float] = Field(default=None, gt=0)
 
 
 class BagOut(BaseModel):
     bag_id: str
+    bag_code: Optional[str] = None
+    bag_ref: str
     bag_type: Literal["SPAWN", "SUBSTRATE"]
-    species_id: int
+    species_id: Optional[int] = None
     pasteurization_run_id: Optional[int] = None
     sterilization_run_id: Optional[int] = None
     mix_lot_id: Optional[int] = None
@@ -182,9 +210,22 @@ class BagOut(BaseModel):
     spawn_recipe_id: Optional[int] = None
     grain_type_id: Optional[int] = None
     parent_spawn_bag_id: Optional[str] = None
+    parent_spawn_bag_ref: Optional[str] = None
+    source_spawn_bag_id: Optional[str] = None
+    source_spawn_bag_ref: Optional[str] = None
+    source_liquid_culture_id: Optional[int] = None
+    source_liquid_culture_code: Optional[str] = None
+    inoculation_source_type: Optional[Literal["LIQUID_CULTURE", "SPAWN_BAG"]] = None
+    target_dry_kg: Optional[float] = None
+    actual_dry_kg: Optional[float] = None
+    dry_weight_kg: Optional[float] = None
+    dry_weight_source: Optional[Literal["ACTUAL", "TARGET"]] = None
+    bio_efficiency: Optional[float] = None
     created_at: datetime
+    labeled_at: Optional[datetime] = None
     inoculated_at: Optional[datetime] = None
     incubation_start_at: Optional[datetime] = None
+    ready_at: Optional[datetime] = None
     fruiting_start_at: Optional[datetime] = None
     disposed_at: Optional[datetime] = None
     disposal_reason: Optional[Literal["CONTAMINATION", "FINAL_HARVEST"]] = None
@@ -196,6 +237,8 @@ class BagOut(BaseModel):
 
 class BagDetailOut(BagOut):
     harvest_events: List["HarvestEventOut"] = []
+    child_bags: List["LineageChildBagOut"] = []
+    child_summary: Optional["BagCollectionSummaryOut"] = None
 
 
 # --- Inoculations ---
@@ -206,10 +249,44 @@ class InoculationCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class SpawnInoculationBatchCreate(BaseModel):
+    sterilization_run_id: int
+    source_type: Literal["LIQUID_CULTURE", "SPAWN_BAG"]
+    liquid_culture_id: Optional[int] = None
+    donor_spawn_bag_id: Optional[str] = None
+    bag_count: int = Field(..., gt=0)
+    inoculated_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_source(self):
+        if self.source_type == "LIQUID_CULTURE":
+            if self.liquid_culture_id is None:
+                raise ValueError("liquid_culture_id is required when source_type is LIQUID_CULTURE")
+            if self.donor_spawn_bag_id is not None:
+                raise ValueError("donor_spawn_bag_id must be omitted when source_type is LIQUID_CULTURE")
+        if self.source_type == "SPAWN_BAG":
+            if not self.donor_spawn_bag_id:
+                raise ValueError("donor_spawn_bag_id is required when source_type is SPAWN_BAG")
+            if self.liquid_culture_id is not None:
+                raise ValueError("liquid_culture_id must be omitted when source_type is SPAWN_BAG")
+        return self
+
+
+class InoculationBatchCreate(BaseModel):
+    spawn_bag_id: str
+    pasteurization_run_id: int
+    bag_count: int = Field(..., gt=0)
+    inoculated_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
 class InoculationOut(BaseModel):
     inoculation_id: int
     substrate_bag_id: str
+    substrate_bag_ref: str
     spawn_bag_id: str
+    spawn_bag_ref: str
     inoculated_at: datetime
     notes: Optional[str] = None
     class Config: from_attributes = True
@@ -227,6 +304,7 @@ class HarvestEventCreate(BaseModel):
 class HarvestEventOut(BaseModel):
     harvest_event_id: int
     bag_id: str
+    bag_ref: str
     flush_number: Literal[1, 2]
     fresh_weight_kg: float
     harvested_at: datetime
@@ -243,9 +321,17 @@ class FruitingStartUpdate(BaseModel):
     bag_id: str
 
 
+class ReadyUpdate(BaseModel):
+    bag_id: str
+
+
 class DisposalUpdate(BaseModel):
     bag_id: str
     disposal_reason: Literal["CONTAMINATION", "FINAL_HARVEST"]
+
+
+class BagDryWeightUpdate(BaseModel):
+    actual_dry_kg: Optional[float] = Field(default=None, gt=0)
 
 
 # --- Ingredients (reference) ---
@@ -286,6 +372,131 @@ class IngredientLotOut(BaseModel):
 # --- Labels ---
 class LabelRequest(BaseModel):
     bag_ids: List[str]
+
+
+# --- Reporting ---
+class ReportGroupOut(BaseModel):
+    key: str
+    label: str
+    total_bags: int
+    contaminated_bags: int
+    contamination_rate: float
+
+
+class PasteurizationRunMetricsOut(BaseModel):
+    pasteurization_run_id: int
+    run_code: str
+    total_bags: int
+    contaminated_bags: int
+    contamination_rate: float
+    total_harvest_kg: float
+    total_dry_weight_kg: float
+    bio_efficiency: Optional[float] = None
+
+
+class SubstrateBagMetricsOut(BaseModel):
+    bag_id: str
+    bag_code: Optional[str] = None
+    bag_ref: str
+    status: str
+    disposal_reason: Optional[Literal["CONTAMINATION", "FINAL_HARVEST"]] = None
+    species_id: Optional[int] = None
+    species_code: Optional[str] = None
+    species_name: Optional[str] = None
+    pasteurization_run_id: Optional[int] = None
+    pasteurization_run_code: Optional[str] = None
+    parent_spawn_bag_id: Optional[str] = None
+    parent_spawn_bag_ref: Optional[str] = None
+    source_sterilization_run_id: Optional[int] = None
+    source_sterilization_run_code: Optional[str] = None
+    target_dry_kg: Optional[float] = None
+    actual_dry_kg: Optional[float] = None
+    dry_weight_kg: Optional[float] = None
+    dry_weight_source: Optional[Literal["ACTUAL", "TARGET"]] = None
+    total_harvest_kg: float
+    bio_efficiency: Optional[float] = None
+    contaminated: bool
+
+
+class LineageChildBagOut(BaseModel):
+    generation: int
+    bag_id: str
+    bag_code: Optional[str] = None
+    bag_ref: str
+    bag_type: Literal["SPAWN", "SUBSTRATE"]
+    status: str
+    disposal_reason: Optional[Literal["CONTAMINATION", "FINAL_HARVEST"]] = None
+    species_id: Optional[int] = None
+    species_code: Optional[str] = None
+    species_name: Optional[str] = None
+    sterilization_run_id: Optional[int] = None
+    sterilization_run_code: Optional[str] = None
+    pasteurization_run_id: Optional[int] = None
+    pasteurization_run_code: Optional[str] = None
+    parent_spawn_bag_id: Optional[str] = None
+    parent_spawn_bag_ref: Optional[str] = None
+    source_liquid_culture_id: Optional[int] = None
+    source_liquid_culture_code: Optional[str] = None
+    inoculation_source_type: Optional[Literal["LIQUID_CULTURE", "SPAWN_BAG"]] = None
+    source_sterilization_run_id: Optional[int] = None
+    source_sterilization_run_code: Optional[str] = None
+    target_dry_kg: Optional[float] = None
+    actual_dry_kg: Optional[float] = None
+    dry_weight_kg: Optional[float] = None
+    dry_weight_source: Optional[Literal["ACTUAL", "TARGET"]] = None
+    total_harvest_kg: float
+    bio_efficiency: Optional[float] = None
+    contaminated: bool
+
+
+class ProductionReportSummaryOut(BaseModel):
+    total_spawn_bags: int
+    total_substrate_bags: int
+    total_contaminated_bags: int
+    contamination_rate: float
+    substrate_bags_with_harvest: int
+    substrate_bags_with_dry_weight: int
+    total_harvest_kg: float
+    total_dry_weight_kg: float
+    overall_bio_efficiency: Optional[float] = None
+
+
+class ProductionReportOut(BaseModel):
+    generated_at: datetime
+    summary: ProductionReportSummaryOut
+    contamination_by_bag_type: List[ReportGroupOut]
+    contamination_by_species: List[ReportGroupOut]
+    contamination_by_source_sterilization_run: List[ReportGroupOut]
+    contamination_by_pasteurization_run: List[ReportGroupOut]
+    contamination_by_parent_spawn_bag: List[ReportGroupOut]
+    pasteurization_runs: List[PasteurizationRunMetricsOut]
+    substrate_bags: List[SubstrateBagMetricsOut]
+
+
+class BagCollectionSummaryOut(BaseModel):
+    total_bags: int
+    unlabeled_bags: int
+    inoculated_bags: int
+    ready_bags: int
+    fruiting_bags: int
+    contaminated_bags: int
+    harvested_bags: int
+    consumed_bags: int
+    total_harvest_kg: float
+    total_dry_weight_kg: float
+    overall_bio_efficiency: Optional[float] = None
+
+
+class SterilizationRunDetailOut(SterilizationRunOut):
+    bags: List[BagOut]
+    summary: BagCollectionSummaryOut
+    downstream_substrate_bags: List[SubstrateBagMetricsOut]
+    downstream_summary: BagCollectionSummaryOut
+
+
+class PasteurizationRunDetailOut(PasteurizationRunOut):
+    bags: List[SubstrateBagMetricsOut]
+    summary: BagCollectionSummaryOut
 
 
 # Forward ref for BagDetailOut

@@ -33,10 +33,10 @@ export default function DisposalPage() {
   return (
     <div className="card">
       <h1>Disposal</h1>
-      <p>Scan or enter bag ID when removing bag from production.</p>
+      <p>Scan or enter the bag code when removing a bag from production.</p>
       <form onSubmit={submit} className="form">
         <label>
-          Bag ID
+          Bag code
           <input
             value={bagId}
             onChange={(e) => setBagId(e.target.value)}
@@ -53,7 +53,7 @@ export default function DisposalPage() {
         </label>
         <button className="btn" type="submit">Record Disposal</button>
       </form>
-      {result && <p className="success">Recorded: {result.bag_id} — {result.disposal_reason}</p>}
+      {result && <p className="success">Recorded: {result.bag_ref} — {result.disposal_reason}</p>}
       {error && <p className="error">{error}</p>}
     </div>
   );

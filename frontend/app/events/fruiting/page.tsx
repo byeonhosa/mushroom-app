@@ -30,10 +30,10 @@ export default function FruitingStartPage() {
   return (
     <div className="card">
       <h1>Fruiting Start</h1>
-      <p>Scan or enter bag ID when moving bag to grow tent.</p>
+      <p>Scan or enter a ready substrate bag code when moving it to the grow tent.</p>
       <form onSubmit={submit} className="form">
         <label>
-          Bag ID
+          Bag code
           <input
             value={bagId}
             onChange={(e) => setBagId(e.target.value)}
@@ -43,7 +43,7 @@ export default function FruitingStartPage() {
         </label>
         <button className="btn" type="submit">Record Fruiting Start</button>
       </form>
-      {result && <p className="success">Recorded: {result.bag_id} — Status: {result.status}</p>}
+      {result && <p className="success">Recorded: {result.bag_ref} — Status: {result.status}</p>}
       {error && <p className="error">{error}</p>}
     </div>
   );
