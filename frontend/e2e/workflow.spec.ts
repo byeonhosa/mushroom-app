@@ -302,5 +302,15 @@ test.describe("bag workflow e2e", () => {
     await expect(contaminationRow).toContainText("LM");
     await expect(contaminationRow).toContainText("LC-LM-001");
     await expect(contaminationRow).toContainText("CONTAMINATED");
+
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Today's production picture in one place." })).toBeVisible();
+    await expect(page.getByText("Contamination cases")).toBeVisible();
+    await expect(page.getByText("1 contamination case(s) require review")).toBeVisible();
+
+    await page.goto(`/bags?bag_ref_contains=${encodeURIComponent(substrateBagRef)}`);
+    const filteredRow = page.locator("tbody tr").filter({ hasText: substrateBagRef });
+    await expect(filteredRow.getByRole("link", { name: substrateBagRef })).toBeVisible();
+    await expect(filteredRow.locator(".statusCONTAMINATED")).toBeVisible();
   });
 });
