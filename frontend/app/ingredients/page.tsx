@@ -55,6 +55,10 @@ export default function IngredientsPage() {
     refresh().catch((e) => setError(String(e)));
   }, []);
 
+  const ingredientNamesById = new Map(
+    ingredients.map((ingredient) => [ingredient.ingredient_id, ingredient.name]),
+  );
+
   async function onCreateIngredient(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -210,7 +214,7 @@ export default function IngredientsPage() {
           {lots.map((item) => (
             <tr key={item.ingredient_lot_id}>
               <td>{item.ingredient_lot_id}</td>
-              <td>{item.ingredient?.name ?? `#${item.ingredient_id}`}</td>
+              <td>{ingredientNamesById.get(item.ingredient_id) ?? `#${item.ingredient_id}`}</td>
               <td>{item.vendor ?? ""}</td>
               <td>{item.lot_code ?? ""}</td>
               <td>{item.received_at ? new Date(item.received_at).toLocaleString() : ""}</td>

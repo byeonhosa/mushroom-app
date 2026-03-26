@@ -1,0 +1,5635 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mushroom Farm App API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fill-profiles": {
+      "get": {
+        "summary": "Fill Profiles",
+        "operationId": "fill_profiles_api_fill_profiles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FillProfileOut"
+                  },
+                  "type": "array",
+                  "title": "Response Fill Profiles Api Fill Profiles Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Fill Profile",
+        "operationId": "create_fill_profile_api_fill_profiles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FillProfileCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FillProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/substrate-recipe-versions": {
+      "get": {
+        "summary": "List Substrate Recipe Versions",
+        "operationId": "list_substrate_recipe_versions_api_substrate_recipe_versions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SubstrateRecipeVersionOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Substrate Recipe Versions Api Substrate Recipe Versions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/spawn-recipes": {
+      "get": {
+        "summary": "List Spawn Recipes",
+        "operationId": "list_spawn_recipes_api_spawn_recipes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SpawnRecipeOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Spawn Recipes Api Spawn Recipes Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mix-lots": {
+      "get": {
+        "summary": "List Mix Lots",
+        "operationId": "list_mix_lots_api_mix_lots_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MixLotOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Mix Lots Api Mix Lots Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Mix Lot",
+        "operationId": "create_mix_lot_api_mix_lots_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MixLotCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MixLotOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/species": {
+      "get": {
+        "summary": "List Species",
+        "operationId": "list_species_api_species_get",
+        "parameters": [
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Active Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MushroomSpeciesOut"
+                  },
+                  "title": "Response List Species Api Species Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Species",
+        "operationId": "create_species_api_species_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MushroomSpeciesCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushroomSpeciesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/species/{species_id}": {
+      "patch": {
+        "summary": "Update Species",
+        "operationId": "update_species_api_species__species_id__patch",
+        "parameters": [
+          {
+            "name": "species_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Species Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MushroomSpeciesUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushroomSpeciesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/liquid-cultures": {
+      "get": {
+        "summary": "List Liquid Cultures",
+        "operationId": "list_liquid_cultures_api_liquid_cultures_get",
+        "parameters": [
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Active Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LiquidCultureOut"
+                  },
+                  "title": "Response List Liquid Cultures Api Liquid Cultures Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Liquid Culture",
+        "operationId": "create_liquid_culture_api_liquid_cultures_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiquidCultureCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiquidCultureOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grain-types": {
+      "get": {
+        "summary": "List Grain Types",
+        "operationId": "list_grain_types_api_grain_types_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GrainTypeOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Grain Types Api Grain Types Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Grain Type",
+        "operationId": "create_grain_type_api_grain_types_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrainTypeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrainTypeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/grain-types/{grain_type_id}": {
+      "patch": {
+        "summary": "Update Grain Type",
+        "operationId": "update_grain_type_api_grain_types__grain_type_id__patch",
+        "parameters": [
+          {
+            "name": "grain_type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Grain Type Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrainTypeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrainTypeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingredients": {
+      "get": {
+        "summary": "List Ingredients",
+        "operationId": "list_ingredients_api_ingredients_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IngredientOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Ingredients Api Ingredients Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Ingredient",
+        "operationId": "create_ingredient_api_ingredients_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngredientCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngredientOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingredient-lots": {
+      "get": {
+        "summary": "List Ingredient Lots",
+        "operationId": "list_ingredient_lots_api_ingredient_lots_get",
+        "parameters": [
+          {
+            "name": "ingredient_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingredient Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IngredientLotOut"
+                  },
+                  "title": "Response List Ingredient Lots Api Ingredient Lots Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Ingredient Lot",
+        "operationId": "create_ingredient_lot_api_ingredient_lots_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngredientLotCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngredientLotOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pasteurization-runs": {
+      "get": {
+        "summary": "List Pasteurization Runs",
+        "operationId": "list_pasteurization_runs_api_pasteurization_runs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PasteurizationRunOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Pasteurization Runs Api Pasteurization Runs Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Pasteurization Run",
+        "operationId": "create_pasteurization_run_api_pasteurization_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasteurizationRunCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasteurizationRunOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pasteurization-runs/{run_id}": {
+      "get": {
+        "summary": "Get Pasteurization Run",
+        "operationId": "get_pasteurization_run_api_pasteurization_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasteurizationRunOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pasteurization-runs/{run_id}/detail": {
+      "get": {
+        "summary": "Get Pasteurization Run Detail",
+        "operationId": "get_pasteurization_run_detail_api_pasteurization_runs__run_id__detail_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasteurizationRunDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sterilization-runs": {
+      "get": {
+        "summary": "List Sterilization Runs",
+        "operationId": "list_sterilization_runs_api_sterilization_runs_get",
+        "parameters": [
+          {
+            "name": "run_code_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Run Code Contains"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "sterilization_run_id",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SterilizationRunOut"
+                  },
+                  "title": "Response List Sterilization Runs Api Sterilization Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Sterilization Run",
+        "operationId": "create_sterilization_run_api_sterilization_runs_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SterilizationRunCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SterilizationRunOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sterilization-runs/{run_id}": {
+      "get": {
+        "summary": "Get Sterilization Run",
+        "operationId": "get_sterilization_run_api_sterilization_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SterilizationRunOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sterilization-runs/{run_id}/detail": {
+      "get": {
+        "summary": "Get Sterilization Run Detail",
+        "operationId": "get_sterilization_run_detail_api_sterilization_runs__run_id__detail_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SterilizationRunDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/spawn": {
+      "post": {
+        "summary": "Create Spawn Bags",
+        "operationId": "create_spawn_bags_api_bags_spawn_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BagCreateSpawn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BagOut"
+                  },
+                  "type": "array",
+                  "title": "Response Create Spawn Bags Api Bags Spawn Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/substrate": {
+      "post": {
+        "summary": "Create Substrate Bags",
+        "operationId": "create_substrate_bags_api_bags_substrate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BagCreateSubstrate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BagOut"
+                  },
+                  "type": "array",
+                  "title": "Response Create Substrate Bags Api Bags Substrate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags": {
+      "get": {
+        "summary": "List Bags",
+        "operationId": "list_bags_api_bags_get",
+        "parameters": [
+          {
+            "name": "bag_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bag Type"
+            }
+          },
+          {
+            "name": "species_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Species Id"
+            }
+          },
+          {
+            "name": "pasteurization_run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pasteurization Run Id"
+            }
+          },
+          {
+            "name": "sterilization_run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sterilization Run Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BagOut"
+                  },
+                  "title": "Response List Bags Api Bags Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}": {
+      "get": {
+        "summary": "Get Bag",
+        "operationId": "get_bag_api_bags__bag_id__get",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BagDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/status-events": {
+      "get": {
+        "summary": "List Bag Status Events",
+        "operationId": "list_bag_status_events_api_bags__bag_id__status_events_get",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BagStatusEventOut"
+                  },
+                  "title": "Response List Bag Status Events Api Bags  Bag Id  Status Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/incubation-start": {
+      "post": {
+        "summary": "Record Incubation Start",
+        "operationId": "record_incubation_start_api_bags__bag_id__incubation_start_post",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BagOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/ready": {
+      "post": {
+        "summary": "Record Ready",
+        "operationId": "record_ready_api_bags__bag_id__ready_post",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BagOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/fruiting-start": {
+      "post": {
+        "summary": "Record Fruiting Start",
+        "operationId": "record_fruiting_start_api_bags__bag_id__fruiting_start_post",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BagOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/disposal": {
+      "post": {
+        "summary": "Record Disposal",
+        "operationId": "record_disposal_api_bags__bag_id__disposal_post",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisposalBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BagOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/dry-weight": {
+      "patch": {
+        "summary": "Update Bag Dry Weight",
+        "operationId": "update_bag_dry_weight_api_bags__bag_id__dry_weight_patch",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BagDryWeightUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BagOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/spawn-inoculations/batch": {
+      "post": {
+        "summary": "Inoculate Spawn Bags",
+        "operationId": "inoculate_spawn_bags_api_spawn_inoculations_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpawnInoculationBatchCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BagOut"
+                  },
+                  "type": "array",
+                  "title": "Response Inoculate Spawn Bags Api Spawn Inoculations Batch Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inoculations": {
+      "post": {
+        "summary": "Create Inoculation",
+        "operationId": "create_inoculation_api_inoculations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InoculationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InoculationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inoculations/batch": {
+      "post": {
+        "summary": "Create Inoculation Batch",
+        "operationId": "create_inoculation_batch_api_inoculations_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InoculationBatchCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BagOut"
+                  },
+                  "type": "array",
+                  "title": "Response Create Inoculation Batch Api Inoculations Batch Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/inoculation": {
+      "get": {
+        "summary": "Get Inoculation For Bag",
+        "operationId": "get_inoculation_for_bag_api_bags__bag_id__inoculation_get",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InoculationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/harvest-events": {
+      "post": {
+        "summary": "Create Harvest Event",
+        "operationId": "create_harvest_event_api_harvest_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HarvestEventCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HarvestEventOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bags/{bag_id}/harvest-events": {
+      "get": {
+        "summary": "List Harvest Events",
+        "operationId": "list_harvest_events_api_bags__bag_id__harvest_events_get",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HarvestEventOut"
+                  },
+                  "title": "Response List Harvest Events Api Bags  Bag Id  Harvest Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/production": {
+      "get": {
+        "summary": "Get Production Report",
+        "operationId": "get_production_report_api_reports_production_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionReportOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/labels/{bag_id}/qr": {
+      "get": {
+        "summary": "Get Label Qr",
+        "description": "Return QR code image for a bag (SVG or PNG).",
+        "operationId": "get_label_qr_api_labels__bag_id__qr_get",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/labels/{bag_id}": {
+      "get": {
+        "summary": "Get Label Data",
+        "description": "Return bag_id for label (QR content + human-readable text).",
+        "operationId": "get_label_data_api_labels__bag_id__get",
+        "parameters": [
+          {
+            "name": "bag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BagCollectionSummaryOut": {
+        "properties": {
+          "total_bags": {
+            "type": "integer",
+            "title": "Total Bags"
+          },
+          "unlabeled_bags": {
+            "type": "integer",
+            "title": "Unlabeled Bags"
+          },
+          "inoculated_bags": {
+            "type": "integer",
+            "title": "Inoculated Bags"
+          },
+          "ready_bags": {
+            "type": "integer",
+            "title": "Ready Bags"
+          },
+          "fruiting_bags": {
+            "type": "integer",
+            "title": "Fruiting Bags"
+          },
+          "contaminated_bags": {
+            "type": "integer",
+            "title": "Contaminated Bags"
+          },
+          "harvested_bags": {
+            "type": "integer",
+            "title": "Harvested Bags"
+          },
+          "consumed_bags": {
+            "type": "integer",
+            "title": "Consumed Bags"
+          },
+          "total_harvest_kg": {
+            "type": "number",
+            "title": "Total Harvest Kg"
+          },
+          "total_dry_weight_kg": {
+            "type": "number",
+            "title": "Total Dry Weight Kg"
+          },
+          "overall_bio_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Bio Efficiency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_bags",
+          "unlabeled_bags",
+          "inoculated_bags",
+          "ready_bags",
+          "fruiting_bags",
+          "contaminated_bags",
+          "harvested_bags",
+          "consumed_bags",
+          "total_harvest_kg",
+          "total_dry_weight_kg"
+        ],
+        "title": "BagCollectionSummaryOut"
+      },
+      "BagCreateSpawn": {
+        "properties": {
+          "sterilization_run_id": {
+            "type": "integer",
+            "title": "Sterilization Run Id"
+          },
+          "bag_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Bag Count",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "sterilization_run_id"
+        ],
+        "title": "BagCreateSpawn",
+        "description": "Create unlabeled spawn bag records from a sterilization run."
+      },
+      "BagCreateSubstrate": {
+        "properties": {
+          "pasteurization_run_id": {
+            "type": "integer",
+            "title": "Pasteurization Run Id"
+          },
+          "bag_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Bag Count",
+            "default": 1
+          },
+          "actual_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Dry Kg"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pasteurization_run_id"
+        ],
+        "title": "BagCreateSubstrate",
+        "description": "Create unlabeled substrate bag records from a pasteurization run."
+      },
+      "BagDetailOut": {
+        "properties": {
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "bag_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bag Code"
+          },
+          "bag_ref": {
+            "type": "string",
+            "title": "Bag Ref"
+          },
+          "bag_type": {
+            "type": "string",
+            "enum": [
+              "SPAWN",
+              "SUBSTRATE"
+            ],
+            "title": "Bag Type"
+          },
+          "species_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Id"
+          },
+          "pasteurization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Id"
+          },
+          "sterilization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sterilization Run Id"
+          },
+          "mix_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mix Lot Id"
+          },
+          "substrate_recipe_version_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substrate Recipe Version Id"
+          },
+          "spawn_recipe_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spawn Recipe Id"
+          },
+          "grain_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grain Type Id"
+          },
+          "parent_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Id"
+          },
+          "parent_spawn_bag_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Ref"
+          },
+          "source_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Spawn Bag Id"
+          },
+          "source_spawn_bag_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Spawn Bag Ref"
+          },
+          "source_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Id"
+          },
+          "source_liquid_culture_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Code"
+          },
+          "inoculation_source_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "LIQUID_CULTURE",
+                  "SPAWN_BAG"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculation Source Type"
+          },
+          "target_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Dry Kg"
+          },
+          "actual_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Dry Kg"
+          },
+          "dry_weight_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Kg"
+          },
+          "dry_weight_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ACTUAL",
+                  "TARGET"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Source"
+          },
+          "bio_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio Efficiency"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "labeled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labeled At"
+          },
+          "inoculated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculated At"
+          },
+          "incubation_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incubation Start At"
+          },
+          "ready_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready At"
+          },
+          "fruiting_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Start At"
+          },
+          "disposed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposed At"
+          },
+          "disposal_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CONTAMINATION",
+                  "FINAL_HARVEST"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposal Reason"
+          },
+          "consumed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumed At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status_events": {
+            "items": {
+              "$ref": "#/components/schemas/BagStatusEventOut"
+            },
+            "type": "array",
+            "title": "Status Events",
+            "default": []
+          },
+          "harvest_events": {
+            "items": {
+              "$ref": "#/components/schemas/HarvestEventOut"
+            },
+            "type": "array",
+            "title": "Harvest Events",
+            "default": []
+          },
+          "child_bags": {
+            "items": {
+              "$ref": "#/components/schemas/LineageChildBagOut"
+            },
+            "type": "array",
+            "title": "Child Bags",
+            "default": []
+          },
+          "child_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BagCollectionSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "bag_id",
+          "bag_ref",
+          "bag_type",
+          "created_at",
+          "status"
+        ],
+        "title": "BagDetailOut"
+      },
+      "BagDryWeightUpdate": {
+        "properties": {
+          "actual_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Dry Kg"
+          }
+        },
+        "type": "object",
+        "title": "BagDryWeightUpdate"
+      },
+      "BagOut": {
+        "properties": {
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "bag_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bag Code"
+          },
+          "bag_ref": {
+            "type": "string",
+            "title": "Bag Ref"
+          },
+          "bag_type": {
+            "type": "string",
+            "enum": [
+              "SPAWN",
+              "SUBSTRATE"
+            ],
+            "title": "Bag Type"
+          },
+          "species_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Id"
+          },
+          "pasteurization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Id"
+          },
+          "sterilization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sterilization Run Id"
+          },
+          "mix_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mix Lot Id"
+          },
+          "substrate_recipe_version_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substrate Recipe Version Id"
+          },
+          "spawn_recipe_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spawn Recipe Id"
+          },
+          "grain_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grain Type Id"
+          },
+          "parent_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Id"
+          },
+          "parent_spawn_bag_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Ref"
+          },
+          "source_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Spawn Bag Id"
+          },
+          "source_spawn_bag_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Spawn Bag Ref"
+          },
+          "source_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Id"
+          },
+          "source_liquid_culture_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Code"
+          },
+          "inoculation_source_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "LIQUID_CULTURE",
+                  "SPAWN_BAG"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculation Source Type"
+          },
+          "target_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Dry Kg"
+          },
+          "actual_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Dry Kg"
+          },
+          "dry_weight_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Kg"
+          },
+          "dry_weight_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ACTUAL",
+                  "TARGET"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Source"
+          },
+          "bio_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio Efficiency"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "labeled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labeled At"
+          },
+          "inoculated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculated At"
+          },
+          "incubation_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incubation Start At"
+          },
+          "ready_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready At"
+          },
+          "fruiting_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Start At"
+          },
+          "disposed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposed At"
+          },
+          "disposal_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CONTAMINATION",
+                  "FINAL_HARVEST"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposal Reason"
+          },
+          "consumed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumed At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bag_id",
+          "bag_ref",
+          "bag_type",
+          "created_at",
+          "status"
+        ],
+        "title": "BagOut"
+      },
+      "BagStatusEventOut": {
+        "properties": {
+          "bag_status_event_id": {
+            "type": "integer",
+            "title": "Bag Status Event Id"
+          },
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "STERILIZED",
+              "PASTEURIZED",
+              "BAG_CODE_ASSIGNED",
+              "INOCULATED",
+              "INCUBATION_STARTED",
+              "READY",
+              "FRUITING_STARTED",
+              "HARVEST_RECORDED",
+              "CONSUMED",
+              "DISPOSED"
+            ],
+            "title": "Event Type"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bag_status_event_id",
+          "bag_id",
+          "event_type",
+          "occurred_at"
+        ],
+        "title": "BagStatusEventOut"
+      },
+      "ContaminationCaseOut": {
+        "properties": {
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "bag_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bag Code"
+          },
+          "bag_ref": {
+            "type": "string",
+            "title": "Bag Ref"
+          },
+          "bag_type": {
+            "type": "string",
+            "enum": [
+              "SPAWN",
+              "SUBSTRATE"
+            ],
+            "title": "Bag Type"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "disposal_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CONTAMINATION",
+                  "FINAL_HARVEST"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposal Reason"
+          },
+          "contaminated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contaminated At"
+          },
+          "species_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Id"
+          },
+          "species_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Code"
+          },
+          "species_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Name"
+          },
+          "sterilization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sterilization Run Id"
+          },
+          "sterilization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sterilization Run Code"
+          },
+          "pasteurization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Id"
+          },
+          "pasteurization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Code"
+          },
+          "parent_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Id"
+          },
+          "parent_spawn_bag_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Ref"
+          },
+          "source_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Id"
+          },
+          "source_liquid_culture_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Code"
+          },
+          "spawn_generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spawn Generation"
+          },
+          "source_sterilization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sterilization Run Id"
+          },
+          "source_sterilization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sterilization Run Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bag_id",
+          "bag_ref",
+          "bag_type",
+          "status"
+        ],
+        "title": "ContaminationCaseOut"
+      },
+      "DataQualityIssueOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "bag_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bag Refs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "label",
+          "count",
+          "bag_refs"
+        ],
+        "title": "DataQualityIssueOut"
+      },
+      "DisposalBody": {
+        "properties": {
+          "disposal_reason": {
+            "type": "string",
+            "enum": [
+              "CONTAMINATION",
+              "FINAL_HARVEST"
+            ],
+            "title": "Disposal Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "disposal_reason"
+        ],
+        "title": "DisposalBody"
+      },
+      "FillProfileCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "target_dry_kg_per_bag": {
+            "type": "number",
+            "title": "Target Dry Kg Per Bag"
+          },
+          "target_water_kg_per_bag": {
+            "type": "number",
+            "title": "Target Water Kg Per Bag"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "target_dry_kg_per_bag",
+          "target_water_kg_per_bag"
+        ],
+        "title": "FillProfileCreate"
+      },
+      "FillProfileOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "target_dry_kg_per_bag": {
+            "type": "number",
+            "title": "Target Dry Kg Per Bag"
+          },
+          "target_water_kg_per_bag": {
+            "type": "number",
+            "title": "Target Water Kg Per Bag"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "fill_profile_id": {
+            "type": "integer",
+            "title": "Fill Profile Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "target_dry_kg_per_bag",
+          "target_water_kg_per_bag",
+          "fill_profile_id"
+        ],
+        "title": "FillProfileOut"
+      },
+      "GrainTypeCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "GrainTypeCreate"
+      },
+      "GrainTypeOut": {
+        "properties": {
+          "grain_type_id": {
+            "type": "integer",
+            "title": "Grain Type Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grain_type_id",
+          "name"
+        ],
+        "title": "GrainTypeOut"
+      },
+      "GrainTypeUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "GrainTypeUpdate"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HarvestEventCreate": {
+        "properties": {
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "flush_number": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Flush Number"
+          },
+          "fresh_weight_kg": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fresh Weight Kg"
+          },
+          "harvested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvested At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bag_id",
+          "flush_number",
+          "fresh_weight_kg"
+        ],
+        "title": "HarvestEventCreate"
+      },
+      "HarvestEventOut": {
+        "properties": {
+          "harvest_event_id": {
+            "type": "integer",
+            "title": "Harvest Event Id"
+          },
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "bag_ref": {
+            "type": "string",
+            "title": "Bag Ref"
+          },
+          "flush_number": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Flush Number"
+          },
+          "fresh_weight_kg": {
+            "type": "number",
+            "title": "Fresh Weight Kg"
+          },
+          "harvested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Harvested At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "harvest_event_id",
+          "bag_id",
+          "bag_ref",
+          "flush_number",
+          "fresh_weight_kg",
+          "harvested_at"
+        ],
+        "title": "HarvestEventOut"
+      },
+      "IngredientCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "IngredientCreate"
+      },
+      "IngredientLotCreate": {
+        "properties": {
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "vendor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor"
+          },
+          "lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lot Code"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received At"
+          },
+          "unit_cost_per_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Cost Per Kg"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id"
+        ],
+        "title": "IngredientLotCreate"
+      },
+      "IngredientLotOut": {
+        "properties": {
+          "ingredient_lot_id": {
+            "type": "integer",
+            "title": "Ingredient Lot Id"
+          },
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "vendor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor"
+          },
+          "lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lot Code"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received At"
+          },
+          "unit_cost_per_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Cost Per Kg"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_lot_id",
+          "ingredient_id"
+        ],
+        "title": "IngredientLotOut"
+      },
+      "IngredientOut": {
+        "properties": {
+          "ingredient_id": {
+            "type": "integer",
+            "title": "Ingredient Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id",
+          "name"
+        ],
+        "title": "IngredientOut"
+      },
+      "InoculationBatchCreate": {
+        "properties": {
+          "spawn_bag_id": {
+            "type": "string",
+            "title": "Spawn Bag Id"
+          },
+          "pasteurization_run_id": {
+            "type": "integer",
+            "title": "Pasteurization Run Id"
+          },
+          "bag_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Bag Count"
+          },
+          "inoculated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculated At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spawn_bag_id",
+          "pasteurization_run_id",
+          "bag_count"
+        ],
+        "title": "InoculationBatchCreate"
+      },
+      "InoculationCreate": {
+        "properties": {
+          "substrate_bag_id": {
+            "type": "string",
+            "title": "Substrate Bag Id"
+          },
+          "spawn_bag_id": {
+            "type": "string",
+            "title": "Spawn Bag Id"
+          },
+          "inoculated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculated At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "substrate_bag_id",
+          "spawn_bag_id"
+        ],
+        "title": "InoculationCreate"
+      },
+      "InoculationOut": {
+        "properties": {
+          "inoculation_id": {
+            "type": "integer",
+            "title": "Inoculation Id"
+          },
+          "substrate_bag_id": {
+            "type": "string",
+            "title": "Substrate Bag Id"
+          },
+          "substrate_bag_ref": {
+            "type": "string",
+            "title": "Substrate Bag Ref"
+          },
+          "spawn_bag_id": {
+            "type": "string",
+            "title": "Spawn Bag Id"
+          },
+          "spawn_bag_ref": {
+            "type": "string",
+            "title": "Spawn Bag Ref"
+          },
+          "inoculated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Inoculated At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "inoculation_id",
+          "substrate_bag_id",
+          "substrate_bag_ref",
+          "spawn_bag_id",
+          "spawn_bag_ref",
+          "inoculated_at"
+        ],
+        "title": "InoculationOut"
+      },
+      "LineageChildBagOut": {
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "title": "Generation"
+          },
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "bag_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bag Code"
+          },
+          "bag_ref": {
+            "type": "string",
+            "title": "Bag Ref"
+          },
+          "bag_type": {
+            "type": "string",
+            "enum": [
+              "SPAWN",
+              "SUBSTRATE"
+            ],
+            "title": "Bag Type"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "disposal_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CONTAMINATION",
+                  "FINAL_HARVEST"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposal Reason"
+          },
+          "species_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Id"
+          },
+          "species_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Code"
+          },
+          "species_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Name"
+          },
+          "sterilization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sterilization Run Id"
+          },
+          "sterilization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sterilization Run Code"
+          },
+          "pasteurization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Id"
+          },
+          "pasteurization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Code"
+          },
+          "parent_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Id"
+          },
+          "parent_spawn_bag_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Ref"
+          },
+          "source_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Id"
+          },
+          "source_liquid_culture_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Code"
+          },
+          "inoculation_source_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "LIQUID_CULTURE",
+                  "SPAWN_BAG"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculation Source Type"
+          },
+          "source_sterilization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sterilization Run Id"
+          },
+          "source_sterilization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sterilization Run Code"
+          },
+          "target_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Dry Kg"
+          },
+          "actual_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Dry Kg"
+          },
+          "dry_weight_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Kg"
+          },
+          "dry_weight_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ACTUAL",
+                  "TARGET"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Source"
+          },
+          "total_harvest_kg": {
+            "type": "number",
+            "title": "Total Harvest Kg"
+          },
+          "bio_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio Efficiency"
+          },
+          "contaminated": {
+            "type": "boolean",
+            "title": "Contaminated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generation",
+          "bag_id",
+          "bag_ref",
+          "bag_type",
+          "status",
+          "total_harvest_kg",
+          "contaminated"
+        ],
+        "title": "LineageChildBagOut"
+      },
+      "LiquidCultureCreate": {
+        "properties": {
+          "culture_code": {
+            "type": "string",
+            "title": "Culture Code"
+          },
+          "species_id": {
+            "type": "integer",
+            "title": "Species Id"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "prepared_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "culture_code",
+          "species_id"
+        ],
+        "title": "LiquidCultureCreate"
+      },
+      "LiquidCultureOut": {
+        "properties": {
+          "liquid_culture_id": {
+            "type": "integer",
+            "title": "Liquid Culture Id"
+          },
+          "culture_code": {
+            "type": "string",
+            "title": "Culture Code"
+          },
+          "species_id": {
+            "type": "integer",
+            "title": "Species Id"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "prepared_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "liquid_culture_id",
+          "culture_code",
+          "species_id",
+          "created_at",
+          "is_active"
+        ],
+        "title": "LiquidCultureOut"
+      },
+      "MixLotCreate": {
+        "properties": {
+          "lot_code": {
+            "type": "string",
+            "title": "Lot Code"
+          },
+          "substrate_recipe_version_id": {
+            "type": "integer",
+            "title": "Substrate Recipe Version Id"
+          },
+          "fill_profile_id": {
+            "type": "integer",
+            "title": "Fill Profile Id"
+          },
+          "mixed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mixed At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lot_code",
+          "substrate_recipe_version_id",
+          "fill_profile_id"
+        ],
+        "title": "MixLotCreate"
+      },
+      "MixLotOut": {
+        "properties": {
+          "mix_lot_id": {
+            "type": "integer",
+            "title": "Mix Lot Id"
+          },
+          "lot_code": {
+            "type": "string",
+            "title": "Lot Code"
+          },
+          "substrate_recipe_version_id": {
+            "type": "integer",
+            "title": "Substrate Recipe Version Id"
+          },
+          "fill_profile_id": {
+            "type": "integer",
+            "title": "Fill Profile Id"
+          },
+          "mixed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Mixed At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mix_lot_id",
+          "lot_code",
+          "substrate_recipe_version_id",
+          "fill_profile_id",
+          "mixed_at"
+        ],
+        "title": "MixLotOut"
+      },
+      "MushroomSpeciesCreate": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "latin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latin Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "MushroomSpeciesCreate"
+      },
+      "MushroomSpeciesOut": {
+        "properties": {
+          "species_id": {
+            "type": "integer",
+            "title": "Species Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "latin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latin Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "species_id",
+          "code",
+          "name",
+          "is_active"
+        ],
+        "title": "MushroomSpeciesOut"
+      },
+      "MushroomSpeciesUpdate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "latin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latin Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "MushroomSpeciesUpdate"
+      },
+      "PasteurizationRunCreate": {
+        "properties": {
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "mix_lot_id": {
+            "type": "integer",
+            "title": "Mix Lot Id"
+          },
+          "substrate_recipe_version_id": {
+            "type": "integer",
+            "title": "Substrate Recipe Version Id"
+          },
+          "steam_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steam Start At"
+          },
+          "steam_end_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steam End At"
+          },
+          "unloaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Unloaded At"
+          },
+          "bag_count": {
+            "type": "integer",
+            "title": "Bag Count"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_code",
+          "mix_lot_id",
+          "substrate_recipe_version_id",
+          "unloaded_at",
+          "bag_count"
+        ],
+        "title": "PasteurizationRunCreate"
+      },
+      "PasteurizationRunDetailOut": {
+        "properties": {
+          "pasteurization_run_id": {
+            "type": "integer",
+            "title": "Pasteurization Run Id"
+          },
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "mix_lot_id": {
+            "type": "integer",
+            "title": "Mix Lot Id"
+          },
+          "substrate_recipe_version_id": {
+            "type": "integer",
+            "title": "Substrate Recipe Version Id"
+          },
+          "steam_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steam Start At"
+          },
+          "steam_end_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steam End At"
+          },
+          "unloaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Unloaded At"
+          },
+          "bag_count": {
+            "type": "integer",
+            "title": "Bag Count"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "bags": {
+            "items": {
+              "$ref": "#/components/schemas/SubstrateBagMetricsOut"
+            },
+            "type": "array",
+            "title": "Bags"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BagCollectionSummaryOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pasteurization_run_id",
+          "run_code",
+          "mix_lot_id",
+          "substrate_recipe_version_id",
+          "unloaded_at",
+          "bag_count",
+          "bags",
+          "summary"
+        ],
+        "title": "PasteurizationRunDetailOut"
+      },
+      "PasteurizationRunMetricsOut": {
+        "properties": {
+          "pasteurization_run_id": {
+            "type": "integer",
+            "title": "Pasteurization Run Id"
+          },
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "total_bags": {
+            "type": "integer",
+            "title": "Total Bags"
+          },
+          "contaminated_bags": {
+            "type": "integer",
+            "title": "Contaminated Bags"
+          },
+          "contamination_rate": {
+            "type": "number",
+            "title": "Contamination Rate"
+          },
+          "total_harvest_kg": {
+            "type": "number",
+            "title": "Total Harvest Kg"
+          },
+          "total_dry_weight_kg": {
+            "type": "number",
+            "title": "Total Dry Weight Kg"
+          },
+          "bio_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio Efficiency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pasteurization_run_id",
+          "run_code",
+          "total_bags",
+          "contaminated_bags",
+          "contamination_rate",
+          "total_harvest_kg",
+          "total_dry_weight_kg"
+        ],
+        "title": "PasteurizationRunMetricsOut"
+      },
+      "PasteurizationRunOut": {
+        "properties": {
+          "pasteurization_run_id": {
+            "type": "integer",
+            "title": "Pasteurization Run Id"
+          },
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "mix_lot_id": {
+            "type": "integer",
+            "title": "Mix Lot Id"
+          },
+          "substrate_recipe_version_id": {
+            "type": "integer",
+            "title": "Substrate Recipe Version Id"
+          },
+          "steam_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steam Start At"
+          },
+          "steam_end_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steam End At"
+          },
+          "unloaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Unloaded At"
+          },
+          "bag_count": {
+            "type": "integer",
+            "title": "Bag Count"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pasteurization_run_id",
+          "run_code",
+          "mix_lot_id",
+          "substrate_recipe_version_id",
+          "unloaded_at",
+          "bag_count"
+        ],
+        "title": "PasteurizationRunOut"
+      },
+      "ProductionReportOut": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ProductionReportSummaryOut"
+          },
+          "contamination_by_bag_type": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Bag Type"
+          },
+          "contamination_by_species": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Species"
+          },
+          "contamination_by_liquid_culture": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Liquid Culture"
+          },
+          "contamination_by_inoculation_source_type": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Inoculation Source Type"
+          },
+          "contamination_by_spawn_generation": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Spawn Generation"
+          },
+          "contamination_by_source_sterilization_run": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Source Sterilization Run"
+          },
+          "contamination_by_pasteurization_run": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Pasteurization Run"
+          },
+          "contamination_by_parent_spawn_bag": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Parent Spawn Bag"
+          },
+          "contaminated_bags": {
+            "items": {
+              "$ref": "#/components/schemas/ContaminationCaseOut"
+            },
+            "type": "array",
+            "title": "Contaminated Bags"
+          },
+          "data_quality_issues": {
+            "items": {
+              "$ref": "#/components/schemas/DataQualityIssueOut"
+            },
+            "type": "array",
+            "title": "Data Quality Issues"
+          },
+          "pasteurization_runs": {
+            "items": {
+              "$ref": "#/components/schemas/PasteurizationRunMetricsOut"
+            },
+            "type": "array",
+            "title": "Pasteurization Runs"
+          },
+          "substrate_bags": {
+            "items": {
+              "$ref": "#/components/schemas/SubstrateBagMetricsOut"
+            },
+            "type": "array",
+            "title": "Substrate Bags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "summary",
+          "contamination_by_bag_type",
+          "contamination_by_species",
+          "contamination_by_liquid_culture",
+          "contamination_by_inoculation_source_type",
+          "contamination_by_spawn_generation",
+          "contamination_by_source_sterilization_run",
+          "contamination_by_pasteurization_run",
+          "contamination_by_parent_spawn_bag",
+          "contaminated_bags",
+          "data_quality_issues",
+          "pasteurization_runs",
+          "substrate_bags"
+        ],
+        "title": "ProductionReportOut"
+      },
+      "ProductionReportSummaryOut": {
+        "properties": {
+          "total_spawn_bags": {
+            "type": "integer",
+            "title": "Total Spawn Bags"
+          },
+          "total_substrate_bags": {
+            "type": "integer",
+            "title": "Total Substrate Bags"
+          },
+          "total_contaminated_bags": {
+            "type": "integer",
+            "title": "Total Contaminated Bags"
+          },
+          "contamination_rate": {
+            "type": "number",
+            "title": "Contamination Rate"
+          },
+          "substrate_bags_with_harvest": {
+            "type": "integer",
+            "title": "Substrate Bags With Harvest"
+          },
+          "substrate_bags_with_dry_weight": {
+            "type": "integer",
+            "title": "Substrate Bags With Dry Weight"
+          },
+          "total_harvest_kg": {
+            "type": "number",
+            "title": "Total Harvest Kg"
+          },
+          "total_dry_weight_kg": {
+            "type": "number",
+            "title": "Total Dry Weight Kg"
+          },
+          "overall_bio_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Bio Efficiency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_spawn_bags",
+          "total_substrate_bags",
+          "total_contaminated_bags",
+          "contamination_rate",
+          "substrate_bags_with_harvest",
+          "substrate_bags_with_dry_weight",
+          "total_harvest_kg",
+          "total_dry_weight_kg"
+        ],
+        "title": "ProductionReportSummaryOut"
+      },
+      "ReportGroupOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "total_bags": {
+            "type": "integer",
+            "title": "Total Bags"
+          },
+          "contaminated_bags": {
+            "type": "integer",
+            "title": "Contaminated Bags"
+          },
+          "contamination_rate": {
+            "type": "number",
+            "title": "Contamination Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "total_bags",
+          "contaminated_bags",
+          "contamination_rate"
+        ],
+        "title": "ReportGroupOut"
+      },
+      "SpawnInoculationBatchCreate": {
+        "properties": {
+          "sterilization_run_id": {
+            "type": "integer",
+            "title": "Sterilization Run Id"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "LIQUID_CULTURE",
+              "SPAWN_BAG"
+            ],
+            "title": "Source Type"
+          },
+          "liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Liquid Culture Id"
+          },
+          "donor_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Donor Spawn Bag Id"
+          },
+          "bag_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Bag Count"
+          },
+          "inoculated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inoculated At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sterilization_run_id",
+          "source_type",
+          "bag_count"
+        ],
+        "title": "SpawnInoculationBatchCreate"
+      },
+      "SpawnRecipeOut": {
+        "properties": {
+          "recipe_code": {
+            "type": "string",
+            "title": "Recipe Code"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "spawn_recipe_id": {
+            "type": "integer",
+            "title": "Spawn Recipe Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe_code",
+          "spawn_recipe_id",
+          "created_at"
+        ],
+        "title": "SpawnRecipeOut"
+      },
+      "SterilizationRunCreate": {
+        "properties": {
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "spawn_recipe_id": {
+            "type": "integer",
+            "title": "Spawn Recipe Id"
+          },
+          "grain_type_id": {
+            "type": "integer",
+            "title": "Grain Type Id"
+          },
+          "cycle_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Start At"
+          },
+          "cycle_end_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle End At"
+          },
+          "unloaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Unloaded At"
+          },
+          "bag_count": {
+            "type": "integer",
+            "title": "Bag Count"
+          },
+          "temp_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp C"
+          },
+          "psi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Psi"
+          },
+          "hold_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hold Minutes"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_code",
+          "spawn_recipe_id",
+          "grain_type_id",
+          "unloaded_at",
+          "bag_count"
+        ],
+        "title": "SterilizationRunCreate"
+      },
+      "SterilizationRunDetailOut": {
+        "properties": {
+          "sterilization_run_id": {
+            "type": "integer",
+            "title": "Sterilization Run Id"
+          },
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "spawn_recipe_id": {
+            "type": "integer",
+            "title": "Spawn Recipe Id"
+          },
+          "grain_type_id": {
+            "type": "integer",
+            "title": "Grain Type Id"
+          },
+          "cycle_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Start At"
+          },
+          "cycle_end_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle End At"
+          },
+          "unloaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Unloaded At"
+          },
+          "bag_count": {
+            "type": "integer",
+            "title": "Bag Count"
+          },
+          "temp_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp C"
+          },
+          "psi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Psi"
+          },
+          "hold_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hold Minutes"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "bags": {
+            "items": {
+              "$ref": "#/components/schemas/BagOut"
+            },
+            "type": "array",
+            "title": "Bags"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BagCollectionSummaryOut"
+          },
+          "downstream_substrate_bags": {
+            "items": {
+              "$ref": "#/components/schemas/SubstrateBagMetricsOut"
+            },
+            "type": "array",
+            "title": "Downstream Substrate Bags"
+          },
+          "downstream_summary": {
+            "$ref": "#/components/schemas/BagCollectionSummaryOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sterilization_run_id",
+          "run_code",
+          "spawn_recipe_id",
+          "grain_type_id",
+          "unloaded_at",
+          "bag_count",
+          "bags",
+          "summary",
+          "downstream_substrate_bags",
+          "downstream_summary"
+        ],
+        "title": "SterilizationRunDetailOut"
+      },
+      "SterilizationRunOut": {
+        "properties": {
+          "sterilization_run_id": {
+            "type": "integer",
+            "title": "Sterilization Run Id"
+          },
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "spawn_recipe_id": {
+            "type": "integer",
+            "title": "Spawn Recipe Id"
+          },
+          "grain_type_id": {
+            "type": "integer",
+            "title": "Grain Type Id"
+          },
+          "cycle_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Start At"
+          },
+          "cycle_end_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle End At"
+          },
+          "unloaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Unloaded At"
+          },
+          "bag_count": {
+            "type": "integer",
+            "title": "Bag Count"
+          },
+          "temp_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp C"
+          },
+          "psi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Psi"
+          },
+          "hold_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hold Minutes"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sterilization_run_id",
+          "run_code",
+          "spawn_recipe_id",
+          "grain_type_id",
+          "unloaded_at",
+          "bag_count"
+        ],
+        "title": "SterilizationRunOut"
+      },
+      "SubstrateBagMetricsOut": {
+        "properties": {
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "bag_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bag Code"
+          },
+          "bag_ref": {
+            "type": "string",
+            "title": "Bag Ref"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "disposal_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "CONTAMINATION",
+                  "FINAL_HARVEST"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposal Reason"
+          },
+          "species_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Id"
+          },
+          "species_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Code"
+          },
+          "species_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Name"
+          },
+          "pasteurization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Id"
+          },
+          "pasteurization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pasteurization Run Code"
+          },
+          "parent_spawn_bag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Id"
+          },
+          "parent_spawn_bag_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Spawn Bag Ref"
+          },
+          "source_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Id"
+          },
+          "source_liquid_culture_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Liquid Culture Code"
+          },
+          "spawn_generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spawn Generation"
+          },
+          "source_sterilization_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sterilization Run Id"
+          },
+          "source_sterilization_run_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Sterilization Run Code"
+          },
+          "target_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Dry Kg"
+          },
+          "actual_dry_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Dry Kg"
+          },
+          "dry_weight_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Kg"
+          },
+          "dry_weight_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ACTUAL",
+                  "TARGET"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry Weight Source"
+          },
+          "total_harvest_kg": {
+            "type": "number",
+            "title": "Total Harvest Kg"
+          },
+          "bio_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio Efficiency"
+          },
+          "contaminated": {
+            "type": "boolean",
+            "title": "Contaminated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bag_id",
+          "bag_ref",
+          "status",
+          "total_harvest_kg",
+          "contaminated"
+        ],
+        "title": "SubstrateBagMetricsOut"
+      },
+      "SubstrateRecipeVersionOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "recipe_code": {
+            "type": "string",
+            "title": "Recipe Code"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "substrate_recipe_version_id": {
+            "type": "integer",
+            "title": "Substrate Recipe Version Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "recipe_code",
+          "substrate_recipe_version_id",
+          "created_at"
+        ],
+        "title": "SubstrateRecipeVersionOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
