@@ -138,6 +138,24 @@ export type Bag = {
   notes?: string | null;
 };
 
+export type BagStatusEvent = {
+  bag_status_event_id: number;
+  bag_id: string;
+  event_type:
+    | "CREATED"
+    | "BAG_CODE_ASSIGNED"
+    | "INOCULATED"
+    | "INCUBATION_STARTED"
+    | "READY"
+    | "FRUITING_STARTED"
+    | "HARVEST_RECORDED"
+    | "CONSUMED"
+    | "DISPOSED";
+  occurred_at: string;
+  detail?: string | null;
+  notes?: string | null;
+};
+
 export type LineageChildBag = {
   generation: number;
   bag_id: string;
@@ -184,6 +202,7 @@ export type BagCollectionSummary = {
 };
 
 export type BagDetail = Bag & {
+  status_events: BagStatusEvent[];
   harvest_events: HarvestEvent[];
   child_bags: LineageChildBag[];
   child_summary?: BagCollectionSummary | null;

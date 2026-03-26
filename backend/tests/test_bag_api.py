@@ -165,6 +165,9 @@ def test_create_spawn_bags_creates_unlabeled_internal_records():
         assert all(bag.bag_code is None for bag in first_batch + second_batch)
         assert all(bag.species_id is None for bag in first_batch + second_batch)
         assert all(bag.status == "STERILIZED" for bag in first_batch + second_batch)
+        status_events = crud.list_bag_status_events(db, first_batch[0].bag_id)
+        assert [event.event_type for event in status_events] == ["CREATED"]
+        assert status_events[0].detail == "Spawn bag record created for sterilization run STER-001"
     finally:
         db.close()
 
@@ -245,6 +248,9 @@ def test_spawn_to_spawn_inoculation_assigns_lineage_and_consumes_donor():
         assert refreshed_donor is not None
         assert refreshed_donor.status == "CONSUMED"
         assert refreshed_donor.consumed_at is not None
+        donor_events = crud.list_bag_status_events(db, donor_spawn.bag_code)
+        assert donor_events[-1].event_type == "CONSUMED"
+        assert donor_events[-1].detail == "Used to inoculate spawn bags"
         assert donor_detail is not None
         assert donor_detail["source_liquid_culture_id"] == liquid_culture.liquid_culture_id
         child_rows = {row["bag_ref"]: row for row in donor_detail["child_bags"]}
@@ -344,6 +350,18 @@ def test_lifecycle_updates_and_harvests_work_with_printable_bag_codes():
         assert bag_detail["bag_code"] == bag_code
         assert bag_detail["status"] == "FLUSH_2_COMPLETE"
         assert len(bag_detail["harvest_events"]) == 2
+        assert [event["event_type"] for event in bag_detail["status_events"]] == [
+            "CREATED",
+            "BAG_CODE_ASSIGNED",
+            "INOCULATED",
+            "INCUBATION_STARTED",
+            "READY",
+            "FRUITING_STARTED",
+            "HARVEST_RECORDED",
+            "HARVEST_RECORDED",
+        ]
+        assert bag_detail["status_events"][-2]["detail"] == "Flush 1: 0.550 kg"
+        assert bag_detail["status_events"][-1]["detail"] == "Flush 2: 0.350 kg"
         assert bag_by_internal_id is not None
         assert bag_by_internal_id.bag_code == bag_code
         assert crud.get_bag_total_harvest_kg(db, bag_code) == pytest.approx(0.9)

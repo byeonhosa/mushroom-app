@@ -235,7 +235,28 @@ class BagOut(BaseModel):
     class Config: from_attributes = True
 
 
+class BagStatusEventOut(BaseModel):
+    bag_status_event_id: int
+    bag_id: str
+    event_type: Literal[
+        "CREATED",
+        "BAG_CODE_ASSIGNED",
+        "INOCULATED",
+        "INCUBATION_STARTED",
+        "READY",
+        "FRUITING_STARTED",
+        "HARVEST_RECORDED",
+        "CONSUMED",
+        "DISPOSED",
+    ]
+    occurred_at: datetime
+    detail: Optional[str] = None
+    notes: Optional[str] = None
+    class Config: from_attributes = True
+
+
 class BagDetailOut(BagOut):
+    status_events: List["BagStatusEventOut"] = []
     harvest_events: List["HarvestEventOut"] = []
     child_bags: List["LineageChildBagOut"] = []
     child_summary: Optional["BagCollectionSummaryOut"] = None

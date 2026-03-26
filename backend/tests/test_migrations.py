@@ -65,6 +65,7 @@ def test_postgres_migrations_apply_cleanly():
 
         assert applied_filenames == [migration_file.name for migration_file in migration_files]
         assert {
+            "bag_status_events",
             "bags",
             "grain_types",
             "harvest_events",
