@@ -25,6 +25,8 @@ class InoculationSourceType(str, enum.Enum):
 
 class BagStatusEventType(str, enum.Enum):
     CREATED = "CREATED"
+    STERILIZED = "STERILIZED"
+    PASTEURIZED = "PASTEURIZED"
     BAG_CODE_ASSIGNED = "BAG_CODE_ASSIGNED"
     INOCULATED = "INOCULATED"
     INCUBATION_STARTED = "INCUBATION_STARTED"

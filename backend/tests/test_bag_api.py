@@ -166,8 +166,9 @@ def test_create_spawn_bags_creates_unlabeled_internal_records():
         assert all(bag.species_id is None for bag in first_batch + second_batch)
         assert all(bag.status == "STERILIZED" for bag in first_batch + second_batch)
         status_events = crud.list_bag_status_events(db, first_batch[0].bag_id)
-        assert [event.event_type for event in status_events] == ["CREATED"]
+        assert [event.event_type for event in status_events] == ["CREATED", "STERILIZED"]
         assert status_events[0].detail == "Spawn bag record created for sterilization run STER-001"
+        assert status_events[1].detail == "Sterilization run completed: STER-001"
     finally:
         db.close()
 
@@ -352,6 +353,7 @@ def test_lifecycle_updates_and_harvests_work_with_printable_bag_codes():
         assert len(bag_detail["harvest_events"]) == 2
         assert [event["event_type"] for event in bag_detail["status_events"]] == [
             "CREATED",
+            "PASTEURIZED",
             "BAG_CODE_ASSIGNED",
             "INOCULATED",
             "INCUBATION_STARTED",
@@ -365,6 +367,35 @@ def test_lifecycle_updates_and_harvests_work_with_printable_bag_codes():
         assert bag_by_internal_id is not None
         assert bag_by_internal_id.bag_code == bag_code
         assert crud.get_bag_total_harvest_kg(db, bag_code) == pytest.approx(0.9)
+    finally:
+        db.close()
+
+
+def test_bag_detail_and_list_recover_status_from_event_history_when_cache_fields_drift():
+    db = _session()
+    try:
+        _, _, _, substrate_bag = _prepare_inoculated_substrate(db)
+        bag_code = substrate_bag.bag_code
+
+        crud.update_bag_incubation_start(db, bag_code)
+        crud.update_bag_ready(db, bag_code)
+
+        bag_row = crud.get_bag(db, bag_code)
+        assert bag_row is not None
+        bag_row.incubation_start_at = None
+        bag_row.ready_at = None
+        bag_row.status = "PASTEURIZED"
+        db.commit()
+
+        detail = crud.get_bag_detail(db, bag_code)
+        bags = crud.list_bags(db, bag_type="SUBSTRATE")
+
+        assert detail is not None
+        assert detail["status"] == "READY"
+        assert detail["incubation_start_at"] is not None
+        assert detail["ready_at"] is not None
+        assert bags[0]["bag_ref"] == bag_code
+        assert bags[0]["status"] == "READY"
     finally:
         db.close()
 

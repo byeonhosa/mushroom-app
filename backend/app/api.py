@@ -273,6 +273,14 @@ def get_bag(bag_id: str, db: Session = Depends(get_db)):
     return bag
 
 
+@router.get("/bags/{bag_id}/status-events", response_model=list[schemas.BagStatusEventOut])
+def list_bag_status_events(bag_id: str, db: Session = Depends(get_db)):
+    bag = crud.get_bag(db, bag_id)
+    if not bag:
+        raise HTTPException(404, "Bag not found")
+    return crud.list_bag_status_events(db, bag_id)
+
+
 # --- Event recording (scan flow) ---
 
 @router.post("/bags/{bag_id}/incubation-start", response_model=schemas.BagOut)

@@ -143,6 +143,8 @@ export type BagStatusEvent = {
   bag_id: string;
   event_type:
     | "CREATED"
+    | "STERILIZED"
+    | "PASTEURIZED"
     | "BAG_CODE_ASSIGNED"
     | "INOCULATED"
     | "INCUBATION_STARTED"

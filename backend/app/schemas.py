@@ -240,6 +240,8 @@ class BagStatusEventOut(BaseModel):
     bag_id: str
     event_type: Literal[
         "CREATED",
+        "STERILIZED",
+        "PASTEURIZED",
         "BAG_CODE_ASSIGNED",
         "INOCULATED",
         "INCUBATION_STARTED",

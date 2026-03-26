@@ -7,6 +7,8 @@ import type { BagDetail } from "../../../lib/types";
 
 const EVENT_LABELS: Record<string, string> = {
   CREATED: "Record Created",
+  STERILIZED: "Sterilized",
+  PASTEURIZED: "Pasteurized",
   BAG_CODE_ASSIGNED: "Bag Code Assigned",
   INOCULATED: "Inoculated",
   INCUBATION_STARTED: "Incubation Started",

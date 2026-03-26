@@ -10,6 +10,14 @@ from sqlalchemy.pool import StaticPool
 from app import crud, models
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _session():
     engine = create_engine(
         "sqlite://",
@@ -294,14 +302,14 @@ def test_production_report_includes_be_and_contamination_summaries():
             {
                 "bag_id": bag_three.bag_id,
                 "bag_code": bag_three.bag_code,
-                "bag_ref": bag_three.bag_code,
-                "bag_type": "SUBSTRATE",
-                "status": "CONTAMINATED",
-                "disposal_reason": "CONTAMINATION",
-                "contaminated_at": bag_three.disposed_at,
-                "species_id": bag_three.species_id,
-                "species_code": "LM",
-                "species_name": "Lion's Mane",
+                    "bag_ref": bag_three.bag_code,
+                    "bag_type": "SUBSTRATE",
+                    "status": "CONTAMINATED",
+                    "disposal_reason": "CONTAMINATION",
+                    "contaminated_at": _as_utc(bag_three.disposed_at),
+                    "species_id": bag_three.species_id,
+                    "species_code": "LM",
+                    "species_name": "Lion's Mane",
                 "sterilization_run_id": None,
                 "sterilization_run_code": None,
                 "pasteurization_run_id": pasteurization_run.pasteurization_run_id,
