@@ -5,6 +5,7 @@
     "dev": "next dev -p 3000",
     "generate:api-contract": "node ./scripts/generate-api-contract.mjs",
     "check:api-contract": "npm run generate:api-contract && git diff --exit-code -- lib/generated/openapi.json lib/generated/api-schema.ts",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "build": "next build",
     "start": "next start -p 3000"
@@ -15,6 +16,7 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/node": "25.2.3",
     "@types/react": "19.2.14",
     "openapi-typescript": "^7.13.0",
