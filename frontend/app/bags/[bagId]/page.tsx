@@ -5,6 +5,18 @@ import { useParams } from "next/navigation";
 import { apiGet } from "../../../lib/api";
 import type { BagDetail } from "../../../lib/types";
 
+const EVENT_LABELS: Record<string, string> = {
+  CREATED: "Record Created",
+  BAG_CODE_ASSIGNED: "Bag Code Assigned",
+  INOCULATED: "Inoculated",
+  INCUBATION_STARTED: "Incubation Started",
+  READY: "Ready",
+  FRUITING_STARTED: "Fruiting Started",
+  HARVEST_RECORDED: "Harvest Recorded",
+  CONSUMED: "Consumed",
+  DISPOSED: "Disposed",
+};
+
 export default function BagPage() {
   const params = useParams();
   const bagIdRaw = params?.bagId;
@@ -106,6 +118,32 @@ export default function BagPage() {
             Total Harvest:{" "}
             {bag.harvest_events.reduce((sum, event) => sum + event.fresh_weight_kg, 0).toFixed(3)} kg
           </p>
+
+          <h2>Lifecycle Timeline</h2>
+          {bag.status_events.length === 0 ? (
+            <p>No lifecycle events logged.</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Event</th>
+                  <th>Detail</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bag.status_events.map((event) => (
+                  <tr key={event.bag_status_event_id}>
+                    <td>{new Date(event.occurred_at).toLocaleString()}</td>
+                    <td>{EVENT_LABELS[event.event_type] ?? event.event_type}</td>
+                    <td>{event.detail ?? "-"}</td>
+                    <td>{event.notes ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
           {bag.child_bags.length > 0 && (
             <>

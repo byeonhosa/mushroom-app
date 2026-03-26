@@ -23,6 +23,18 @@ class InoculationSourceType(str, enum.Enum):
     SPAWN_BAG = "SPAWN_BAG"
 
 
+class BagStatusEventType(str, enum.Enum):
+    CREATED = "CREATED"
+    BAG_CODE_ASSIGNED = "BAG_CODE_ASSIGNED"
+    INOCULATED = "INOCULATED"
+    INCUBATION_STARTED = "INCUBATION_STARTED"
+    READY = "READY"
+    FRUITING_STARTED = "FRUITING_STARTED"
+    HARVEST_RECORDED = "HARVEST_RECORDED"
+    CONSUMED = "CONSUMED"
+    DISPOSED = "DISPOSED"
+
+
 class Zone(Base):
     __tablename__ = "zones"
     zone_id = Column(Integer, primary_key=True)
@@ -221,6 +233,7 @@ class Bag(Base):
         cascade="all, delete-orphan",
     )
     harvest_events = relationship("HarvestEvent", back_populates="bag", cascade="all, delete-orphan")
+    status_events = relationship("BagStatusEvent", back_populates="bag", cascade="all, delete-orphan")
 
     @property
     def bag_ref(self) -> str:
@@ -280,6 +293,18 @@ class Bag(Base):
         if self.bag_type != "SUBSTRATE" or dry_weight is None or dry_weight <= 0:
             return None
         return self.total_harvest_kg / dry_weight
+
+
+class BagStatusEvent(Base):
+    __tablename__ = "bag_status_events"
+    bag_status_event_id = Column(Integer, primary_key=True)
+    bag_id = Column(String(80), ForeignKey("bags.bag_id", ondelete="CASCADE"), nullable=False)
+    event_type = Column(String(40), nullable=False)
+    occurred_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    detail = Column(Text)
+    notes = Column(Text)
+
+    bag = relationship("Bag", back_populates="status_events")
 
 
 class InoculationBatch(Base):

@@ -48,6 +48,52 @@ def _sync_bag_status(bag: models.Bag) -> str:
     return bag.status
 
 
+def _record_bag_event(
+    db: Session,
+    bag: models.Bag,
+    event_type: str,
+    *,
+    occurred_at: datetime | None = None,
+    detail: str | None = None,
+    notes: str | None = None,
+) -> models.BagStatusEvent:
+    event = models.BagStatusEvent(
+        bag=bag,
+        event_type=event_type,
+        occurred_at=occurred_at or _now(),
+        detail=detail,
+        notes=notes,
+    )
+    db.add(event)
+    return event
+
+
+def _format_harvest_event_detail(flush_number: int, fresh_weight_kg: float) -> str:
+    return f"Flush {flush_number}: {fresh_weight_kg:.3f} kg"
+
+
+def _build_status_event_row(event: models.BagStatusEvent) -> dict:
+    return {
+        "bag_status_event_id": event.bag_status_event_id,
+        "bag_id": event.bag_id,
+        "event_type": event.event_type,
+        "occurred_at": event.occurred_at,
+        "detail": event.detail,
+        "notes": event.notes,
+    }
+
+
+def list_bag_status_events(db: Session, bag_ref: str):
+    bag = _resolve_bag(db, bag_ref)
+    if not bag:
+        return []
+    return db.execute(
+        select(models.BagStatusEvent)
+        .where(models.BagStatusEvent.bag_id == bag.bag_id)
+        .order_by(models.BagStatusEvent.occurred_at.asc(), models.BagStatusEvent.bag_status_event_id.asc())
+    ).scalars().all()
+
+
 def _resolve_bag(db: Session, bag_ref: str) -> models.Bag | None:
     bag = db.get(models.Bag, bag_ref)
     if bag:
@@ -758,6 +804,7 @@ def create_spawn_bags(db: Session, sterilization_run_id: int, bag_count: int) ->
     _validate_run_capacity(f"Sterilization run {run.run_code}", run.bag_count, existing_bag_count, bag_count)
     ids = bag_id.generate_internal_bag_ids(db, "SPAWN", bag_count)
     bags = []
+    created_at = _now()
     for bid in ids:
         bag = models.Bag(
             bag_id=bid,
@@ -770,11 +817,19 @@ def create_spawn_bags(db: Session, sterilization_run_id: int, bag_count: int) ->
             substrate_recipe_version_id=None,
             spawn_recipe_id=run.spawn_recipe_id,
             grain_type_id=run.grain_type_id,
+            created_at=created_at,
             labeled_at=None,
             inoculated_at=None,
             status="STERILIZED",
         )
         db.add(bag)
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.CREATED.value,
+            occurred_at=created_at,
+            detail=f"Spawn bag record created for sterilization run {run.run_code}",
+        )
         bags.append(bag)
     db.commit()
     for b in bags:
@@ -798,6 +853,7 @@ def create_substrate_bags(
         target_dry_kg = float(run.mix_lot.fill_profile.target_dry_kg_per_bag)
     ids = bag_id.generate_internal_bag_ids(db, "SUBSTRATE", bag_count)
     bags = []
+    created_at = _now()
     for bid in ids:
         bag = models.Bag(
             bag_id=bid,
@@ -812,11 +868,19 @@ def create_substrate_bags(
             grain_type_id=None,
             target_dry_kg=target_dry_kg,
             actual_dry_kg=actual_dry_kg,
+            created_at=created_at,
             labeled_at=None,
             inoculated_at=None,
             status="PASTEURIZED",
         )
         db.add(bag)
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.CREATED.value,
+            occurred_at=created_at,
+            detail=f"Substrate bag record created for pasteurization run {run.run_code}",
+        )
         bags.append(bag)
     db.commit()
     for b in bags:
@@ -870,9 +934,11 @@ def get_bag_detail(db: Session, bag_ref: str) -> dict | None:
         descendants = _build_descendant_bags(db, [bag.bag_id])
         child_rows = [_build_lineage_row(child_bag, generation) for child_bag, generation in descendants]
         child_summary = _summarize_bags([child_bag for child_bag, _ in descendants])
+    status_events = [_build_status_event_row(event) for event in list_bag_status_events(db, bag.bag_id)]
 
     return {
         **_bag_payload(bag),
+        "status_events": status_events,
         "harvest_events": bag.harvest_events,
         "child_bags": child_rows,
         "child_summary": child_summary,
@@ -953,6 +1019,12 @@ def update_bag_incubation_start(db: Session, bag_ref: str) -> models.Bag | None:
         raise ValueError("Bag must be inoculated before incubation can start")
     if bag.incubation_start_at is None:
         bag.incubation_start_at = _now()
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.INCUBATION_STARTED.value,
+            occurred_at=bag.incubation_start_at,
+        )
     _sync_bag_status(bag)
     db.commit()
     db.refresh(bag)
@@ -969,6 +1041,12 @@ def update_bag_ready(db: Session, bag_ref: str) -> models.Bag | None:
         raise ValueError("Bag must enter incubation before it can be marked ready")
     if bag.ready_at is None:
         bag.ready_at = _now()
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.READY.value,
+            occurred_at=bag.ready_at,
+        )
     _sync_bag_status(bag)
     db.commit()
     db.refresh(bag)
@@ -987,6 +1065,12 @@ def update_bag_fruiting_start(db: Session, bag_ref: str) -> models.Bag | None:
         raise ValueError("Only ready substrate bags can be moved to fruiting")
     if bag.fruiting_start_at is None:
         bag.fruiting_start_at = _now()
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.FRUITING_STARTED.value,
+            occurred_at=bag.fruiting_start_at,
+        )
     _sync_bag_status(bag)
     db.commit()
     db.refresh(bag)
@@ -1006,6 +1090,13 @@ def update_bag_disposal(db: Session, bag_ref: str, disposal_reason: str) -> mode
             raise ValueError("Final harvest disposal requires at least one recorded harvest")
     bag.disposed_at = _now()
     bag.disposal_reason = disposal_reason
+    _record_bag_event(
+        db,
+        bag,
+        models.BagStatusEventType.DISPOSED.value,
+        occurred_at=bag.disposed_at,
+        detail=f"Reason: {disposal_reason}",
+    )
     _sync_bag_status(bag)
     db.commit()
     db.refresh(bag)
@@ -1068,6 +1159,11 @@ def inoculate_spawn_bags(
         raise ValueError("Unsupported source_type")
 
     performed_at = inoculated_at or _now()
+    inoculation_detail = (
+        f"Inoculated from liquid culture {source_liquid_culture.culture_code}"
+        if source_liquid_culture is not None
+        else f"Inoculated from spawn bag {source_spawn_bag.bag_ref}"
+    )
     bag_codes = bag_id.generate_spawn_bag_ids(db, sterilization_run_id, species_id, len(bags))
     batch = models.InoculationBatch(
         source_type=source_type,
@@ -1082,6 +1178,7 @@ def inoculate_spawn_bags(
     db.add(batch)
 
     for bag, bag_code in zip(bags, bag_codes):
+        should_record_label_assignment = bag.bag_code is None or bag.labeled_at is None
         bag.species_id = species_id
         bag.parent_spawn_bag_id = source_spawn_bag.bag_id if source_spawn_bag else None
         bag.source_liquid_culture_id = (
@@ -1090,11 +1187,35 @@ def inoculate_spawn_bags(
         bag.bag_code = bag_code
         bag.labeled_at = performed_at
         bag.inoculated_at = performed_at
+        if should_record_label_assignment:
+            _record_bag_event(
+                db,
+                bag,
+                models.BagStatusEventType.BAG_CODE_ASSIGNED.value,
+                occurred_at=performed_at,
+                detail=f"Printable code assigned: {bag_code}",
+            )
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.INOCULATED.value,
+            occurred_at=performed_at,
+            detail=inoculation_detail,
+            notes=notes,
+        )
         _sync_bag_status(bag)
         db.add(models.InoculationBatchTarget(inoculation_batch=batch, bag=bag))
 
     if source_spawn_bag is not None:
         source_spawn_bag.consumed_at = performed_at
+        _record_bag_event(
+            db,
+            source_spawn_bag,
+            models.BagStatusEventType.CONSUMED.value,
+            occurred_at=performed_at,
+            detail="Used to inoculate spawn bags",
+            notes=notes,
+        )
         _sync_bag_status(source_spawn_bag)
 
     try:
@@ -1135,6 +1256,7 @@ def _create_substrate_inoculations_for_bags(
             raise ValueError("All substrate bags in one inoculation batch must come from the same pasteurization run")
 
     performed_at = inoculated_at or _now()
+    inoculation_detail = f"Inoculated from spawn bag {spawn.bag_ref}"
     bag_codes = bag_id.generate_substrate_bag_ids(db, pasteurization_run_id, spawn.species_id, len(substrate_bags))
     batch = models.InoculationBatch(
         source_type=models.InoculationSourceType.SPAWN_BAG.value,
@@ -1148,6 +1270,7 @@ def _create_substrate_inoculations_for_bags(
     inoculations: list[models.Inoculation] = []
 
     for bag, bag_code in zip(substrate_bags, bag_codes):
+        should_record_label_assignment = bag.bag_code is None or bag.labeled_at is None
         inoc = models.Inoculation(
             substrate_bag_id=bag.bag_id,
             spawn_bag_id=spawn.bag_id,
@@ -1161,11 +1284,35 @@ def _create_substrate_inoculations_for_bags(
         bag.bag_code = bag.bag_code or bag_code
         bag.labeled_at = bag.labeled_at or performed_at
         bag.inoculated_at = performed_at
+        if should_record_label_assignment:
+            _record_bag_event(
+                db,
+                bag,
+                models.BagStatusEventType.BAG_CODE_ASSIGNED.value,
+                occurred_at=performed_at,
+                detail=f"Printable code assigned: {bag.bag_code}",
+            )
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.INOCULATED.value,
+            occurred_at=performed_at,
+            detail=inoculation_detail,
+            notes=notes,
+        )
         _sync_bag_status(bag)
         inoculations.append(inoc)
         db.add(models.InoculationBatchTarget(inoculation_batch=batch, bag=bag))
 
     spawn.consumed_at = performed_at
+    _record_bag_event(
+        db,
+        spawn,
+        models.BagStatusEventType.CONSUMED.value,
+        occurred_at=performed_at,
+        detail="Used to inoculate substrate bags",
+        notes=notes,
+    )
     _sync_bag_status(spawn)
 
     try:
@@ -1272,6 +1419,14 @@ def create_harvest_event(db: Session, bag_ref: str, flush_number: int, fresh_wei
     db.add(ev)
     try:
         db.flush()
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.HARVEST_RECORDED.value,
+            occurred_at=ev.harvested_at,
+            detail=_format_harvest_event_detail(flush_number, fresh_weight_kg),
+            notes=notes,
+        )
         _sync_bag_status(bag)
         db.commit()
     except IntegrityError:
