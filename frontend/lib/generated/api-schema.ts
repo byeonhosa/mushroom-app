@@ -591,6 +591,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dashboard/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard Overview */
+        get: operations["get_dashboard_overview_api_dashboard_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reports/production": {
         parameters: {
             query?: never;
@@ -948,6 +965,119 @@ export interface components {
             source_sterilization_run_id?: number | null;
             /** Source Sterilization Run Code */
             source_sterilization_run_code?: string | null;
+        };
+        /** DashboardActivityOut */
+        DashboardActivityOut: {
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Bag Id */
+            bag_id: string;
+            /** Bag Ref */
+            bag_ref: string;
+            /**
+             * Bag Type
+             * @enum {string}
+             */
+            bag_type: "SPAWN" | "SUBSTRATE";
+            /** Event Type */
+            event_type: string;
+            /** Title */
+            title: string;
+            /** Detail */
+            detail?: string | null;
+            /** Href */
+            href: string;
+        };
+        /** DashboardAlertOut */
+        DashboardAlertOut: {
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "warning";
+            /** Title */
+            title: string;
+            /** Detail */
+            detail: string;
+            /** Href */
+            href: string;
+        };
+        /** DashboardOverviewOut */
+        DashboardOverviewOut: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            summary: components["schemas"]["ProductionReportSummaryOut"];
+            /** Queues */
+            queues: components["schemas"]["DashboardQueueOut"][];
+            /** Sterilization Runs */
+            sterilization_runs: components["schemas"]["DashboardRunSummaryOut"][];
+            /** Pasteurization Runs */
+            pasteurization_runs: components["schemas"]["DashboardRunSummaryOut"][];
+            /** Recent Activity */
+            recent_activity: components["schemas"]["DashboardActivityOut"][];
+            /** Alerts */
+            alerts: components["schemas"]["DashboardAlertOut"][];
+        };
+        /** DashboardQueueOut */
+        DashboardQueueOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Count */
+            count: number;
+            /** Description */
+            description: string;
+            /** Href */
+            href: string;
+            /**
+             * Tone
+             * @enum {string}
+             */
+            tone: "default" | "action" | "warning";
+        };
+        /** DashboardRunSummaryOut */
+        DashboardRunSummaryOut: {
+            /**
+             * Run Type
+             * @enum {string}
+             */
+            run_type: "STERILIZATION" | "PASTEURIZATION";
+            /** Run Id */
+            run_id: number;
+            /** Run Code */
+            run_code: string;
+            /**
+             * Unloaded At
+             * Format: date-time
+             */
+            unloaded_at: string;
+            /** Planned Bag Count */
+            planned_bag_count: number;
+            /** Total Bags */
+            total_bags: number;
+            /** Unlabeled Bags */
+            unlabeled_bags: number;
+            /** Ready Bags */
+            ready_bags: number;
+            /** Fruiting Bags */
+            fruiting_bags: number;
+            /** Contaminated Bags */
+            contaminated_bags: number;
+            /** Harvested Bags */
+            harvested_bags: number;
+            /** Downstream Bags */
+            downstream_bags: number;
+            /** Next Action */
+            next_action: string;
+            /** Href */
+            href: string;
         };
         /** DataQualityIssueOut */
         DataQualityIssueOut: {
@@ -2551,6 +2681,7 @@ export interface operations {
         parameters: {
             query?: {
                 bag_type?: string | null;
+                bag_ref_contains?: string | null;
                 species_id?: number | null;
                 pasteurization_run_id?: number | null;
                 sterilization_run_id?: number | null;
@@ -2998,6 +3129,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_overview_api_dashboard_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOverviewOut"];
                 };
             };
         };

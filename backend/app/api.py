@@ -247,6 +247,7 @@ def create_substrate_bags(payload: schemas.BagCreateSubstrate, db: Session = Dep
 @router.get("/bags", response_model=list[schemas.BagOut])
 def list_bags(
     bag_type: str | None = None,
+    bag_ref_contains: str | None = None,
     species_id: int | None = None,
     pasteurization_run_id: int | None = None,
     sterilization_run_id: int | None = None,
@@ -257,6 +258,7 @@ def list_bags(
     return crud.list_bags(
         db,
         bag_type=bag_type,
+        bag_ref_contains=bag_ref_contains,
         species_id=species_id,
         pasteurization_run_id=pasteurization_run_id,
         sterilization_run_id=sterilization_run_id,
@@ -444,6 +446,11 @@ def list_harvest_events(bag_id: str, db: Session = Depends(get_db)):
 
 
 # --- Reporting ---
+
+@router.get("/dashboard/overview", response_model=schemas.DashboardOverviewOut)
+def get_dashboard_overview(db: Session = Depends(get_db)):
+    return crud.get_dashboard_overview(db)
+
 
 @router.get("/reports/production", response_model=schemas.ProductionReportOut)
 def get_production_report(db: Session = Depends(get_db)):

@@ -535,6 +535,60 @@ class ProductionReportOut(BaseModel):
     substrate_bags: List[SubstrateBagMetricsOut]
 
 
+class DashboardQueueOut(BaseModel):
+    key: str
+    label: str
+    count: int
+    description: str
+    href: str
+    tone: Literal["default", "action", "warning"]
+
+
+class DashboardRunSummaryOut(BaseModel):
+    run_type: Literal["STERILIZATION", "PASTEURIZATION"]
+    run_id: int
+    run_code: str
+    unloaded_at: datetime
+    planned_bag_count: int
+    total_bags: int
+    unlabeled_bags: int
+    ready_bags: int
+    fruiting_bags: int
+    contaminated_bags: int
+    harvested_bags: int
+    downstream_bags: int
+    next_action: str
+    href: str
+
+
+class DashboardActivityOut(BaseModel):
+    occurred_at: datetime
+    bag_id: str
+    bag_ref: str
+    bag_type: Literal["SPAWN", "SUBSTRATE"]
+    event_type: str
+    title: str
+    detail: Optional[str] = None
+    href: str
+
+
+class DashboardAlertOut(BaseModel):
+    severity: Literal["info", "warning"]
+    title: str
+    detail: str
+    href: str
+
+
+class DashboardOverviewOut(BaseModel):
+    generated_at: datetime
+    summary: ProductionReportSummaryOut
+    queues: List[DashboardQueueOut]
+    sterilization_runs: List[DashboardRunSummaryOut]
+    pasteurization_runs: List[DashboardRunSummaryOut]
+    recent_activity: List[DashboardActivityOut]
+    alerts: List[DashboardAlertOut]
+
+
 class BagCollectionSummaryOut(BaseModel):
     total_bags: int
     unlabeled_bags: int

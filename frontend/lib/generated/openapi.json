@@ -1067,6 +1067,22 @@
             }
           },
           {
+            "name": "bag_ref_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bag Ref Contains"
+            }
+          },
+          {
             "name": "species_id",
             "in": "query",
             "required": false,
@@ -1701,6 +1717,24 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/overview": {
+      "get": {
+        "summary": "Get Dashboard Overview",
+        "operationId": "get_dashboard_overview_api_dashboard_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOverviewOut"
                 }
               }
             }
@@ -3017,6 +3051,281 @@
           "status"
         ],
         "title": "ContaminationCaseOut"
+      },
+      "DashboardActivityOut": {
+        "properties": {
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "bag_id": {
+            "type": "string",
+            "title": "Bag Id"
+          },
+          "bag_ref": {
+            "type": "string",
+            "title": "Bag Ref"
+          },
+          "bag_type": {
+            "type": "string",
+            "enum": [
+              "SPAWN",
+              "SUBSTRATE"
+            ],
+            "title": "Bag Type"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href"
+          }
+        },
+        "type": "object",
+        "required": [
+          "occurred_at",
+          "bag_id",
+          "bag_ref",
+          "bag_type",
+          "event_type",
+          "title",
+          "href"
+        ],
+        "title": "DashboardActivityOut"
+      },
+      "DashboardAlertOut": {
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning"
+            ],
+            "title": "Severity"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href"
+          }
+        },
+        "type": "object",
+        "required": [
+          "severity",
+          "title",
+          "detail",
+          "href"
+        ],
+        "title": "DashboardAlertOut"
+      },
+      "DashboardOverviewOut": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ProductionReportSummaryOut"
+          },
+          "queues": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardQueueOut"
+            },
+            "type": "array",
+            "title": "Queues"
+          },
+          "sterilization_runs": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardRunSummaryOut"
+            },
+            "type": "array",
+            "title": "Sterilization Runs"
+          },
+          "pasteurization_runs": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardRunSummaryOut"
+            },
+            "type": "array",
+            "title": "Pasteurization Runs"
+          },
+          "recent_activity": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardActivityOut"
+            },
+            "type": "array",
+            "title": "Recent Activity"
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardAlertOut"
+            },
+            "type": "array",
+            "title": "Alerts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "summary",
+          "queues",
+          "sterilization_runs",
+          "pasteurization_runs",
+          "recent_activity",
+          "alerts"
+        ],
+        "title": "DashboardOverviewOut"
+      },
+      "DashboardQueueOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href"
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "default",
+              "action",
+              "warning"
+            ],
+            "title": "Tone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "count",
+          "description",
+          "href",
+          "tone"
+        ],
+        "title": "DashboardQueueOut"
+      },
+      "DashboardRunSummaryOut": {
+        "properties": {
+          "run_type": {
+            "type": "string",
+            "enum": [
+              "STERILIZATION",
+              "PASTEURIZATION"
+            ],
+            "title": "Run Type"
+          },
+          "run_id": {
+            "type": "integer",
+            "title": "Run Id"
+          },
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "unloaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Unloaded At"
+          },
+          "planned_bag_count": {
+            "type": "integer",
+            "title": "Planned Bag Count"
+          },
+          "total_bags": {
+            "type": "integer",
+            "title": "Total Bags"
+          },
+          "unlabeled_bags": {
+            "type": "integer",
+            "title": "Unlabeled Bags"
+          },
+          "ready_bags": {
+            "type": "integer",
+            "title": "Ready Bags"
+          },
+          "fruiting_bags": {
+            "type": "integer",
+            "title": "Fruiting Bags"
+          },
+          "contaminated_bags": {
+            "type": "integer",
+            "title": "Contaminated Bags"
+          },
+          "harvested_bags": {
+            "type": "integer",
+            "title": "Harvested Bags"
+          },
+          "downstream_bags": {
+            "type": "integer",
+            "title": "Downstream Bags"
+          },
+          "next_action": {
+            "type": "string",
+            "title": "Next Action"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_type",
+          "run_id",
+          "run_code",
+          "unloaded_at",
+          "planned_bag_count",
+          "total_bags",
+          "unlabeled_bags",
+          "ready_bags",
+          "fruiting_bags",
+          "contaminated_bags",
+          "harvested_bags",
+          "downstream_bags",
+          "next_action",
+          "href"
+        ],
+        "title": "DashboardRunSummaryOut"
       },
       "DataQualityIssueOut": {
         "properties": {
