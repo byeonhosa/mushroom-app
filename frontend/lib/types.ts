@@ -241,6 +241,9 @@ export type SubstrateBagMetrics = {
   pasteurization_run_code?: string | null;
   parent_spawn_bag_id?: string | null;
   parent_spawn_bag_ref?: string | null;
+  source_liquid_culture_id?: number | null;
+  source_liquid_culture_code?: string | null;
+  spawn_generation?: number | null;
   source_sterilization_run_id?: number | null;
   source_sterilization_run_code?: string | null;
   target_dry_kg?: number | null;
@@ -250,6 +253,37 @@ export type SubstrateBagMetrics = {
   total_harvest_kg: number;
   bio_efficiency?: number | null;
   contaminated: boolean;
+};
+
+export type ContaminationCase = {
+  bag_id: string;
+  bag_code?: string | null;
+  bag_ref: string;
+  bag_type: "SPAWN" | "SUBSTRATE";
+  status: string;
+  disposal_reason?: "CONTAMINATION" | "FINAL_HARVEST" | null;
+  contaminated_at?: string | null;
+  species_id?: number | null;
+  species_code?: string | null;
+  species_name?: string | null;
+  sterilization_run_id?: number | null;
+  sterilization_run_code?: string | null;
+  pasteurization_run_id?: number | null;
+  pasteurization_run_code?: string | null;
+  parent_spawn_bag_id?: string | null;
+  parent_spawn_bag_ref?: string | null;
+  source_liquid_culture_id?: number | null;
+  source_liquid_culture_code?: string | null;
+  spawn_generation?: number | null;
+  source_sterilization_run_id?: number | null;
+  source_sterilization_run_code?: string | null;
+};
+
+export type DataQualityIssue = {
+  code: string;
+  label: string;
+  count: number;
+  bag_refs: string[];
 };
 
 export type ProductionReportSummary = {
@@ -269,9 +303,14 @@ export type ProductionReport = {
   summary: ProductionReportSummary;
   contamination_by_bag_type: ReportGroup[];
   contamination_by_species: ReportGroup[];
+  contamination_by_liquid_culture: ReportGroup[];
+  contamination_by_inoculation_source_type: ReportGroup[];
+  contamination_by_spawn_generation: ReportGroup[];
   contamination_by_source_sterilization_run: ReportGroup[];
   contamination_by_pasteurization_run: ReportGroup[];
   contamination_by_parent_spawn_bag: ReportGroup[];
+  contaminated_bags: ContaminationCase[];
+  data_quality_issues: DataQualityIssue[];
   pasteurization_runs: PasteurizationRunMetrics[];
   substrate_bags: SubstrateBagMetrics[];
 };

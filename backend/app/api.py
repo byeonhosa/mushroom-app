@@ -318,7 +318,10 @@ def record_disposal(
     payload: DisposalBody,
     db: Session = Depends(get_db),
 ):
-    bag = crud.update_bag_disposal(db, bag_id, payload.disposal_reason)
+    try:
+        bag = crud.update_bag_disposal(db, bag_id, payload.disposal_reason)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     if not bag:
         raise HTTPException(404, "Bag not found")
     return bag

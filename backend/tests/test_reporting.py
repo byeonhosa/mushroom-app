@@ -217,9 +217,51 @@ def test_production_report_includes_be_and_contamination_summaries():
         rows_by_ref = {row["bag_ref"]: row for row in report["substrate_bags"]}
         assert rows_by_ref[bag_one.bag_code]["dry_weight_source"] == "ACTUAL"
         assert rows_by_ref[bag_one.bag_code]["bio_efficiency"] == pytest.approx(0.8)
+        assert rows_by_ref[bag_one.bag_code]["source_liquid_culture_code"] == "LC-001"
+        assert rows_by_ref[bag_one.bag_code]["spawn_generation"] == 1
         assert rows_by_ref[bag_two.bag_code]["dry_weight_source"] == "TARGET"
         assert rows_by_ref[bag_two.bag_code]["bio_efficiency"] == pytest.approx(0.5)
         assert rows_by_ref[bag_three.bag_code]["contaminated"] is True
+
+        by_liquid_culture = report["contamination_by_liquid_culture"]
+        assert by_liquid_culture == [
+            {
+                "key": "1",
+                "label": "LC-001",
+                "total_bags": 4,
+                "contaminated_bags": 1,
+                "contamination_rate": pytest.approx(1 / 4),
+            }
+        ]
+
+        by_source_type = report["contamination_by_inoculation_source_type"]
+        assert by_source_type == [
+            {
+                "key": "SPAWN_BAG",
+                "label": "Spawn Bag",
+                "total_bags": 3,
+                "contaminated_bags": 1,
+                "contamination_rate": pytest.approx(1 / 3),
+            },
+            {
+                "key": "LIQUID_CULTURE",
+                "label": "Liquid Culture",
+                "total_bags": 1,
+                "contaminated_bags": 0,
+                "contamination_rate": pytest.approx(0.0),
+            },
+        ]
+
+        by_spawn_generation = report["contamination_by_spawn_generation"]
+        assert by_spawn_generation == [
+            {
+                "key": "1",
+                "label": "Generation 1",
+                "total_bags": 4,
+                "contaminated_bags": 1,
+                "contamination_rate": pytest.approx(1 / 4),
+            }
+        ]
 
         by_parent_spawn = report["contamination_by_parent_spawn_bag"]
         assert by_parent_spawn == [
@@ -248,6 +290,33 @@ def test_production_report_includes_be_and_contamination_summaries():
         assert by_source_sterilization[0]["total_bags"] == 4
         assert by_source_sterilization[0]["contaminated_bags"] == 1
 
+        assert report["contaminated_bags"] == [
+            {
+                "bag_id": bag_three.bag_id,
+                "bag_code": bag_three.bag_code,
+                "bag_ref": bag_three.bag_code,
+                "bag_type": "SUBSTRATE",
+                "status": "CONTAMINATED",
+                "disposal_reason": "CONTAMINATION",
+                "contaminated_at": bag_three.disposed_at,
+                "species_id": bag_three.species_id,
+                "species_code": "LM",
+                "species_name": "Lion's Mane",
+                "sterilization_run_id": None,
+                "sterilization_run_code": None,
+                "pasteurization_run_id": pasteurization_run.pasteurization_run_id,
+                "pasteurization_run_code": pasteurization_run.run_code,
+                "parent_spawn_bag_id": spawn_bag.bag_id,
+                "parent_spawn_bag_ref": spawn_bag.bag_code,
+                "source_liquid_culture_id": 1,
+                "source_liquid_culture_code": "LC-001",
+                "spawn_generation": 1,
+                "source_sterilization_run_id": sterilization_run.sterilization_run_id,
+                "source_sterilization_run_code": sterilization_run.run_code,
+            }
+        ]
+        assert report["data_quality_issues"] == []
+
         run_metrics = report["pasteurization_runs"]
         assert run_metrics == [
             {
@@ -261,5 +330,53 @@ def test_production_report_includes_be_and_contamination_summaries():
                 "bio_efficiency": pytest.approx(1.425 / 3.5),
             }
         ]
+    finally:
+        db.close()
+
+
+def test_production_report_surfaces_data_quality_issues_for_bad_historical_data():
+    db = _session()
+    try:
+        spawn_recipe = _seed_spawn_recipe(db, recipe_code="SR-BAD")
+        grain_type = _seed_grain_type(db)
+        sterilization_run = _seed_sterilization_run(db, spawn_recipe, grain_type, run_code="STER-BAD")
+        substrate_recipe = _seed_substrate_recipe(db, recipe_code="MM-BAD")
+        fill_profile = _seed_fill_profile(db)
+        mix_lot = _seed_mix_lot(db, substrate_recipe, fill_profile)
+        pasteurization_run = _seed_pasteurization_run(db, mix_lot, substrate_recipe, run_code="PAST-BAD")
+
+        bad_spawn = models.Bag(
+            bag_id="SPNREC-9001",
+            bag_type="SPAWN",
+            sterilization_run_id=sterilization_run.sterilization_run_id,
+            inoculated_at=datetime.now(timezone.utc),
+            ready_at=datetime.now(timezone.utc),
+            status="READY",
+        )
+        bad_substrate = models.Bag(
+            bag_id="SUBREC-9001",
+            bag_type="SUBSTRATE",
+            pasteurization_run_id=pasteurization_run.pasteurization_run_id,
+            inoculated_at=datetime.now(timezone.utc),
+            fruiting_start_at=datetime.now(timezone.utc),
+            disposed_at=datetime.now(timezone.utc),
+            disposal_reason="FINAL_HARVEST",
+            status="DISPOSED",
+        )
+        db.add(bad_spawn)
+        db.add(bad_substrate)
+        db.commit()
+
+        report = crud.get_production_report(db)
+        issues_by_code = {issue["code"]: issue for issue in report["data_quality_issues"]}
+
+        assert issues_by_code["INOCULATED_SPAWN_MISSING_SOURCE"]["count"] == 1
+        assert issues_by_code["INOCULATED_BAG_MISSING_SPECIES"]["count"] == 2
+        assert issues_by_code["READY_WITHOUT_INCUBATION"]["count"] == 1
+        assert issues_by_code["INOCULATED_SUBSTRATE_MISSING_PARENT"]["count"] == 1
+        assert issues_by_code["FRUITING_WITHOUT_READY"]["count"] == 1
+        assert issues_by_code["FINAL_HARVEST_WITHOUT_HARVEST"]["count"] == 1
+        assert issues_by_code["INOCULATED_SPAWN_MISSING_SOURCE"]["bag_refs"] == ["SPNREC-9001"]
+        assert issues_by_code["INOCULATED_SUBSTRATE_MISSING_PARENT"]["bag_refs"] == ["SUBREC-9001"]
     finally:
         db.close()

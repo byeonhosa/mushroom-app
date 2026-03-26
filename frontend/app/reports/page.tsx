@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet } from "../../lib/api";
-import type { ProductionReport, ReportGroup } from "../../lib/types";
+import type { DataQualityIssue, ProductionReport, ReportGroup } from "../../lib/types";
 
 function formatKg(value: number | null | undefined) {
   if (value == null) {
@@ -41,6 +41,36 @@ function GroupTable({ title, groups }: { title: string; groups: ReportGroup[] })
                 <td>{group.total_bags}</td>
                 <td>{group.contaminated_bags}</td>
                 <td>{formatPercent(group.contamination_rate)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function DataQualityTable({ issues }: { issues: DataQualityIssue[] }) {
+  return (
+    <div className="card">
+      <h2>Data Quality</h2>
+      {issues.length === 0 ? (
+        <p>No report-level data quality issues detected.</p>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Issue</th>
+              <th>Count</th>
+              <th>Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            {issues.map((issue) => (
+              <tr key={issue.code}>
+                <td>{issue.label}</td>
+                <td>{issue.count}</td>
+                <td>{issue.bag_refs.length > 0 ? issue.bag_refs.join(", ") : "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -152,12 +182,57 @@ export default function ReportsPage() {
 
           <GroupTable title="Contamination By Bag Type" groups={report.contamination_by_bag_type} />
           <GroupTable title="Contamination By Species" groups={report.contamination_by_species} />
+          <GroupTable title="Contamination By Liquid Culture" groups={report.contamination_by_liquid_culture} />
+          <GroupTable
+            title="Contamination By Inoculation Source Type"
+            groups={report.contamination_by_inoculation_source_type}
+          />
+          <GroupTable title="Contamination By Spawn Generation" groups={report.contamination_by_spawn_generation} />
           <GroupTable
             title="Contamination By Source Sterilization Run"
             groups={report.contamination_by_source_sterilization_run}
           />
           <GroupTable title="Contamination By Pasteurization Run" groups={report.contamination_by_pasteurization_run} />
           <GroupTable title="Contamination By Parent Spawn Bag" groups={report.contamination_by_parent_spawn_bag} />
+          <DataQualityTable issues={report.data_quality_issues} />
+
+          <div className="card">
+            <h2>Contamination Cases</h2>
+            {report.contaminated_bags.length === 0 ? (
+              <p>No contaminated bags recorded yet.</p>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Bag</th>
+                    <th>Type</th>
+                    <th>Species</th>
+                    <th>Liquid Culture</th>
+                    <th>Generation</th>
+                    <th>Source Sterilization</th>
+                    <th>Pasteurization</th>
+                    <th>Contaminated At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.contaminated_bags.map((bag) => (
+                    <tr key={bag.bag_id}>
+                      <td>
+                        <a href={`/bags/${encodeURIComponent(bag.bag_ref)}`}>{bag.bag_ref}</a>
+                      </td>
+                      <td>{bag.bag_type}</td>
+                      <td>{bag.species_code ?? "-"}</td>
+                      <td>{bag.source_liquid_culture_code ?? "-"}</td>
+                      <td>{bag.spawn_generation ?? "-"}</td>
+                      <td>{bag.source_sterilization_run_code ?? "-"}</td>
+                      <td>{bag.pasteurization_run_code ?? "-"}</td>
+                      <td>{bag.contaminated_at ? new Date(bag.contaminated_at).toLocaleString() : "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
 
           <div className="card">
             <h2>Substrate Bag Metrics</h2>
@@ -171,6 +246,8 @@ export default function ReportsPage() {
                     <th>Species</th>
                     <th>Pasteurization Run</th>
                     <th>Parent Spawn</th>
+                    <th>Liquid Culture</th>
+                    <th>Generation</th>
                     <th>Status</th>
                     <th>Harvest</th>
                     <th>Dry Weight</th>
@@ -187,6 +264,8 @@ export default function ReportsPage() {
                       <td>{bag.species_code ?? "-"}</td>
                       <td>{bag.pasteurization_run_code ?? "-"}</td>
                       <td>{bag.parent_spawn_bag_ref ?? "-"}</td>
+                      <td>{bag.source_liquid_culture_code ?? "-"}</td>
+                      <td>{bag.spawn_generation ?? "-"}</td>
                       <td>{bag.contaminated ? "CONTAMINATED" : bag.status}</td>
                       <td>{formatKg(bag.total_harvest_kg)}</td>
                       <td>{formatKg(bag.dry_weight_kg)}</td>

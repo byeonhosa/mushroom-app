@@ -157,6 +157,167 @@ def _build_group_summary(entries: list[tuple[str, str, bool]]) -> list[dict]:
     return sorted(results, key=lambda row: (-row["contaminated_bags"], row["label"]))
 
 
+def _count_bags_for_run(db: Session, run_column, run_id: int) -> int:
+    return db.execute(
+        select(func.count())
+        .select_from(models.Bag)
+        .where(run_column == run_id)
+    ).scalar_one()
+
+
+def _validate_run_capacity(run_label: str, planned_bag_count: int, existing_bag_count: int, requested_bag_count: int):
+    next_total = existing_bag_count + requested_bag_count
+    if next_total > planned_bag_count:
+        raise ValueError(
+            f"{run_label} is planned for {planned_bag_count} bag(s), but this would create {next_total} total records"
+        )
+
+
+def _root_liquid_culture_for_bag(
+    bag: models.Bag,
+    bag_index: dict[str, models.Bag],
+    memo: dict[str, tuple[int | None, str | None]],
+    visiting: set[str] | None = None,
+) -> tuple[int | None, str | None]:
+    if bag.bag_id in memo:
+        return memo[bag.bag_id]
+
+    if visiting is None:
+        visiting = set()
+    if bag.bag_id in visiting:
+        return (None, None)
+
+    visiting.add(bag.bag_id)
+    result: tuple[int | None, str | None]
+    if bag.source_liquid_culture_id is not None:
+        result = (
+            bag.source_liquid_culture_id,
+            bag.source_liquid_culture.culture_code if bag.source_liquid_culture else None,
+        )
+    elif bag.parent_spawn_bag_id and bag.parent_spawn_bag_id in bag_index:
+        result = _root_liquid_culture_for_bag(bag_index[bag.parent_spawn_bag_id], bag_index, memo, visiting)
+    else:
+        result = (None, None)
+    visiting.remove(bag.bag_id)
+    memo[bag.bag_id] = result
+    return result
+
+
+def _spawn_generation_for_bag(
+    bag: models.Bag,
+    bag_index: dict[str, models.Bag],
+    memo: dict[str, int | None],
+    visiting: set[str] | None = None,
+) -> int | None:
+    if bag.bag_id in memo:
+        return memo[bag.bag_id]
+
+    if visiting is None:
+        visiting = set()
+    if bag.bag_id in visiting:
+        return None
+
+    visiting.add(bag.bag_id)
+    generation: int | None
+    if bag.bag_type == "SPAWN":
+        if bag.source_liquid_culture_id is not None:
+            generation = 1
+        elif bag.parent_spawn_bag_id and bag.parent_spawn_bag_id in bag_index:
+            parent_generation = _spawn_generation_for_bag(bag_index[bag.parent_spawn_bag_id], bag_index, memo, visiting)
+            generation = parent_generation + 1 if parent_generation is not None else None
+        else:
+            generation = None
+    else:
+        if bag.parent_spawn_bag_id and bag.parent_spawn_bag_id in bag_index:
+            generation = _spawn_generation_for_bag(bag_index[bag.parent_spawn_bag_id], bag_index, memo, visiting)
+        elif bag.source_liquid_culture_id is not None:
+            generation = 1
+        else:
+            generation = None
+    visiting.remove(bag.bag_id)
+    memo[bag.bag_id] = generation
+    return generation
+
+
+def _build_lineage_metadata(
+    bag: models.Bag,
+    bag_index: dict[str, models.Bag],
+    liquid_culture_memo: dict[str, tuple[int | None, str | None]],
+    generation_memo: dict[str, int | None],
+) -> dict:
+    source_liquid_culture_id, source_liquid_culture_code = _root_liquid_culture_for_bag(
+        bag,
+        bag_index,
+        liquid_culture_memo,
+    )
+    return {
+        "source_liquid_culture_id": source_liquid_culture_id,
+        "source_liquid_culture_code": source_liquid_culture_code,
+        "spawn_generation": _spawn_generation_for_bag(bag, bag_index, generation_memo),
+    }
+
+
+def _build_data_quality_issues(bags: list[models.Bag]) -> list[dict]:
+    issues = [
+        (
+            "INOCULATED_SPAWN_MISSING_SOURCE",
+            "Inoculated spawn bags missing an inoculation source",
+            lambda bag: bag.bag_type == "SPAWN"
+            and bag.inoculated_at is not None
+            and bag.source_liquid_culture_id is None
+            and bag.parent_spawn_bag_id is None,
+        ),
+        (
+            "INOCULATED_SUBSTRATE_MISSING_PARENT",
+            "Inoculated substrate bags missing a parent spawn bag",
+            lambda bag: bag.bag_type == "SUBSTRATE"
+            and bag.inoculated_at is not None
+            and bag.parent_spawn_bag_id is None,
+        ),
+        (
+            "INOCULATED_BAG_MISSING_SPECIES",
+            "Inoculated bags missing species assignment",
+            lambda bag: bag.inoculated_at is not None and bag.species_id is None,
+        ),
+        (
+            "READY_WITHOUT_INCUBATION",
+            "Bags marked ready without an incubation start",
+            lambda bag: bag.ready_at is not None and bag.incubation_start_at is None,
+        ),
+        (
+            "FRUITING_WITHOUT_READY",
+            "Substrate bags moved to fruiting without a ready timestamp",
+            lambda bag: bag.bag_type == "SUBSTRATE"
+            and bag.fruiting_start_at is not None
+            and bag.ready_at is None,
+        ),
+        (
+            "FINAL_HARVEST_WITHOUT_HARVEST",
+            "Bags disposed as final harvest without any recorded harvest weight",
+            lambda bag: bag.disposal_reason == "FINAL_HARVEST" and bag.total_harvest_kg <= 0,
+        ),
+        (
+            "FINAL_HARVEST_ON_NON_SUBSTRATE",
+            "Non-substrate bags disposed as final harvest",
+            lambda bag: bag.disposal_reason == "FINAL_HARVEST" and bag.bag_type != "SUBSTRATE",
+        ),
+    ]
+
+    rows: list[dict] = []
+    for code, label, predicate in issues:
+        matching = [bag.bag_ref for bag in bags if predicate(bag)]
+        if matching:
+            rows.append(
+                {
+                    "code": code,
+                    "label": label,
+                    "count": len(matching),
+                    "bag_refs": matching[:5],
+                }
+            )
+    return rows
+
+
 def _bag_payload(bag: models.Bag) -> dict:
     bio_efficiency, dry_weight_kg, dry_weight_source = calculate_bio_efficiency(
         bag.total_harvest_kg,
@@ -201,13 +362,19 @@ def _bag_payload(bag: models.Bag) -> dict:
     }
 
 
-def _build_substrate_metrics_row(bag: models.Bag) -> dict:
+def _build_substrate_metrics_row(bag: models.Bag, lineage_metadata: dict | None = None) -> dict:
     source_sterilization_run = bag.parent_spawn_bag.sterilization_run if bag.parent_spawn_bag else None
     bio_efficiency, dry_weight_kg, dry_weight_source = calculate_bio_efficiency(
         bag.total_harvest_kg,
         actual_dry_kg=float(bag.actual_dry_kg) if bag.actual_dry_kg is not None else None,
         target_dry_kg=float(bag.target_dry_kg) if bag.target_dry_kg is not None else None,
     )
+    if lineage_metadata is None:
+        lineage_metadata = {
+            "source_liquid_culture_id": bag.source_liquid_culture_id,
+            "source_liquid_culture_code": bag.source_liquid_culture_code,
+            "spawn_generation": 1 if bag.source_liquid_culture_id is not None else None,
+        }
     return {
         "bag_id": bag.bag_id,
         "bag_code": bag.bag_code,
@@ -221,6 +388,9 @@ def _build_substrate_metrics_row(bag: models.Bag) -> dict:
         "pasteurization_run_code": bag.pasteurization_run.run_code if bag.pasteurization_run else None,
         "parent_spawn_bag_id": bag.parent_spawn_bag_id,
         "parent_spawn_bag_ref": bag.parent_spawn_bag_ref,
+        "source_liquid_culture_id": lineage_metadata["source_liquid_culture_id"],
+        "source_liquid_culture_code": lineage_metadata["source_liquid_culture_code"],
+        "spawn_generation": lineage_metadata["spawn_generation"],
         "source_sterilization_run_id": (
             source_sterilization_run.sterilization_run_id if source_sterilization_run is not None else None
         ),
@@ -584,6 +754,8 @@ def create_spawn_bags(db: Session, sterilization_run_id: int, bag_count: int) ->
     run = db.get(models.SterilizationRun, sterilization_run_id)
     if not run:
         raise ValueError(f"Sterilization run {sterilization_run_id} not found")
+    existing_bag_count = _count_bags_for_run(db, models.Bag.sterilization_run_id, sterilization_run_id)
+    _validate_run_capacity(f"Sterilization run {run.run_code}", run.bag_count, existing_bag_count, bag_count)
     ids = bag_id.generate_internal_bag_ids(db, "SPAWN", bag_count)
     bags = []
     for bid in ids:
@@ -619,6 +791,8 @@ def create_substrate_bags(
     run = db.get(models.PasteurizationRun, pasteurization_run_id)
     if not run:
         raise ValueError(f"Pasteurization run {pasteurization_run_id} not found")
+    existing_bag_count = _count_bags_for_run(db, models.Bag.pasteurization_run_id, pasteurization_run_id)
+    _validate_run_capacity(f"Pasteurization run {run.run_code}", run.bag_count, existing_bag_count, bag_count)
     target_dry_kg = None
     if run.mix_lot and run.mix_lot.fill_profile and run.mix_lot.fill_profile.target_dry_kg_per_bag is not None:
         target_dry_kg = float(run.mix_lot.fill_profile.target_dry_kg_per_bag)
@@ -823,6 +997,13 @@ def update_bag_disposal(db: Session, bag_ref: str, disposal_reason: str) -> mode
     bag = _resolve_bag(db, bag_ref)
     if not bag:
         return None
+    if bag.disposed_at:
+        raise ValueError("Bag has already been disposed")
+    if disposal_reason == "FINAL_HARVEST":
+        if bag.bag_type != "SUBSTRATE":
+            raise ValueError("Only substrate bags can be disposed as FINAL_HARVEST")
+        if bag.total_harvest_kg <= 0:
+            raise ValueError("Final harvest disposal requires at least one recorded harvest")
     bag.disposed_at = _now()
     bag.disposal_reason = disposal_reason
     _sync_bag_status(bag)
@@ -1125,22 +1306,24 @@ def get_bag_total_harvest_kg(db: Session, bag_id: str) -> float:
 def get_production_report(db: Session) -> dict:
     bags = db.execute(
         select(models.Bag)
-        .options(
-            joinedload(models.Bag.species),
-            joinedload(models.Bag.pasteurization_run),
-            joinedload(models.Bag.sterilization_run),
-            joinedload(models.Bag.parent_spawn_bag).joinedload(models.Bag.sterilization_run),
-            joinedload(models.Bag.harvest_events),
-        )
+        .options(*_bag_lineage_options())
         .order_by(models.Bag.created_at.desc(), models.Bag.bag_id.desc())
     ).unique().scalars().all()
+
+    bag_index = {bag.bag_id: bag for bag in bags}
+    liquid_culture_memo: dict[str, tuple[int | None, str | None]] = {}
+    generation_memo: dict[str, int | None] = {}
 
     substrate_rows: list[dict] = []
     contamination_by_bag_type_entries: list[tuple[str, str, bool]] = []
     contamination_by_species_entries: list[tuple[str, str, bool]] = []
+    contamination_by_liquid_culture_entries: list[tuple[str, str, bool]] = []
+    contamination_by_inoculation_source_type_entries: list[tuple[str, str, bool]] = []
+    contamination_by_spawn_generation_entries: list[tuple[str, str, bool]] = []
     contamination_by_source_sterilization_entries: list[tuple[str, str, bool]] = []
     contamination_by_pasteurization_entries: list[tuple[str, str, bool]] = []
     contamination_by_parent_spawn_entries: list[tuple[str, str, bool]] = []
+    contaminated_bags: list[dict] = []
     pasteurization_run_groups: dict[int, dict] = {}
 
     total_harvest_kg = 0.0
@@ -1148,11 +1331,31 @@ def get_production_report(db: Session) -> dict:
 
     for bag in bags:
         contaminated = _is_contaminated(bag)
+        lineage_metadata = _build_lineage_metadata(bag, bag_index, liquid_culture_memo, generation_memo)
+        source_liquid_culture_id = lineage_metadata["source_liquid_culture_id"]
+        source_liquid_culture_code = lineage_metadata["source_liquid_culture_code"]
+        spawn_generation = lineage_metadata["spawn_generation"]
         contamination_by_bag_type_entries.append((bag.bag_type, bag.bag_type.title(), contaminated))
 
         if bag.species:
             contamination_by_species_entries.append(
                 (bag.species.code, f"{bag.species.name} ({bag.species.code})", contaminated)
+            )
+
+        if source_liquid_culture_id is not None and source_liquid_culture_code is not None:
+            contamination_by_liquid_culture_entries.append(
+                (str(source_liquid_culture_id), source_liquid_culture_code, contaminated)
+            )
+
+        if bag.inoculation_source_type is not None:
+            source_type_label = "Liquid Culture" if bag.inoculation_source_type == "LIQUID_CULTURE" else "Spawn Bag"
+            contamination_by_inoculation_source_type_entries.append(
+                (bag.inoculation_source_type, source_type_label, contaminated)
+            )
+
+        if spawn_generation is not None:
+            contamination_by_spawn_generation_entries.append(
+                (str(spawn_generation), f"Generation {spawn_generation}", contaminated)
             )
 
         source_sterilization_run = bag.sterilization_run
@@ -1161,6 +1364,35 @@ def get_production_report(db: Session) -> dict:
         if source_sterilization_run is not None:
             contamination_by_source_sterilization_entries.append(
                 (str(source_sterilization_run.sterilization_run_id), source_sterilization_run.run_code, contaminated)
+            )
+
+        if contaminated:
+            contaminated_bags.append(
+                {
+                    "bag_id": bag.bag_id,
+                    "bag_code": bag.bag_code,
+                    "bag_ref": bag.bag_ref,
+                    "bag_type": bag.bag_type,
+                    "status": bag.status,
+                    "disposal_reason": bag.disposal_reason,
+                    "contaminated_at": bag.disposed_at,
+                    "species_id": bag.species_id,
+                    "species_code": bag.species.code if bag.species else None,
+                    "species_name": bag.species.name if bag.species else None,
+                    "sterilization_run_id": bag.sterilization_run_id,
+                    "sterilization_run_code": bag.sterilization_run.run_code if bag.sterilization_run else None,
+                    "pasteurization_run_id": bag.pasteurization_run_id,
+                    "pasteurization_run_code": bag.pasteurization_run.run_code if bag.pasteurization_run else None,
+                    "parent_spawn_bag_id": bag.parent_spawn_bag_id,
+                    "parent_spawn_bag_ref": bag.parent_spawn_bag_ref,
+                    "source_liquid_culture_id": source_liquid_culture_id,
+                    "source_liquid_culture_code": source_liquid_culture_code,
+                    "spawn_generation": spawn_generation,
+                    "source_sterilization_run_id": (
+                        source_sterilization_run.sterilization_run_id if source_sterilization_run is not None else None
+                    ),
+                    "source_sterilization_run_code": source_sterilization_run.run_code if source_sterilization_run else None,
+                }
             )
 
         if bag.bag_type != "SUBSTRATE":
@@ -1201,6 +1433,9 @@ def get_production_report(db: Session) -> dict:
                 "pasteurization_run_code": pasteurization_run_code,
                 "parent_spawn_bag_id": bag.parent_spawn_bag_id,
                 "parent_spawn_bag_ref": bag.parent_spawn_bag_ref,
+                "source_liquid_culture_id": source_liquid_culture_id,
+                "source_liquid_culture_code": source_liquid_culture_code,
+                "spawn_generation": spawn_generation,
                 "source_sterilization_run_id": (
                     source_sterilization_run.sterilization_run_id if source_sterilization_run is not None else None
                 ),
@@ -1244,12 +1479,12 @@ def get_production_report(db: Session) -> dict:
     pasteurization_runs = []
     for row in pasteurization_run_groups.values():
         total_bags_in_group = row["total_bags"]
-        contaminated_bags = row["contaminated_bags"]
+        contaminated_bag_count = row["contaminated_bags"]
         total_dry_weight_in_group = row["total_dry_weight_kg"]
         pasteurization_runs.append(
             {
                 **row,
-                "contamination_rate": contaminated_bags / total_bags_in_group if total_bags_in_group else 0.0,
+                "contamination_rate": contaminated_bag_count / total_bags_in_group if total_bags_in_group else 0.0,
                 "bio_efficiency": (
                     row["total_harvest_kg"] / total_dry_weight_in_group
                     if total_dry_weight_in_group > 0
@@ -1260,6 +1495,14 @@ def get_production_report(db: Session) -> dict:
 
     pasteurization_runs.sort(key=lambda row: row["run_code"])
     substrate_rows.sort(key=lambda row: row["bag_ref"])
+    contaminated_bags.sort(
+        key=lambda row: (
+            row["contaminated_at"] is None,
+            row["contaminated_at"] or datetime.min.replace(tzinfo=timezone.utc),
+            row["bag_ref"],
+        ),
+        reverse=True,
+    )
 
     return {
         "generated_at": _now(),
@@ -1276,9 +1519,14 @@ def get_production_report(db: Session) -> dict:
         },
         "contamination_by_bag_type": _build_group_summary(contamination_by_bag_type_entries),
         "contamination_by_species": _build_group_summary(contamination_by_species_entries),
+        "contamination_by_liquid_culture": _build_group_summary(contamination_by_liquid_culture_entries),
+        "contamination_by_inoculation_source_type": _build_group_summary(contamination_by_inoculation_source_type_entries),
+        "contamination_by_spawn_generation": _build_group_summary(contamination_by_spawn_generation_entries),
         "contamination_by_source_sterilization_run": _build_group_summary(contamination_by_source_sterilization_entries),
         "contamination_by_pasteurization_run": _build_group_summary(contamination_by_pasteurization_entries),
         "contamination_by_parent_spawn_bag": _build_group_summary(contamination_by_parent_spawn_entries),
+        "contaminated_bags": contaminated_bags,
+        "data_quality_issues": _build_data_quality_issues(bags),
         "pasteurization_runs": pasteurization_runs,
         "substrate_bags": substrate_rows,
     }
