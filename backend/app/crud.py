@@ -12,7 +12,15 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _derive_bag_status(bag: models.Bag) -> str:
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _derive_bag_status_from_caches(bag: models.Bag) -> str:
     if bag.disposed_at:
         return "CONTAMINATED" if bag.disposal_reason == "CONTAMINATION" else "DISPOSED"
 
@@ -40,11 +48,76 @@ def _derive_bag_status(bag: models.Bag) -> str:
         return "INCUBATING"
     if bag.inoculated_at:
         return "INOCULATED"
-    return "PASTEURIZED"
+        return "PASTEURIZED"
+
+
+def _event_time_by_type(bag: models.Bag) -> dict[str, datetime]:
+    event_times: dict[str, datetime] = {}
+    for event in sorted(
+        bag.status_events,
+        key=lambda row: (_as_utc(row.occurred_at) or _now(), row.bag_status_event_id or 0),
+    ):
+        event_times[event.event_type] = _as_utc(event.occurred_at) or _now()
+    return event_times
+
+
+def _derive_bag_status_from_history(bag: models.Bag, event_times: dict[str, datetime]) -> str:
+    if event_times.get(models.BagStatusEventType.DISPOSED.value) or bag.disposed_at:
+        return "CONTAMINATED" if bag.disposal_reason == "CONTAMINATION" else "DISPOSED"
+
+    if bag.bag_type == "SPAWN":
+        if event_times.get(models.BagStatusEventType.CONSUMED.value) or bag.consumed_at:
+            return "CONSUMED"
+        if event_times.get(models.BagStatusEventType.READY.value) or bag.ready_at:
+            return "READY"
+        if event_times.get(models.BagStatusEventType.INCUBATION_STARTED.value) or bag.incubation_start_at:
+            return "INCUBATING"
+        if event_times.get(models.BagStatusEventType.INOCULATED.value) or bag.inoculated_at:
+            return "INOCULATED"
+        if event_times.get(models.BagStatusEventType.STERILIZED.value):
+            return "STERILIZED"
+        return "CREATED"
+
+    harvest_count = len(bag.harvest_events)
+    if harvest_count >= 2:
+        return "FLUSH_2_COMPLETE"
+    if harvest_count >= 1:
+        return "FLUSH_1_COMPLETE"
+    if event_times.get(models.BagStatusEventType.FRUITING_STARTED.value) or bag.fruiting_start_at:
+        return "FRUITING"
+    if event_times.get(models.BagStatusEventType.READY.value) or bag.ready_at:
+        return "READY"
+    if event_times.get(models.BagStatusEventType.INCUBATION_STARTED.value) or bag.incubation_start_at:
+        return "INCUBATING"
+    if event_times.get(models.BagStatusEventType.INOCULATED.value) or bag.inoculated_at:
+        return "INOCULATED"
+    if event_times.get(models.BagStatusEventType.PASTEURIZED.value):
+        return "PASTEURIZED"
+    return "CREATED"
+
+
+def _bag_history_snapshot(bag: models.Bag) -> dict:
+    event_times = _event_time_by_type(bag)
+    if event_times:
+        status = _derive_bag_status_from_history(bag, event_times)
+    else:
+        status = _derive_bag_status_from_caches(bag)
+
+    return {
+        "created_at": event_times.get(models.BagStatusEventType.CREATED.value, _as_utc(bag.created_at)),
+        "labeled_at": event_times.get(models.BagStatusEventType.BAG_CODE_ASSIGNED.value, _as_utc(bag.labeled_at)),
+        "inoculated_at": event_times.get(models.BagStatusEventType.INOCULATED.value, _as_utc(bag.inoculated_at)),
+        "incubation_start_at": event_times.get(models.BagStatusEventType.INCUBATION_STARTED.value, _as_utc(bag.incubation_start_at)),
+        "ready_at": event_times.get(models.BagStatusEventType.READY.value, _as_utc(bag.ready_at)),
+        "fruiting_start_at": event_times.get(models.BagStatusEventType.FRUITING_STARTED.value, _as_utc(bag.fruiting_start_at)),
+        "disposed_at": event_times.get(models.BagStatusEventType.DISPOSED.value, _as_utc(bag.disposed_at)),
+        "consumed_at": event_times.get(models.BagStatusEventType.CONSUMED.value, _as_utc(bag.consumed_at)),
+        "status": status,
+    }
 
 
 def _sync_bag_status(bag: models.Bag) -> str:
-    bag.status = _derive_bag_status(bag)
+    bag.status = _bag_history_snapshot(bag)["status"]
     return bag.status
 
 
@@ -60,7 +133,7 @@ def _record_bag_event(
     event = models.BagStatusEvent(
         bag=bag,
         event_type=event_type,
-        occurred_at=occurred_at or _now(),
+        occurred_at=_as_utc(occurred_at) or _now(),
         detail=detail,
         notes=notes,
     )
@@ -77,7 +150,7 @@ def _build_status_event_row(event: models.BagStatusEvent) -> dict:
         "bag_status_event_id": event.bag_status_event_id,
         "bag_id": event.bag_id,
         "event_type": event.event_type,
-        "occurred_at": event.occurred_at,
+        "occurred_at": _as_utc(event.occurred_at),
         "detail": event.detail,
         "notes": event.notes,
     }
@@ -109,6 +182,7 @@ def _bag_lineage_options():
         joinedload(models.Bag.parent_spawn_bag).joinedload(models.Bag.sterilization_run),
         joinedload(models.Bag.source_liquid_culture),
         joinedload(models.Bag.harvest_events),
+        joinedload(models.Bag.status_events),
     )
 
 
@@ -118,9 +192,10 @@ def _resolve_spawn_source(db: Session, spawn_bag_ref: str) -> models.Bag:
         raise LookupError("Spawn bag not found")
     if spawn.bag_type != "SPAWN":
         raise ValueError("Spawn bag must be SPAWN type")
-    if spawn.consumed_at:
+    snapshot = _bag_history_snapshot(spawn)
+    if snapshot["consumed_at"]:
         raise ValueError("Spawn bag is already consumed")
-    if not spawn.ready_at:
+    if not snapshot["ready_at"]:
         raise ValueError("Spawn bag must be READY before it can inoculate other bags")
     if spawn.species_id is None:
         raise ValueError("Spawn bag must have an assigned species before it can inoculate other bags")
@@ -304,54 +379,55 @@ def _build_lineage_metadata(
 
 
 def _build_data_quality_issues(bags: list[models.Bag]) -> list[dict]:
+    snapshots = {bag.bag_id: _bag_history_snapshot(bag) for bag in bags}
     issues = [
         (
             "INOCULATED_SPAWN_MISSING_SOURCE",
             "Inoculated spawn bags missing an inoculation source",
-            lambda bag: bag.bag_type == "SPAWN"
-            and bag.inoculated_at is not None
+            lambda bag, snapshot: bag.bag_type == "SPAWN"
+            and snapshot["inoculated_at"] is not None
             and bag.source_liquid_culture_id is None
             and bag.parent_spawn_bag_id is None,
         ),
         (
             "INOCULATED_SUBSTRATE_MISSING_PARENT",
             "Inoculated substrate bags missing a parent spawn bag",
-            lambda bag: bag.bag_type == "SUBSTRATE"
-            and bag.inoculated_at is not None
+            lambda bag, snapshot: bag.bag_type == "SUBSTRATE"
+            and snapshot["inoculated_at"] is not None
             and bag.parent_spawn_bag_id is None,
         ),
         (
             "INOCULATED_BAG_MISSING_SPECIES",
             "Inoculated bags missing species assignment",
-            lambda bag: bag.inoculated_at is not None and bag.species_id is None,
+            lambda bag, snapshot: snapshot["inoculated_at"] is not None and bag.species_id is None,
         ),
         (
             "READY_WITHOUT_INCUBATION",
             "Bags marked ready without an incubation start",
-            lambda bag: bag.ready_at is not None and bag.incubation_start_at is None,
+            lambda bag, snapshot: snapshot["ready_at"] is not None and snapshot["incubation_start_at"] is None,
         ),
         (
             "FRUITING_WITHOUT_READY",
             "Substrate bags moved to fruiting without a ready timestamp",
-            lambda bag: bag.bag_type == "SUBSTRATE"
-            and bag.fruiting_start_at is not None
-            and bag.ready_at is None,
+            lambda bag, snapshot: bag.bag_type == "SUBSTRATE"
+            and snapshot["fruiting_start_at"] is not None
+            and snapshot["ready_at"] is None,
         ),
         (
             "FINAL_HARVEST_WITHOUT_HARVEST",
             "Bags disposed as final harvest without any recorded harvest weight",
-            lambda bag: bag.disposal_reason == "FINAL_HARVEST" and bag.total_harvest_kg <= 0,
+            lambda bag, snapshot: bag.disposal_reason == "FINAL_HARVEST" and bag.total_harvest_kg <= 0,
         ),
         (
             "FINAL_HARVEST_ON_NON_SUBSTRATE",
             "Non-substrate bags disposed as final harvest",
-            lambda bag: bag.disposal_reason == "FINAL_HARVEST" and bag.bag_type != "SUBSTRATE",
+            lambda bag, snapshot: bag.disposal_reason == "FINAL_HARVEST" and bag.bag_type != "SUBSTRATE",
         ),
     ]
 
     rows: list[dict] = []
     for code, label, predicate in issues:
-        matching = [bag.bag_ref for bag in bags if predicate(bag)]
+        matching = [bag.bag_ref for bag in bags if predicate(bag, snapshots[bag.bag_id])]
         if matching:
             rows.append(
                 {
@@ -365,6 +441,7 @@ def _build_data_quality_issues(bags: list[models.Bag]) -> list[dict]:
 
 
 def _bag_payload(bag: models.Bag) -> dict:
+    snapshot = _bag_history_snapshot(bag)
     bio_efficiency, dry_weight_kg, dry_weight_source = calculate_bio_efficiency(
         bag.total_harvest_kg,
         actual_dry_kg=float(bag.actual_dry_kg) if bag.actual_dry_kg is not None else None,
@@ -394,21 +471,22 @@ def _bag_payload(bag: models.Bag) -> dict:
         "dry_weight_kg": dry_weight_kg,
         "dry_weight_source": dry_weight_source,
         "bio_efficiency": bio_efficiency,
-        "created_at": bag.created_at,
-        "labeled_at": bag.labeled_at,
-        "inoculated_at": bag.inoculated_at,
-        "incubation_start_at": bag.incubation_start_at,
-        "ready_at": bag.ready_at,
-        "fruiting_start_at": bag.fruiting_start_at,
-        "disposed_at": bag.disposed_at,
+        "created_at": snapshot["created_at"],
+        "labeled_at": snapshot["labeled_at"],
+        "inoculated_at": snapshot["inoculated_at"],
+        "incubation_start_at": snapshot["incubation_start_at"],
+        "ready_at": snapshot["ready_at"],
+        "fruiting_start_at": snapshot["fruiting_start_at"],
+        "disposed_at": snapshot["disposed_at"],
         "disposal_reason": bag.disposal_reason,
-        "consumed_at": bag.consumed_at,
-        "status": bag.status,
+        "consumed_at": snapshot["consumed_at"],
+        "status": snapshot["status"],
         "notes": bag.notes,
     }
 
 
 def _build_substrate_metrics_row(bag: models.Bag, lineage_metadata: dict | None = None) -> dict:
+    snapshot = _bag_history_snapshot(bag)
     source_sterilization_run = bag.parent_spawn_bag.sterilization_run if bag.parent_spawn_bag else None
     bio_efficiency, dry_weight_kg, dry_weight_source = calculate_bio_efficiency(
         bag.total_harvest_kg,
@@ -425,7 +503,7 @@ def _build_substrate_metrics_row(bag: models.Bag, lineage_metadata: dict | None 
         "bag_id": bag.bag_id,
         "bag_code": bag.bag_code,
         "bag_ref": bag.bag_ref,
-        "status": bag.status,
+        "status": snapshot["status"],
         "disposal_reason": bag.disposal_reason,
         "species_id": bag.species_id,
         "species_code": bag.species.code if bag.species else None,
@@ -452,6 +530,7 @@ def _build_substrate_metrics_row(bag: models.Bag, lineage_metadata: dict | None 
 
 
 def _build_lineage_row(bag: models.Bag, generation: int) -> dict:
+    snapshot = _bag_history_snapshot(bag)
     source_sterilization_run = bag.parent_spawn_bag.sterilization_run if bag.parent_spawn_bag else None
     bio_efficiency, dry_weight_kg, dry_weight_source = calculate_bio_efficiency(
         bag.total_harvest_kg,
@@ -464,7 +543,7 @@ def _build_lineage_row(bag: models.Bag, generation: int) -> dict:
         "bag_code": bag.bag_code,
         "bag_ref": bag.bag_ref,
         "bag_type": bag.bag_type,
-        "status": bag.status,
+        "status": snapshot["status"],
         "disposal_reason": bag.disposal_reason,
         "species_id": bag.species_id,
         "species_code": bag.species.code if bag.species else None,
@@ -496,6 +575,7 @@ def _summarize_bags(bags: list[models.Bag]) -> dict:
     total_harvest_kg = 0.0
     total_dry_weight_kg = 0.0
     harvested_bags = 0
+    snapshots = {bag.bag_id: _bag_history_snapshot(bag) for bag in bags}
     for bag in bags:
         if bag.bag_type == "SUBSTRATE":
             if bag.total_harvest_kg > 0:
@@ -508,12 +588,12 @@ def _summarize_bags(bags: list[models.Bag]) -> dict:
     return {
         "total_bags": total_bags,
         "unlabeled_bags": sum(1 for bag in bags if bag.bag_code is None),
-        "inoculated_bags": sum(1 for bag in bags if bag.inoculated_at is not None),
-        "ready_bags": sum(1 for bag in bags if bag.ready_at is not None),
-        "fruiting_bags": sum(1 for bag in bags if bag.fruiting_start_at is not None),
+        "inoculated_bags": sum(1 for bag in bags if snapshots[bag.bag_id]["inoculated_at"] is not None),
+        "ready_bags": sum(1 for bag in bags if snapshots[bag.bag_id]["ready_at"] is not None),
+        "fruiting_bags": sum(1 for bag in bags if snapshots[bag.bag_id]["fruiting_start_at"] is not None),
         "contaminated_bags": sum(1 for bag in bags if _is_contaminated(bag)),
         "harvested_bags": harvested_bags,
-        "consumed_bags": sum(1 for bag in bags if bag.consumed_at is not None),
+        "consumed_bags": sum(1 for bag in bags if snapshots[bag.bag_id]["consumed_at"] is not None),
         "total_harvest_kg": total_harvest_kg,
         "total_dry_weight_kg": total_dry_weight_kg,
         "overall_bio_efficiency": total_harvest_kg / total_dry_weight_kg if total_dry_weight_kg > 0 else None,
@@ -805,6 +885,7 @@ def create_spawn_bags(db: Session, sterilization_run_id: int, bag_count: int) ->
     ids = bag_id.generate_internal_bag_ids(db, "SPAWN", bag_count)
     bags = []
     created_at = _now()
+    process_stage_at = max(_as_utc(run.unloaded_at) or created_at, created_at)
     for bid in ids:
         bag = models.Bag(
             bag_id=bid,
@@ -830,6 +911,14 @@ def create_spawn_bags(db: Session, sterilization_run_id: int, bag_count: int) ->
             occurred_at=created_at,
             detail=f"Spawn bag record created for sterilization run {run.run_code}",
         )
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.STERILIZED.value,
+            occurred_at=process_stage_at,
+            detail=f"Sterilization run completed: {run.run_code}",
+        )
+        _sync_bag_status(bag)
         bags.append(bag)
     db.commit()
     for b in bags:
@@ -854,6 +943,7 @@ def create_substrate_bags(
     ids = bag_id.generate_internal_bag_ids(db, "SUBSTRATE", bag_count)
     bags = []
     created_at = _now()
+    process_stage_at = max(_as_utc(run.unloaded_at) or created_at, created_at)
     for bid in ids:
         bag = models.Bag(
             bag_id=bid,
@@ -881,6 +971,14 @@ def create_substrate_bags(
             occurred_at=created_at,
             detail=f"Substrate bag record created for pasteurization run {run.run_code}",
         )
+        _record_bag_event(
+            db,
+            bag,
+            models.BagStatusEventType.PASTEURIZED.value,
+            occurred_at=process_stage_at,
+            detail=f"Pasteurization run completed: {run.run_code}",
+        )
+        _sync_bag_status(bag)
         bags.append(bag)
     db.commit()
     for b in bags:
@@ -913,7 +1011,8 @@ def list_bags(
     if status:
         stmt = stmt.where(models.Bag.status == status)
     stmt = stmt.options(*_bag_lineage_options()).order_by(models.Bag.created_at.desc()).limit(max(1, min(limit, 1000)))
-    return db.execute(stmt).unique().scalars().all()
+    bags = db.execute(stmt).unique().scalars().all()
+    return [_bag_payload(bag) for bag in bags]
 
 
 def get_bag_detail(db: Session, bag_ref: str) -> dict | None:
@@ -1013,11 +1112,12 @@ def update_bag_incubation_start(db: Session, bag_ref: str) -> models.Bag | None:
     bag = _resolve_bag(db, bag_ref)
     if not bag:
         return None
-    if bag.disposed_at:
+    snapshot = _bag_history_snapshot(bag)
+    if snapshot["disposed_at"]:
         raise ValueError("Disposed bags cannot enter incubation")
-    if not bag.inoculated_at:
+    if not snapshot["inoculated_at"]:
         raise ValueError("Bag must be inoculated before incubation can start")
-    if bag.incubation_start_at is None:
+    if snapshot["incubation_start_at"] is None:
         bag.incubation_start_at = _now()
         _record_bag_event(
             db,
@@ -1035,11 +1135,12 @@ def update_bag_ready(db: Session, bag_ref: str) -> models.Bag | None:
     bag = _resolve_bag(db, bag_ref)
     if not bag:
         return None
-    if bag.disposed_at:
+    snapshot = _bag_history_snapshot(bag)
+    if snapshot["disposed_at"]:
         raise ValueError("Disposed bags cannot be marked ready")
-    if not bag.incubation_start_at:
+    if not snapshot["incubation_start_at"]:
         raise ValueError("Bag must enter incubation before it can be marked ready")
-    if bag.ready_at is None:
+    if snapshot["ready_at"] is None:
         bag.ready_at = _now()
         _record_bag_event(
             db,
@@ -1059,11 +1160,12 @@ def update_bag_fruiting_start(db: Session, bag_ref: str) -> models.Bag | None:
         return None
     if bag.bag_type != "SUBSTRATE":
         raise ValueError("Only substrate bags can be moved to fruiting")
-    if bag.disposed_at:
+    snapshot = _bag_history_snapshot(bag)
+    if snapshot["disposed_at"]:
         raise ValueError("Disposed bags cannot be moved to fruiting")
-    if not bag.ready_at:
+    if not snapshot["ready_at"]:
         raise ValueError("Only ready substrate bags can be moved to fruiting")
-    if bag.fruiting_start_at is None:
+    if snapshot["fruiting_start_at"] is None:
         bag.fruiting_start_at = _now()
         _record_bag_event(
             db,
@@ -1081,7 +1183,8 @@ def update_bag_disposal(db: Session, bag_ref: str, disposal_reason: str) -> mode
     bag = _resolve_bag(db, bag_ref)
     if not bag:
         return None
-    if bag.disposed_at:
+    snapshot = _bag_history_snapshot(bag)
+    if snapshot["disposed_at"]:
         raise ValueError("Bag has already been disposed")
     if disposal_reason == "FINAL_HARVEST":
         if bag.bag_type != "SUBSTRATE":
@@ -1246,9 +1349,10 @@ def _create_substrate_inoculations_for_bags(
         raise ValueError("Substrate bags must belong to a pasteurization run")
 
     for bag in substrate_bags:
+        bag_snapshot = _bag_history_snapshot(bag)
         if bag.bag_type != "SUBSTRATE":
             raise ValueError("Substrate bag must be SUBSTRATE type")
-        if bag.disposed_at:
+        if bag_snapshot["disposed_at"]:
             raise ValueError("Disposed substrate bags cannot be inoculated")
         if bag.inoculation is not None:
             raise ValueError(f"Substrate bag already inoculated: {bag.bag_ref}")
@@ -1405,9 +1509,10 @@ def create_harvest_event(db: Session, bag_ref: str, flush_number: int, fresh_wei
         raise LookupError("Bag not found")
     if bag.bag_type != "SUBSTRATE":
         raise ValueError("Harvest events only for substrate bags")
-    if bag.disposed_at:
+    snapshot = _bag_history_snapshot(bag)
+    if snapshot["disposed_at"]:
         raise ValueError("Disposed bags cannot be harvested")
-    if not bag.fruiting_start_at:
+    if not snapshot["fruiting_start_at"]:
         raise ValueError("Bag must enter fruiting before harvest")
     ev = models.HarvestEvent(
         bag=bag,
@@ -1486,6 +1591,7 @@ def get_production_report(db: Session) -> dict:
 
     for bag in bags:
         contaminated = _is_contaminated(bag)
+        bag_snapshot = _bag_history_snapshot(bag)
         lineage_metadata = _build_lineage_metadata(bag, bag_index, liquid_culture_memo, generation_memo)
         source_liquid_culture_id = lineage_metadata["source_liquid_culture_id"]
         source_liquid_culture_code = lineage_metadata["source_liquid_culture_code"]
@@ -1523,17 +1629,17 @@ def get_production_report(db: Session) -> dict:
 
         if contaminated:
             contaminated_bags.append(
-                {
-                    "bag_id": bag.bag_id,
-                    "bag_code": bag.bag_code,
-                    "bag_ref": bag.bag_ref,
-                    "bag_type": bag.bag_type,
-                    "status": bag.status,
-                    "disposal_reason": bag.disposal_reason,
-                    "contaminated_at": bag.disposed_at,
-                    "species_id": bag.species_id,
-                    "species_code": bag.species.code if bag.species else None,
-                    "species_name": bag.species.name if bag.species else None,
+                    {
+                        "bag_id": bag.bag_id,
+                        "bag_code": bag.bag_code,
+                        "bag_ref": bag.bag_ref,
+                        "bag_type": bag.bag_type,
+                        "status": bag_snapshot["status"],
+                        "disposal_reason": bag.disposal_reason,
+                        "contaminated_at": bag_snapshot["disposed_at"],
+                        "species_id": bag.species_id,
+                        "species_code": bag.species.code if bag.species else None,
+                        "species_name": bag.species.name if bag.species else None,
                     "sterilization_run_id": bag.sterilization_run_id,
                     "sterilization_run_code": bag.sterilization_run.run_code if bag.sterilization_run else None,
                     "pasteurization_run_id": bag.pasteurization_run_id,
@@ -1564,46 +1670,13 @@ def get_production_report(db: Session) -> dict:
                 (bag.parent_spawn_bag.bag_id, bag.parent_spawn_bag.bag_ref, contaminated)
             )
 
-        bag_total_harvest_kg = bag.total_harvest_kg
-        bio_efficiency, dry_weight_kg, dry_weight_source = calculate_bio_efficiency(
-            bag_total_harvest_kg,
-            actual_dry_kg=float(bag.actual_dry_kg) if bag.actual_dry_kg is not None else None,
-            target_dry_kg=float(bag.target_dry_kg) if bag.target_dry_kg is not None else None,
-        )
+        metrics_row = _build_substrate_metrics_row(bag, lineage_metadata)
+        bag_total_harvest_kg = metrics_row["total_harvest_kg"]
+        dry_weight_kg = metrics_row["dry_weight_kg"]
         if dry_weight_kg is not None:
             total_dry_weight_kg += dry_weight_kg
         total_harvest_kg += bag_total_harvest_kg
-
-        substrate_rows.append(
-            {
-                "bag_id": bag.bag_id,
-                "bag_code": bag.bag_code,
-                "bag_ref": bag.bag_ref,
-                "status": bag.status,
-                "disposal_reason": bag.disposal_reason,
-                "species_id": bag.species_id,
-                "species_code": bag.species.code if bag.species else None,
-                "species_name": bag.species.name if bag.species else None,
-                "pasteurization_run_id": bag.pasteurization_run_id,
-                "pasteurization_run_code": pasteurization_run_code,
-                "parent_spawn_bag_id": bag.parent_spawn_bag_id,
-                "parent_spawn_bag_ref": bag.parent_spawn_bag_ref,
-                "source_liquid_culture_id": source_liquid_culture_id,
-                "source_liquid_culture_code": source_liquid_culture_code,
-                "spawn_generation": spawn_generation,
-                "source_sterilization_run_id": (
-                    source_sterilization_run.sterilization_run_id if source_sterilization_run is not None else None
-                ),
-                "source_sterilization_run_code": source_sterilization_run.run_code if source_sterilization_run else None,
-                "target_dry_kg": float(bag.target_dry_kg) if bag.target_dry_kg is not None else None,
-                "actual_dry_kg": float(bag.actual_dry_kg) if bag.actual_dry_kg is not None else None,
-                "dry_weight_kg": dry_weight_kg,
-                "dry_weight_source": dry_weight_source,
-                "total_harvest_kg": bag_total_harvest_kg,
-                "bio_efficiency": bio_efficiency,
-                "contaminated": contaminated,
-            }
-        )
+        substrate_rows.append(metrics_row)
 
         if bag.pasteurization_run_id is not None and pasteurization_run_code is not None:
             run_group = pasteurization_run_groups.setdefault(
