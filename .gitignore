@@ -36,3 +36,6 @@ backend/e2e.sqlite3
 
 # Codex local config
 .codex/
+
+# TypeScript build info
+frontend/tsconfig.tsbuildinfo

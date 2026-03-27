@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Literal
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class HealthCheckOut(BaseModel):
@@ -33,7 +33,7 @@ class FillProfileCreate(BaseModel):
 
 class FillProfileOut(FillProfileCreate):
     fill_profile_id: int
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Substrate recipe versions ---
@@ -46,7 +46,7 @@ class SubstrateRecipeVersionCreate(BaseModel):
 class SubstrateRecipeVersionOut(SubstrateRecipeVersionCreate):
     substrate_recipe_version_id: int
     created_at: datetime
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Spawn recipes ---
@@ -58,7 +58,7 @@ class SpawnRecipeCreate(BaseModel):
 class SpawnRecipeOut(SpawnRecipeCreate):
     spawn_recipe_id: int
     created_at: datetime
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Mix lots ---
@@ -77,7 +77,7 @@ class MixLotOut(BaseModel):
     fill_profile_id: int
     mixed_at: datetime
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Species ---
@@ -104,7 +104,7 @@ class MushroomSpeciesOut(BaseModel):
     latin_name: Optional[str] = None
     notes: Optional[str] = None
     is_active: bool
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Liquid cultures ---
@@ -126,7 +126,7 @@ class LiquidCultureOut(BaseModel):
     created_at: datetime
     notes: Optional[str] = None
     is_active: bool
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Grain types ---
@@ -144,7 +144,7 @@ class GrainTypeOut(BaseModel):
     grain_type_id: int
     name: str
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Pasteurization runs ---
@@ -169,7 +169,7 @@ class PasteurizationRunOut(BaseModel):
     unloaded_at: datetime
     bag_count: int
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Sterilization runs ---
@@ -200,7 +200,7 @@ class SterilizationRunOut(BaseModel):
     psi: Optional[float] = None
     hold_minutes: Optional[int] = None
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Bags ---
@@ -252,7 +252,7 @@ class BagOut(BaseModel):
     consumed_at: Optional[datetime] = None
     status: str
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BagStatusEventOut(BaseModel):
@@ -274,7 +274,7 @@ class BagStatusEventOut(BaseModel):
     occurred_at: datetime
     detail: Optional[str] = None
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BagDetailOut(BagOut):
@@ -332,7 +332,7 @@ class InoculationOut(BaseModel):
     spawn_bag_ref: str
     inoculated_at: datetime
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Harvest events ---
@@ -352,7 +352,7 @@ class HarvestEventOut(BaseModel):
     fresh_weight_kg: float
     harvested_at: datetime
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Event recording (scan flow) ---
@@ -389,7 +389,7 @@ class IngredientOut(BaseModel):
     name: str
     category: Optional[str] = None
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class IngredientLotCreate(BaseModel):
@@ -409,7 +409,7 @@ class IngredientLotOut(BaseModel):
     received_at: Optional[datetime] = None
     unit_cost_per_kg: Optional[float] = None
     notes: Optional[str] = None
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Labels ---

@@ -48,7 +48,7 @@ def _derive_bag_status_from_caches(bag: models.Bag) -> str:
         return "INCUBATING"
     if bag.inoculated_at:
         return "INOCULATED"
-        return "PASTEURIZED"
+    return "PASTEURIZED"
 
 
 def _event_time_by_type(bag: models.Bag) -> dict[str, datetime]:
