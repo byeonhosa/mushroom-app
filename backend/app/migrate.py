@@ -1,18 +1,19 @@
 from pathlib import Path
-from sqlalchemy import create_engine, text
+from sqlalchemy import Column, DateTime, Integer, MetaData, Table, Text, create_engine, func, text
 from .config import settings
 
 MIG_DIR = Path(__file__).parent / "migrations"
 
 def ensure_schema_migrations(engine):
-    with engine.begin() as conn:
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS schema_migrations (
-          id SERIAL PRIMARY KEY,
-          filename TEXT NOT NULL UNIQUE,
-          applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-        """))
+    metadata = MetaData()
+    schema_migrations = Table(
+        "schema_migrations",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("filename", Text, nullable=False, unique=True),
+        Column("applied_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    )
+    metadata.create_all(engine, tables=[schema_migrations])
 
 def applied(engine) -> set[str]:
     with engine.begin() as conn:
