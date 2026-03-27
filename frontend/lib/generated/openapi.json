@@ -14,7 +14,45 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HealthLiveOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health/live": {
+      "get": {
+        "summary": "Health Live",
+        "operationId": "health_live_api_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthLiveOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "summary": "Health Ready",
+        "operationId": "health_ready_api_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthReadyOut"
+                }
               }
             }
           }
@@ -3646,6 +3684,124 @@
           "harvested_at"
         ],
         "title": "HarvestEventOut"
+      },
+      "HealthCheckOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "ok"
+        ],
+        "title": "HealthCheckOut"
+      },
+      "HealthLiveOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "service",
+          "version",
+          "environment",
+          "checked_at"
+        ],
+        "title": "HealthLiveOut"
+      },
+      "HealthReadyOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "database_backend": {
+            "type": "string",
+            "title": "Database Backend"
+          },
+          "pending_migrations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pending Migrations"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/HealthCheckOut"
+            },
+            "type": "array",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "service",
+          "version",
+          "environment",
+          "checked_at",
+          "database_backend",
+          "pending_migrations",
+          "checks"
+        ],
+        "title": "HealthReadyOut"
       },
       "IngredientCreate": {
         "properties": {

@@ -21,6 +21,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health Live */
+        get: operations["health_live_api_health_live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health Ready */
+        get: operations["health_ready_api_health_ready_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fill-profiles": {
         parameters: {
             query?: never;
@@ -1189,6 +1223,53 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** HealthCheckOut */
+        HealthCheckOut: {
+            /** Name */
+            name: string;
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail?: string | null;
+        };
+        /** HealthLiveOut */
+        HealthLiveOut: {
+            /** Ok */
+            ok: boolean;
+            /** Service */
+            service: string;
+            /** Version */
+            version: string;
+            /** Environment */
+            environment: string;
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+        };
+        /** HealthReadyOut */
+        HealthReadyOut: {
+            /** Ok */
+            ok: boolean;
+            /** Service */
+            service: string;
+            /** Version */
+            version: string;
+            /** Environment */
+            environment: string;
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /** Database Backend */
+            database_backend: string;
+            /** Pending Migrations */
+            pending_migrations: string[];
+            /** Checks */
+            checks: components["schemas"]["HealthCheckOut"][];
+        };
         /** IngredientCreate */
         IngredientCreate: {
             /** Name */
@@ -1849,7 +1930,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["HealthLiveOut"];
+                };
+            };
+        };
+    };
+    health_live_api_health_live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthLiveOut"];
+                };
+            };
+        };
+    };
+    health_ready_api_health_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthReadyOut"];
                 };
             };
         };

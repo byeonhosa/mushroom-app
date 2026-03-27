@@ -3,6 +3,26 @@ from typing import Optional, List, Literal
 from pydantic import BaseModel, Field, model_validator
 
 
+class HealthCheckOut(BaseModel):
+    name: str
+    ok: bool
+    detail: Optional[str] = None
+
+
+class HealthLiveOut(BaseModel):
+    ok: bool
+    service: str
+    version: str
+    environment: str
+    checked_at: datetime
+
+
+class HealthReadyOut(HealthLiveOut):
+    database_backend: str
+    pending_migrations: List[str]
+    checks: List[HealthCheckOut]
+
+
 # --- Fill profiles ---
 class FillProfileCreate(BaseModel):
     name: str

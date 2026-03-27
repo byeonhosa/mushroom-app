@@ -1,20 +1,33 @@
 from typing import Literal
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from psycopg.errors import UniqueViolation
 
 from .db import get_db
-from . import schemas, crud
+from . import schemas, crud, ops
 
 router = APIRouter()
 
 
-@router.get("/health")
+@router.get("/health", response_model=schemas.HealthLiveOut)
 def health():
-    return {"ok": True}
+    return ops.get_live_health()
+
+
+@router.get("/health/live", response_model=schemas.HealthLiveOut)
+def health_live():
+    return ops.get_live_health()
+
+
+@router.get("/health/ready", response_model=schemas.HealthReadyOut)
+def health_ready(response: Response):
+    payload = ops.get_readiness_health()
+    if not payload["ok"]:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return payload
 
 
 # --- Reference data ---
