@@ -17,6 +17,13 @@ ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
 
 RUN npm run build
 
+FROM node:22-bookworm-slim AS prod-deps
+
+WORKDIR /app
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --omit=dev
+
 FROM node:22-bookworm-slim AS runner
 
 WORKDIR /app
@@ -26,9 +33,9 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0
 
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
+
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/next.config.js ./next.config.js
