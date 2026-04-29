@@ -1,0 +1,80 @@
+name: Deploy to droplet
+
+# Only triggers on push to main (which forks cannot do).
+# This is the security mitigation for running a self-hosted runner on a public repo:
+# fork PRs cannot trigger this workflow because they cannot push to main.
+# PR validation continues to run on GitHub-hosted runners in ci.yml.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Don't run multiple deploys concurrently. If a newer push arrives mid-deploy,
+# wait for the in-flight one to finish rather than cancelling it.
+concurrency:
+  group: deploy-droplet
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, mushroom-app-prod]
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: /opt/mushroom-app
+
+    steps:
+      - name: Pull latest main
+        run: |
+          git fetch origin
+          git checkout main
+          git reset --hard origin/main
+          git log --oneline -3
+
+      - name: Rebuild and start containers
+        run: |
+          docker compose up -d --build
+          docker compose ps
+
+      - name: Wait for API to respond
+        run: |
+          for i in $(seq 1 24); do
+            if curl -fsS -m 5 http://127.0.0.1:8000/api/health/ready > /dev/null 2>&1; then
+              echo "API responding after $((i * 5))s"
+              break
+            fi
+            echo "Waiting for API... ($i/24)"
+            sleep 5
+          done
+          # Final assert — fails the step if the API still isn't responding
+          curl -fsS http://127.0.0.1:8000/api/health/ready > /dev/null
+
+      - name: Smoke test endpoints
+        run: |
+          set -e
+          echo "=== /api/health/ready ==="
+          curl -fsS http://127.0.0.1:8000/api/health/ready | python3 -m json.tool
+          echo ""
+          echo "=== /api/species ==="
+          curl -fsS http://127.0.0.1:8000/api/species | python3 -m json.tool
+          echo ""
+          echo "=== /api/dashboard/overview (head only) ==="
+          curl -fsS http://127.0.0.1:8000/api/dashboard/overview | python3 -m json.tool | head -20
+          echo ""
+          echo "=== frontend ==="
+          curl -fsS -o /dev/null -w "frontend: HTTP %{http_code}\n" http://127.0.0.1:3000/
+
+      - name: Show running containers
+        run: docker compose ps
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          echo "=== docker compose ps ==="
+          docker compose ps
+          echo ""
+          echo "=== api logs (tail 100) ==="
+          docker compose logs --tail 100 api || true
+          echo ""
+          echo "=== frontend logs (tail 50) ==="
+          docker compose logs --tail 50 frontend || true
