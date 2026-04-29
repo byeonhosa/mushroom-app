@@ -49,6 +49,20 @@ jobs:
           # Final assert — fails the step if the API still isn't responding
           curl -fsS http://127.0.0.1:8000/api/health/ready > /dev/null
 
+      - name: Wait for frontend to respond
+        run: |
+          # Next.js startup is slower than uvicorn; up to ~75s for healthcheck to pass.
+          for i in $(seq 1 30); do
+            if curl -fsS -m 5 http://127.0.0.1:3000/ > /dev/null 2>&1; then
+              echo "Frontend responding after $((i * 5))s"
+              break
+            fi
+            echo "Waiting for frontend... ($i/30)"
+            sleep 5
+          done
+          # Final assert — fails the step if the frontend still isn't responding
+          curl -fsS http://127.0.0.1:3000/ > /dev/null
+
       - name: Smoke test endpoints
         run: |
           set -e
