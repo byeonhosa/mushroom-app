@@ -1,8 +1,9 @@
-fastapi==0.115.6
-uvicorn[standard]==0.30.6
-SQLAlchemy==2.0.32
+fastapi>=0.118,<0.120
+uvicorn[standard]>=0.32,<0.34
+SQLAlchemy>=2.0.36,<2.1
 psycopg[binary]>=3.2
-pydantic==2.8.2
-pydantic-settings==2.4.0
+pydantic>=2.10,<2.12
+pydantic-settings>=2.6,<2.8
 python-dateutil==2.9.0.post0
 qrcode[pil]==8.0
+Pillow>=11.3.0
