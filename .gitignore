@@ -33,9 +33,11 @@ frontend/test-results/
 pgdata/
 backups/
 backend/e2e.sqlite3
+*.db
 
-# Codex local config
+# Agent local config
 .codex/
+.claude/
 
 # TypeScript build info
 frontend/tsconfig.tsbuildinfo
