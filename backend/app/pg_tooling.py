@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy.engine import make_url
@@ -45,7 +45,7 @@ def build_pg_env(info: PostgresConnectionInfo) -> dict[str, str]:
 
 
 def default_backup_path(output_dir: Path, *, now: datetime | None = None) -> Path:
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc)
     filename = f"mushroom_{now.strftime('%Y%m%d_%H%M%S')}.dump"
     return output_dir / filename
 
