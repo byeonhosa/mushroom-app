@@ -387,3 +387,62 @@ class HarvestEvent(Base):
         if self.bag:
             return self.bag.bag_ref
         return self.bag_id
+
+
+class SpeciesProfile(Base):
+    """Species cultivation reference (Crowe-detailed commercial parameters).
+
+    Standalone reference table — NOT the operational ``mushroom_species`` table
+    that carries FKs from liquid_cultures/bags. Field names mirror the keys in
+    backend/app/seeds/mushroom_species.json; the JSON ``id`` maps to ``code``,
+    which is the upsert key used by ``app.seed_species``.
+
+    Range fields are nullable integers (``*_low`` / ``*_high``); a JSON null is
+    preserved as SQL NULL, never coerced to 0. ``use_type`` and
+    ``pinning_trigger`` are effectively enums whose allowed values come from the
+    JSON _meta.conventions:
+      use_type:        culinary | medicinal | both
+      pinning_trigger: fae_increase | temp_drop | co2_drop | co2_drop_cold_shock
+                       | cold_shock_and_strike | combined | form_dependent
+    """
+
+    __tablename__ = "species_profiles"
+
+    species_profile_id = Column(Integer, primary_key=True)
+    code = Column(String(60), nullable=False, unique=True)
+    common_name = Column(String(160), nullable=False)
+    scientific_name = Column(String(160))
+    difficulty = Column(String(40))
+    difficulty_rank = Column(Integer)
+    use_type = Column(String(20))
+    substrate_primary = Column(Text)
+    substrate_moisture_pct_low = Column(Integer)
+    substrate_moisture_pct_high = Column(Integer)
+    spawn_rate_pct_low = Column(Integer)
+    spawn_rate_pct_high = Column(Integer)
+    incubation_temp_f_low = Column(Integer)
+    incubation_temp_f_high = Column(Integer)
+    colonization_days_low = Column(Integer)
+    colonization_days_high = Column(Integer)
+    fruiting_temp_f_low = Column(Integer)
+    fruiting_temp_f_high = Column(Integer)
+    fruiting_humidity_pct_low = Column(Integer)
+    fruiting_humidity_pct_high = Column(Integer)
+    fruiting_co2_ppm_low = Column(Integer)
+    fruiting_co2_ppm_high = Column(Integer)
+    fae_ach_low = Column(Integer)
+    fae_ach_high = Column(Integer)
+    light_lux_low = Column(Integer)
+    light_lux_high = Column(Integer)
+    light_hours_per_day_low = Column(Integer)
+    light_hours_per_day_high = Column(Integer)
+    pinning_trigger = Column(String(40))
+    pin_to_harvest_days_low = Column(Integer)
+    pin_to_harvest_days_high = Column(Integer)
+    biological_efficiency_pct_low = Column(Integer)
+    biological_efficiency_pct_high = Column(Integer)
+    typical_flushes_low = Column(Integer)
+    typical_flushes_high = Column(Integer)
+    yield_notes = Column(Text)
+    pricing_notes = Column(Text)
+    notes = Column(Text)
