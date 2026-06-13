@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/events/disposal">Disposal</a>
               <a href="/reports">Reports</a>
               <a href="/species">Species</a>
+              <a href="/reference/species">Species Reference</a>
               <a href="/liquid-cultures">Liquid Cultures</a>
               <a href="/pasteurization-runs">Pasteurization</a>
               <a href="/sterilization-runs">Sterilization</a>

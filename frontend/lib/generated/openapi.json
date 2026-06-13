@@ -348,6 +348,67 @@
         }
       }
     },
+    "/api/species-profiles": {
+      "get": {
+        "summary": "List Species Profiles",
+        "operationId": "list_species_profiles_api_species_profiles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SpeciesProfileOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Species Profiles Api Species Profiles Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/species-profiles/{code}": {
+      "get": {
+        "summary": "Get Species Profile",
+        "operationId": "get_species_profile_api_species_profiles__code__get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/liquid-cultures": {
       "get": {
         "summary": "List Liquid Cultures",
@@ -5431,6 +5492,414 @@
           "created_at"
         ],
         "title": "SpawnRecipeOut"
+      },
+      "SpeciesProfileOut": {
+        "properties": {
+          "species_profile_id": {
+            "type": "integer",
+            "title": "Species Profile Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "common_name": {
+            "type": "string",
+            "title": "Common Name"
+          },
+          "scientific_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scientific Name"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "difficulty_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty Rank"
+          },
+          "use_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Type"
+          },
+          "substrate_primary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substrate Primary"
+          },
+          "substrate_moisture_pct_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substrate Moisture Pct Low"
+          },
+          "substrate_moisture_pct_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substrate Moisture Pct High"
+          },
+          "spawn_rate_pct_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spawn Rate Pct Low"
+          },
+          "spawn_rate_pct_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spawn Rate Pct High"
+          },
+          "incubation_temp_f_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incubation Temp F Low"
+          },
+          "incubation_temp_f_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incubation Temp F High"
+          },
+          "colonization_days_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colonization Days Low"
+          },
+          "colonization_days_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colonization Days High"
+          },
+          "fruiting_temp_f_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Temp F Low"
+          },
+          "fruiting_temp_f_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Temp F High"
+          },
+          "fruiting_humidity_pct_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Humidity Pct Low"
+          },
+          "fruiting_humidity_pct_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Humidity Pct High"
+          },
+          "fruiting_co2_ppm_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Co2 Ppm Low"
+          },
+          "fruiting_co2_ppm_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fruiting Co2 Ppm High"
+          },
+          "fae_ach_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fae Ach Low"
+          },
+          "fae_ach_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fae Ach High"
+          },
+          "light_lux_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Light Lux Low"
+          },
+          "light_lux_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Light Lux High"
+          },
+          "light_hours_per_day_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Light Hours Per Day Low"
+          },
+          "light_hours_per_day_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Light Hours Per Day High"
+          },
+          "pinning_trigger": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinning Trigger"
+          },
+          "pin_to_harvest_days_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pin To Harvest Days Low"
+          },
+          "pin_to_harvest_days_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pin To Harvest Days High"
+          },
+          "biological_efficiency_pct_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Biological Efficiency Pct Low"
+          },
+          "biological_efficiency_pct_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Biological Efficiency Pct High"
+          },
+          "typical_flushes_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Typical Flushes Low"
+          },
+          "typical_flushes_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Typical Flushes High"
+          },
+          "yield_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Notes"
+          },
+          "pricing_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Notes"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "species_profile_id",
+          "code",
+          "common_name"
+        ],
+        "title": "SpeciesProfileOut"
       },
       "SterilizationRunCreate": {
         "properties": {

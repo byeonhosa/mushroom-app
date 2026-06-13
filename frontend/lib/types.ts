@@ -11,6 +11,7 @@ export type SubstrateRecipeVersion = Schema<"SubstrateRecipeVersionOut">;
 export type SpawnRecipe = Schema<"SpawnRecipeOut">;
 export type MixLot = Schema<"MixLotOut">;
 export type MushroomSpecies = Schema<"MushroomSpeciesOut">;
+export type SpeciesProfile = Schema<"SpeciesProfileOut">;
 export type LiquidCulture = Schema<"LiquidCultureOut">;
 export type GrainType = Schema<"GrainTypeOut">;
 export type Ingredient = Schema<"IngredientOut">;

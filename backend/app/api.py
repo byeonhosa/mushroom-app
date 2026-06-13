@@ -98,6 +98,21 @@ def update_species(species_id: int, payload: schemas.MushroomSpeciesUpdate, db: 
     return row
 
 
+# Read-only cultivation reference (species_profiles). Distinct from /species,
+# which serves the operational mushroom_species table.
+@router.get("/species-profiles", response_model=list[schemas.SpeciesProfileOut])
+def list_species_profiles(db: Session = Depends(get_db)):
+    return crud.list_species_profiles(db)
+
+
+@router.get("/species-profiles/{code}", response_model=schemas.SpeciesProfileOut)
+def get_species_profile(code: str, db: Session = Depends(get_db)):
+    row = crud.get_species_profile(db, code)
+    if not row:
+        raise HTTPException(404, "Species profile not found")
+    return row
+
+
 @router.get("/liquid-cultures", response_model=list[schemas.LiquidCultureOut])
 def list_liquid_cultures(active_only: bool = True, db: Session = Depends(get_db)):
     return crud.list_liquid_cultures(db, active_only=active_only)

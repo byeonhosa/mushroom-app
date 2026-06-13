@@ -94,6 +94,22 @@ def update_species(db: Session, species_id: int, data: dict):
     return s
 
 
+# --- Species profiles (read-only cultivation reference) ---
+
+def list_species_profiles(db: Session):
+    return db.execute(
+        select(models.SpeciesProfile).order_by(
+            models.SpeciesProfile.common_name.asc(), models.SpeciesProfile.species_profile_id.asc()
+        )
+    ).scalars().all()
+
+
+def get_species_profile(db: Session, code: str):
+    return db.execute(
+        select(models.SpeciesProfile).where(models.SpeciesProfile.code == code)
+    ).scalar_one_or_none()
+
+
 # --- Liquid cultures ---
 
 def list_liquid_cultures(db: Session, active_only: bool = True):

@@ -107,6 +107,52 @@ class MushroomSpeciesOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- Species profiles (read-only cultivation reference) ---
+# Mirrors models.SpeciesProfile. Range fields are nullable ints (*_low / *_high);
+# `use_type` and `pinning_trigger` are effectively enums (allowed values live in
+# the seed JSON _meta.conventions and the model docstring).
+class SpeciesProfileOut(BaseModel):
+    species_profile_id: int
+    code: str
+    common_name: str
+    scientific_name: Optional[str] = None
+    difficulty: Optional[str] = None
+    difficulty_rank: Optional[int] = None
+    use_type: Optional[str] = None
+    substrate_primary: Optional[str] = None
+    substrate_moisture_pct_low: Optional[int] = None
+    substrate_moisture_pct_high: Optional[int] = None
+    spawn_rate_pct_low: Optional[int] = None
+    spawn_rate_pct_high: Optional[int] = None
+    incubation_temp_f_low: Optional[int] = None
+    incubation_temp_f_high: Optional[int] = None
+    colonization_days_low: Optional[int] = None
+    colonization_days_high: Optional[int] = None
+    fruiting_temp_f_low: Optional[int] = None
+    fruiting_temp_f_high: Optional[int] = None
+    fruiting_humidity_pct_low: Optional[int] = None
+    fruiting_humidity_pct_high: Optional[int] = None
+    fruiting_co2_ppm_low: Optional[int] = None
+    fruiting_co2_ppm_high: Optional[int] = None
+    fae_ach_low: Optional[int] = None
+    fae_ach_high: Optional[int] = None
+    light_lux_low: Optional[int] = None
+    light_lux_high: Optional[int] = None
+    light_hours_per_day_low: Optional[int] = None
+    light_hours_per_day_high: Optional[int] = None
+    pinning_trigger: Optional[str] = None
+    pin_to_harvest_days_low: Optional[int] = None
+    pin_to_harvest_days_high: Optional[int] = None
+    biological_efficiency_pct_low: Optional[int] = None
+    biological_efficiency_pct_high: Optional[int] = None
+    typical_flushes_low: Optional[int] = None
+    typical_flushes_high: Optional[int] = None
+    yield_notes: Optional[str] = None
+    pricing_notes: Optional[str] = None
+    notes: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 # --- Liquid cultures ---
 class LiquidCultureCreate(BaseModel):
     culture_code: str

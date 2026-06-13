@@ -160,6 +160,40 @@ export interface paths {
         patch: operations["update_species_api_species__species_id__patch"];
         trace?: never;
     };
+    "/api/species-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Species Profiles */
+        get: operations["list_species_profiles_api_species_profiles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/species-profiles/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Species Profile */
+        get: operations["get_species_profile_api_species_profiles__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/liquid-cultures": {
         parameters: {
             query?: never;
@@ -1736,6 +1770,85 @@ export interface components {
              */
             created_at: string;
         };
+        /** SpeciesProfileOut */
+        SpeciesProfileOut: {
+            /** Species Profile Id */
+            species_profile_id: number;
+            /** Code */
+            code: string;
+            /** Common Name */
+            common_name: string;
+            /** Scientific Name */
+            scientific_name?: string | null;
+            /** Difficulty */
+            difficulty?: string | null;
+            /** Difficulty Rank */
+            difficulty_rank?: number | null;
+            /** Use Type */
+            use_type?: string | null;
+            /** Substrate Primary */
+            substrate_primary?: string | null;
+            /** Substrate Moisture Pct Low */
+            substrate_moisture_pct_low?: number | null;
+            /** Substrate Moisture Pct High */
+            substrate_moisture_pct_high?: number | null;
+            /** Spawn Rate Pct Low */
+            spawn_rate_pct_low?: number | null;
+            /** Spawn Rate Pct High */
+            spawn_rate_pct_high?: number | null;
+            /** Incubation Temp F Low */
+            incubation_temp_f_low?: number | null;
+            /** Incubation Temp F High */
+            incubation_temp_f_high?: number | null;
+            /** Colonization Days Low */
+            colonization_days_low?: number | null;
+            /** Colonization Days High */
+            colonization_days_high?: number | null;
+            /** Fruiting Temp F Low */
+            fruiting_temp_f_low?: number | null;
+            /** Fruiting Temp F High */
+            fruiting_temp_f_high?: number | null;
+            /** Fruiting Humidity Pct Low */
+            fruiting_humidity_pct_low?: number | null;
+            /** Fruiting Humidity Pct High */
+            fruiting_humidity_pct_high?: number | null;
+            /** Fruiting Co2 Ppm Low */
+            fruiting_co2_ppm_low?: number | null;
+            /** Fruiting Co2 Ppm High */
+            fruiting_co2_ppm_high?: number | null;
+            /** Fae Ach Low */
+            fae_ach_low?: number | null;
+            /** Fae Ach High */
+            fae_ach_high?: number | null;
+            /** Light Lux Low */
+            light_lux_low?: number | null;
+            /** Light Lux High */
+            light_lux_high?: number | null;
+            /** Light Hours Per Day Low */
+            light_hours_per_day_low?: number | null;
+            /** Light Hours Per Day High */
+            light_hours_per_day_high?: number | null;
+            /** Pinning Trigger */
+            pinning_trigger?: string | null;
+            /** Pin To Harvest Days Low */
+            pin_to_harvest_days_low?: number | null;
+            /** Pin To Harvest Days High */
+            pin_to_harvest_days_high?: number | null;
+            /** Biological Efficiency Pct Low */
+            biological_efficiency_pct_low?: number | null;
+            /** Biological Efficiency Pct High */
+            biological_efficiency_pct_high?: number | null;
+            /** Typical Flushes Low */
+            typical_flushes_low?: number | null;
+            /** Typical Flushes High */
+            typical_flushes_high?: number | null;
+            /** Yield Notes */
+            yield_notes?: string | null;
+            /** Pricing Notes */
+            pricing_notes?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** SterilizationRunCreate */
         SterilizationRunCreate: {
             /** Run Code */
@@ -2207,6 +2320,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MushroomSpeciesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_species_profiles_api_species_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesProfileOut"][];
+                };
+            };
+        };
+    };
+    get_species_profile_api_species_profiles__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesProfileOut"];
                 };
             };
             /** @description Validation Error */
