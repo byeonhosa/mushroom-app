@@ -28,6 +28,8 @@ from .crud_reference import (  # noqa: F401
     list_species,
     create_species,
     update_species,
+    list_species_profiles,
+    get_species_profile,
     list_liquid_cultures,
     create_liquid_culture,
     list_grain_types,
