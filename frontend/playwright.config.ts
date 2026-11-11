@@ -47,6 +47,7 @@ export default defineConfig({
       env: {
         ...process.env,
         DATABASE_URL: "sqlite:///./e2e.sqlite3",
+        // The origin the pages are served from: accepted on state-changing requests.
         CORS_ORIGINS: "http://localhost:3001",
         PORT: "8001",
       },
@@ -59,7 +60,8 @@ export default defineConfig({
       reuseExistingServer: false,
       env: {
         ...process.env,
-        NEXT_PUBLIC_API_BASE: "http://localhost:8001/api",
+        // The pages call /api on their own origin; next dev forwards it here.
+        API_PROXY_TARGET: "http://localhost:8001",
       },
     },
   ],

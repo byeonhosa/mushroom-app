@@ -12,8 +12,19 @@ sys.path.insert(0, str(BACKEND_DIR))
 os.environ.setdefault("DATABASE_URL", "sqlite:///./e2e.sqlite3")
 os.environ.setdefault("CORS_ORIGINS", "http://127.0.0.1:3000")
 os.environ.setdefault("PYTHONPATH", str(BACKEND_DIR))
+# The browser tests sign in dozens of times; bcrypt's production work factor
+# would only slow them down.
+os.environ.setdefault("PASSWORD_HASH_ROUNDS", "4")
 
-from app import models  # noqa: E402
+from app import models, security  # noqa: E402
+
+# Accounts for the browser tests. This server only ever runs against a
+# throwaway SQLite file.
+E2E_PASSWORD = "e2e test password"
+E2E_USERS = [
+    ("admin@e2e.test", "Ada Admin", "admin"),
+    ("operator@e2e.test", "Olly Operator", "operator"),
+]
 
 
 def _sqlite_file_path(database_url: str) -> Path:
@@ -42,6 +53,16 @@ def _reset_database() -> None:
 
     db = Session()
     try:
+        for email, display_name, role in E2E_USERS:
+            db.add(
+                models.User(
+                    email=email,
+                    display_name=display_name,
+                    role=role,
+                    password_hash=security.hash_password(E2E_PASSWORD),
+                )
+            )
+
         species = models.MushroomSpecies(code="LM", name="Lion's Mane", is_active=True)
         db.add(species)
         db.flush()

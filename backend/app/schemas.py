@@ -62,6 +62,65 @@ class HealthReadyOut(HealthLiveOut):
     checks: List[HealthCheckOut]
 
 
+# --- Sign-in and users (SRS 4.14) ---
+class AuthStatusOut(BaseModel):
+    setup_required: bool
+
+
+class LoginIn(BaseModel):
+    email: str = Field(..., min_length=3, max_length=254)
+    password: str = Field(..., min_length=1, max_length=200)
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(..., min_length=1, max_length=200)
+    new_password: str = Field(..., min_length=1, max_length=200)
+
+
+def _clean_email(value: str) -> str:
+    email = value.strip().lower()
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise ValueError("Enter an email address, for example name@example.com.")
+    return email
+
+
+EmailAddress = Annotated[str, AfterValidator(_clean_email)]
+UserRoleName = Literal["admin", "operator"]
+
+
+class CurrentUserOut(BaseModel):
+    user_id: int
+    email: str
+    display_name: str
+    role: UserRoleName
+    must_change_password: bool
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AccountUpdate(BaseModel):
+    display_name: str = Field(..., min_length=1, max_length=120)
+
+
+class UserOut(CurrentUserOut):
+    is_active: bool
+    created_at: UtcDatetime
+    last_login_at: Optional[UtcDatetime] = None
+
+
+class UserCreate(BaseModel):
+    email: EmailAddress
+    display_name: str = Field(..., min_length=1, max_length=120)
+    role: UserRoleName = "operator"
+    password: str = Field(..., min_length=1, max_length=200)
+
+
+class UserUpdate(BaseModel):
+    display_name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    role: Optional[UserRoleName] = None
+    is_active: Optional[bool] = None
+    password: Optional[str] = Field(default=None, min_length=1, max_length=200)
+
+
 # --- Fill profiles ---
 class FillProfileCreate(BaseModel):
     name: str
@@ -364,6 +423,8 @@ class BagStatusEventOut(BaseModel):
     occurred_at: UtcDatetime
     detail: Optional[str] = None
     notes: Optional[str] = None
+    # USR-4: the name of the user who entered the event, when known.
+    recorded_by_name: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -442,6 +503,7 @@ class HarvestEventOut(BaseModel):
     fresh_weight_kg: float
     harvested_at: UtcDatetime
     notes: Optional[str] = None
+    recorded_by_name: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 

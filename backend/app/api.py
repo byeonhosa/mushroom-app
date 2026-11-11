@@ -6,24 +6,34 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+from .auth import require_admin, require_user
 from .db import get_db
 from .errors import is_unique_violation
 from . import bag_id, crud, models, ops, schemas
 
-router = APIRouter()
+# USR-1: the health checks are the only routes here that answer without a
+# session. Everything on `router` needs a signed-in user; routes that maintain
+# reference data add `require_admin` (USR-2). Sign-in itself and user
+# management live in api_auth.py.
+#
+# The path prefix /integration/ is reserved for the website's read-only API
+# (roadmap WP-9, service-token credentials). No route in this module may use it.
+public_router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
+ADMIN_ONLY = [Depends(require_admin)]
 
 
-@router.get("/health", response_model=schemas.HealthLiveOut)
+@public_router.get("/health", response_model=schemas.HealthLiveOut)
 def health():
     return ops.get_live_health()
 
 
-@router.get("/health/live", response_model=schemas.HealthLiveOut)
+@public_router.get("/health/live", response_model=schemas.HealthLiveOut)
 def health_live():
     return ops.get_live_health()
 
 
-@router.get("/health/ready", response_model=schemas.HealthReadyOut)
+@public_router.get("/health/ready", response_model=schemas.HealthReadyOut)
 def health_ready(response: Response):
     payload = ops.get_readiness_health()
     if not payload["ok"]:
@@ -38,7 +48,7 @@ def fill_profiles(db: Session = Depends(get_db)):
     return crud.list_fill_profiles(db)
 
 
-@router.post("/fill-profiles", response_model=schemas.FillProfileOut)
+@router.post("/fill-profiles", response_model=schemas.FillProfileOut, dependencies=ADMIN_ONLY)
 def create_fill_profile(payload: schemas.FillProfileCreate, db: Session = Depends(get_db)):
     return crud.create_fill_profile(
         db, payload.name, payload.target_dry_kg_per_bag,
@@ -76,7 +86,7 @@ def list_species(active_only: bool = True, db: Session = Depends(get_db)):
     return crud.list_species(db, active_only=active_only)
 
 
-@router.post("/species", response_model=schemas.MushroomSpeciesOut)
+@router.post("/species", response_model=schemas.MushroomSpeciesOut, dependencies=ADMIN_ONLY)
 def create_species(payload: schemas.MushroomSpeciesCreate, db: Session = Depends(get_db)):
     try:
         return crud.create_species(db, payload.model_dump(exclude_unset=True))
@@ -86,7 +96,7 @@ def create_species(payload: schemas.MushroomSpeciesCreate, db: Session = Depends
         raise
 
 
-@router.patch("/species/{species_id}", response_model=schemas.MushroomSpeciesOut)
+@router.patch("/species/{species_id}", response_model=schemas.MushroomSpeciesOut, dependencies=ADMIN_ONLY)
 def update_species(species_id: int, payload: schemas.MushroomSpeciesUpdate, db: Session = Depends(get_db)):
     try:
         row = crud.update_species(db, species_id, payload.model_dump(exclude_unset=True))
@@ -134,7 +144,7 @@ def list_grain_types(db: Session = Depends(get_db)):
     return crud.list_grain_types(db)
 
 
-@router.post("/grain-types", response_model=schemas.GrainTypeOut)
+@router.post("/grain-types", response_model=schemas.GrainTypeOut, dependencies=ADMIN_ONLY)
 def create_grain_type(payload: schemas.GrainTypeCreate, db: Session = Depends(get_db)):
     try:
         return crud.create_grain_type(db, payload.model_dump(exclude_unset=True))
@@ -144,7 +154,7 @@ def create_grain_type(payload: schemas.GrainTypeCreate, db: Session = Depends(ge
         raise
 
 
-@router.patch("/grain-types/{grain_type_id}", response_model=schemas.GrainTypeOut)
+@router.patch("/grain-types/{grain_type_id}", response_model=schemas.GrainTypeOut, dependencies=ADMIN_ONLY)
 def update_grain_type(grain_type_id: int, payload: schemas.GrainTypeUpdate, db: Session = Depends(get_db)):
     try:
         row = crud.update_grain_type(db, grain_type_id, payload.model_dump(exclude_unset=True))
@@ -162,7 +172,7 @@ def list_ingredients(db: Session = Depends(get_db)):
     return crud.list_ingredients(db)
 
 
-@router.post("/ingredients", response_model=schemas.IngredientOut)
+@router.post("/ingredients", response_model=schemas.IngredientOut, dependencies=ADMIN_ONLY)
 def create_ingredient(payload: schemas.IngredientCreate, db: Session = Depends(get_db)):
     return crud.create_ingredient(db, payload.model_dump(exclude_unset=True))
 

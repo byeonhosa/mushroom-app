@@ -2,8 +2,8 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { API_BASE } from "../../../../../lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000/api";
 
 function SpawnLabelsContent() {
   const searchParams = useSearchParams();

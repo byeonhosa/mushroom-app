@@ -12,8 +12,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY frontend ./
 
-ARG NEXT_PUBLIC_API_BASE=http://localhost:8000/api
-ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE} \
+# The pages call the API on their own origin, under /api (frontend/lib/api.ts).
+# Behind the Caddy proxy that path never reaches this server. Without the
+# proxy (the deploy checks on the loopback port, a local stack) this server
+# forwards /api/* to the address below; next.config.js reads it at build time.
+ARG API_PROXY_TARGET=http://api:8000
+ENV API_PROXY_TARGET=${API_PROXY_TARGET} \
     NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build

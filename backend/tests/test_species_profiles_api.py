@@ -1,42 +1,13 @@
 """HTTP tests for the read-only species_profiles reference endpoints."""
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app import models
-from app.db import get_db
-from app.main import app
 from app.seed_species import seed
 
 
-@pytest.fixture
-def client():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    models.Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-
-    db = Session()
-    seed(db)
-
-    def _override_get_db():
-        try:
-            yield db
-        finally:
-            pass
-
-    app.dependency_overrides[get_db] = _override_get_db
-    try:
-        yield TestClient(app)
-    finally:
-        app.dependency_overrides.pop(get_db, None)
-        db.close()
+@pytest.fixture(autouse=True)
+def _seeded_profiles(db_session):
+    seed(db_session)
 
 
 def test_list_returns_all_species(client):

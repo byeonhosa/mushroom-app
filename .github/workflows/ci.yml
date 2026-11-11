@@ -184,6 +184,8 @@ jobs:
       - name: Build and start the stack
         run: |
           cp .env.example .env
+          # A throwaway administrator for this job only.
+          printf 'BOOTSTRAP_ADMIN_EMAIL=ci-admin@example.com\nBOOTSTRAP_ADMIN_PASSWORD=ci only password 1\n' >> .env
           docker compose up -d --build
           docker compose ps
 
@@ -199,6 +201,9 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8000/api/health/ready
           curl -fsS -o /dev/null -w "frontend: HTTP %{http_code}\n" http://127.0.0.1:3000/
+
+      - name: Sign-in works through the built images
+        run: bash ops/ci/check-sign-in.sh
 
       - name: Restart policy, log rotation, loopback-only ports
         run: bash ops/ci/check-hardening.sh

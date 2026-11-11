@@ -107,6 +107,8 @@ def _record_bag_event(
         occurred_at=_as_utc(occurred_at) or _now(),
         detail=detail,
         notes=notes,
+        # Set on the session by app.auth.get_principal (USR-4).
+        recorded_by_user_id=db.info.get("user_id"),
     )
     db.add(event)
     return event

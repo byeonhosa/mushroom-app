@@ -92,20 +92,58 @@ jobs:
           # Final assert — fails the step if the frontend still isn't responding
           curl -fsS http://127.0.0.1:3000/ > /dev/null
 
+      - name: First administrator (only when no user exists)
+        env:
+          BOOTSTRAP_ADMIN_EMAIL: ${{ secrets.BOOTSTRAP_ADMIN_EMAIL }}
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+        run: |
+          # USR-3. The two secrets go to a container that exists only for this
+          # command; the long-running API container never holds them. Once any
+          # user exists the command does nothing, so it is safe on every
+          # deploy. Without the secrets it says so and nobody can sign in.
+          docker compose run --rm --no-deps \
+            -e BOOTSTRAP_ADMIN_EMAIL -e BOOTSTRAP_ADMIN_PASSWORD \
+            api python -m app.manage bootstrap-admin
+
       - name: Smoke test endpoints
         run: |
           set -e
-          echo "=== /api/health/ready ==="
+          echo "=== health answers without a session ==="
           curl -fsS http://127.0.0.1:8000/api/health/ready | python3 -m json.tool
           echo ""
-          echo "=== /api/species (count) ==="
-          curl -fsS http://127.0.0.1:8000/api/species | python3 -c "import json,sys; print(len(json.load(sys.stdin)), 'active species')"
-          echo ""
-          echo "=== /api/dashboard/overview (summary) ==="
-          curl -fsS http://127.0.0.1:8000/api/dashboard/overview | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['summary'], indent=2))"
+          echo "=== everything else refuses without a session (USR-1) ==="
+          for path in /api/bags /api/species /api/dashboard/overview /api/reports/production /api/users; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8000$path")
+            echo "$path -> $code"
+            test "$code" = "401"
+          done
           echo ""
           echo "=== frontend ==="
-          curl -fsS -o /dev/null -w "frontend: HTTP %{http_code}\n" http://127.0.0.1:3000/
+          curl -fsS -o /dev/null -w "sign-in page: HTTP %{http_code}\n" http://127.0.0.1:3000/login
+
+      - name: Signed-in request
+        run: |
+          set -e
+          # A two-minute session for the first administrator, made on the
+          # server, so this check never depends on anyone's password.
+          if token=$(docker compose exec -T api python -m app.manage smoke-session); then
+            echo "::add-mask::$token"
+            cookie="Cookie: mfa_session=$token"
+            # Through the frontend's /api forwarder, as a browser on the server would.
+            curl -fsS -H "$cookie" http://127.0.0.1:3000/api/auth/me \
+              | python3 -c "import json,sys; u=json.load(sys.stdin); print('signed in as role:', u['role'])"
+            curl -fsS -H "$cookie" http://127.0.0.1:3000/api/dashboard/overview \
+              | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['summary'], indent=2))"
+            curl -fsS -H "$cookie" http://127.0.0.1:3000/api/species \
+              | python3 -c "import json,sys; print(len(json.load(sys.stdin)), 'active species')"
+            curl -fsS -o /dev/null -X POST -H "$cookie" -H "Origin: http://127.0.0.1:3000" \
+              http://127.0.0.1:3000/api/auth/logout
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "$cookie" http://127.0.0.1:3000/api/auth/me)
+            echo "after sign-out -> $code"
+            test "$code" = "401"
+          else
+            echo "::warning::No administrator account exists, so nobody can sign in. Set the repository secrets BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (roadmap, owner action O2) and re-run this workflow."
+          fi
 
       - name: Row counts (is there real data yet?)
         run: |
@@ -137,8 +175,8 @@ jobs:
         run: |
           # Dangling images are the ones this deploy replaced. Build cache
           # unused for three days goes too. Volumes are never pruned.
-          docker image prune -f
-          docker builder prune -f --filter "until=72h"
+          docker image prune -f | tail -n 1
+          docker builder prune -f --filter "until=72h" | tail -n 1
           docker system df
           df -h / | tail -n 1
 

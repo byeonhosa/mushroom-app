@@ -132,6 +132,7 @@ export default function BagPage() {
                   <th>Event</th>
                   <th>Detail</th>
                   <th>Notes</th>
+                  <th>Entered by</th>
                 </tr>
               </thead>
               <tbody>
@@ -141,6 +142,7 @@ export default function BagPage() {
                     <td>{EVENT_LABELS[event.event_type] ?? event.event_type}</td>
                     <td>{event.detail ?? "-"}</td>
                     <td>{event.notes ?? "-"}</td>
+                    <td>{event.recorded_by_name ?? "-"}</td>
                   </tr>
                 ))}
               </tbody>
