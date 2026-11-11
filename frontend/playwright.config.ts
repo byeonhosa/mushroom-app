@@ -4,7 +4,11 @@ import { defineConfig, devices } from "@playwright/test";
 const frontendDir = __dirname;
 const repoRoot = path.resolve(frontendDir, "..");
 const backendDir = path.join(repoRoot, "backend");
-const pythonCommand = process.platform === "win32" ? "python" : "python3";
+// E2E_PYTHON lets a developer point at a virtualenv interpreter.
+const pythonCommand = process.env.E2E_PYTHON || (process.platform === "win32" ? "python" : "python3");
+// PW_CHROMIUM_PATH lets an environment with a pre-installed Chromium use it
+// instead of the browser that `npx playwright install` downloads in CI.
+const chromiumPath = process.env.PW_CHROMIUM_PATH || undefined;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -21,7 +25,9 @@ export default defineConfig({
     baseURL: "http://localhost:3001",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    // Video needs Playwright's own ffmpeg, which a pre-installed browser may lack.
+    video: chromiumPath ? "off" : "retain-on-failure",
+    launchOptions: chromiumPath ? { executablePath: chromiumPath } : {},
   },
   projects: [
     {

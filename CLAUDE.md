@@ -22,15 +22,15 @@ Mushroom Farm Manager — production tracking for The Maury River Mushroom Farm,
 
 ## Workflow
 - Work on a branch, open a pull request, merge by squash when CI is green.
-- **GitHub Actions CI is the test gate** (`.github/workflows/ci.yml`): pytest, migration smoke against PostgreSQL, API contract check, frontend typecheck, build, and Playwright e2e. Do not merge on red.
+- **GitHub Actions CI is the test gate** (`.github/workflows/ci.yml`): pytest, migration smoke against PostgreSQL, API contract check, dependency audit (`pip-audit`, `npm audit`), frontend typecheck, build, and Playwright e2e. Do not merge on red.
 - **Every push to `main` deploys** (`.github/workflows/deploy-droplet.yml`) on the self-hosted runner on the droplet. It pulls, runs `docker compose up -d --build`, waits for the API, and smoke-tests the health endpoint, two API routes and the frontend. Check the result with `gh run list`.
 - If a deploy fails at the build, the running containers are unaffected. Fix forward or revert.
 - The deploy workflow does **not** run on pull requests. This protects the self-hosted runner on a public repo (forks cannot push to `main`).
 - In cloud sessions GitHub's GraphQL API is blocked: `gh pr create` and `gh pr merge` fail. Use the REST calls listed in the brief. The proxy also refuses branch deletion; merged branches are removed by the repository's auto-delete setting once the owner turns it on.
 
 ## Tech Stack
-- Frontend: Next.js 16.x, React 19 (TypeScript). No Tailwind or UI library; one global `frontend/app/styles.css` with semantic classes.
-- Backend: FastAPI (see `backend/requirements.txt` for the pinned range), Python 3.12
+- Frontend: Next.js 16.x, React 19 (TypeScript). No Tailwind or UI library; one global `frontend/app/styles.css` with semantic classes. Next.js 16 differs from older versions in APIs and conventions; its documentation ships with the package at `frontend/node_modules/next/dist/docs/`, so check the relevant guide there before using an API you have not used in this codebase. `next-env.d.ts` is generated (`npm run typecheck` runs `next typegen` first) and is not tracked.
+- Backend: FastAPI, Python 3.12. Direct dependencies and their ranges are in `backend/requirements.in`; `backend/requirements.txt` and `requirements-dev.txt` are hashed lockfiles compiled from the `.in` files with `pip-compile` (commands at the top of `requirements.in`). The Docker image and CI install from the lockfiles with `--require-hashes`. Never edit a lockfile by hand.
 - Database: PostgreSQL 16 (prod), SQLite (dev/test)
 - ORM: SQLAlchemy 2.0 — **migrations are raw SQL via `python -m app.migrate` (NOT Alembic)**
 - API contract: OpenAPI generated from the code; frontend types generated from it (`npm run generate:api-contract`); CI checks for drift
@@ -47,7 +47,7 @@ Mushroom Farm Manager — production tracking for The Maury River Mushroom Farm,
 ## Build & Test Commands
 
     # Backend
-    cd backend && pip install -r requirements.txt -r requirements-dev.txt
+    cd backend && pip install --require-hashes -r requirements.txt -r requirements-dev.txt
     cd backend && pytest -q
     cd backend && uvicorn app.main:app --reload --port 8000
 
