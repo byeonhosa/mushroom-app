@@ -318,6 +318,53 @@ class LiquidCultureOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- Purchased spawn lots (REF-11) ---
+class PurchasedSpawnLotCreate(BaseModel):
+    vendor: str = Field(..., min_length=1, max_length=160)
+    vendor_lot_number: Optional[str] = Field(default=None, max_length=120)
+    species_id: int
+    grain_type_id: Optional[int] = None
+    received_at: InputDatetime
+    quantity: Optional[float] = Field(default=None, gt=0)
+    quantity_unit: Optional[str] = Field(default=None, max_length=20)
+    notes: Optional[str] = None
+
+
+class PurchasedSpawnLotUpdate(BaseModel):
+    vendor: Optional[str] = Field(default=None, min_length=1, max_length=160)
+    vendor_lot_number: Optional[str] = Field(default=None, max_length=120)
+    species_id: Optional[int] = None
+    grain_type_id: Optional[int] = None
+    received_at: Optional[InputDatetime] = None
+    quantity: Optional[float] = Field(default=None, gt=0)
+    quantity_unit: Optional[str] = Field(default=None, max_length=20)
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+    # INO-7: true marks the lot used up; false reopens it.
+    used_up: Optional[bool] = None
+
+
+class PurchasedSpawnLotOut(BaseModel):
+    purchased_spawn_lot_id: int
+    lot_code: str
+    vendor: str
+    vendor_lot_number: Optional[str] = None
+    species_id: int
+    species_code: Optional[str] = None
+    species_name: Optional[str] = None
+    grain_type_id: Optional[int] = None
+    grain_type_name: Optional[str] = None
+    received_at: UtcDatetime
+    quantity: Optional[float] = None
+    quantity_unit: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: bool
+    is_used_up: bool
+    used_up_at: Optional[UtcDatetime] = None
+    created_at: UtcDatetime
+    model_config = ConfigDict(from_attributes=True)
+
+
 # --- Grain types ---
 class GrainTypeCreate(BaseModel):
     name: str
@@ -429,7 +476,9 @@ class BagOut(BaseModel):
     source_spawn_bag_ref: Optional[str] = None
     source_liquid_culture_id: Optional[int] = None
     source_liquid_culture_code: Optional[str] = None
-    inoculation_source_type: Optional[Literal["LIQUID_CULTURE", "SPAWN_BAG"]] = None
+    source_purchased_spawn_lot_id: Optional[int] = None
+    source_purchased_spawn_lot_code: Optional[str] = None
+    inoculation_source_type: Optional[Literal["LIQUID_CULTURE", "SPAWN_BAG", "PURCHASED_SPAWN"]] = None
     target_dry_kg: Optional[float] = None
     actual_dry_kg: Optional[float] = None
     dry_weight_kg: Optional[float] = None
@@ -489,35 +538,52 @@ class InoculationCreate(BaseModel):
 
 
 class SpawnInoculationBatchCreate(BaseModel):
+    """Inoculate unlabeled spawn bags of a run from one source (INO-1, INO-2, INO-6)."""
+
     sterilization_run_id: int
-    source_type: Literal["LIQUID_CULTURE", "SPAWN_BAG"]
+    source_type: Literal["LIQUID_CULTURE", "SPAWN_BAG", "PURCHASED_SPAWN"]
     liquid_culture_id: Optional[int] = None
     donor_spawn_bag_id: Optional[str] = None
+    purchased_spawn_lot_id: Optional[int] = None
     bag_count: int = Field(..., gt=0)
     inoculated_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_source(self):
-        if self.source_type == "LIQUID_CULTURE":
-            if self.liquid_culture_id is None:
-                raise ValueError("liquid_culture_id is required when source_type is LIQUID_CULTURE")
-            if self.donor_spawn_bag_id is not None:
-                raise ValueError("donor_spawn_bag_id must be omitted when source_type is LIQUID_CULTURE")
-        if self.source_type == "SPAWN_BAG":
-            if not self.donor_spawn_bag_id:
-                raise ValueError("donor_spawn_bag_id is required when source_type is SPAWN_BAG")
-            if self.liquid_culture_id is not None:
-                raise ValueError("liquid_culture_id must be omitted when source_type is SPAWN_BAG")
+        given = {
+            "LIQUID_CULTURE": self.liquid_culture_id is not None,
+            "SPAWN_BAG": bool(self.donor_spawn_bag_id),
+            "PURCHASED_SPAWN": self.purchased_spawn_lot_id is not None,
+        }
+        field = {
+            "LIQUID_CULTURE": "liquid_culture_id",
+            "SPAWN_BAG": "donor_spawn_bag_id",
+            "PURCHASED_SPAWN": "purchased_spawn_lot_id",
+        }
+        if not given[self.source_type]:
+            raise ValueError(f"{field[self.source_type]} is required when source_type is {self.source_type}")
+        for other, present in given.items():
+            if other != self.source_type and present:
+                raise ValueError(f"{field[other]} must be omitted when source_type is {self.source_type}")
         return self
 
 
 class InoculationBatchCreate(BaseModel):
-    spawn_bag_id: str
+    """Inoculate unlabeled substrate bags of a run from a ready spawn bag or a purchased spawn lot (INO-3, INO-6)."""
+
+    spawn_bag_id: Optional[str] = None
+    purchased_spawn_lot_id: Optional[int] = None
     pasteurization_run_id: int
     bag_count: int = Field(..., gt=0)
     inoculated_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_source(self):
+        if bool(self.spawn_bag_id) == (self.purchased_spawn_lot_id is not None):
+            raise ValueError("Give exactly one source: spawn_bag_id or purchased_spawn_lot_id")
+        return self
 
 
 class InoculationOut(BaseModel):
@@ -649,6 +715,8 @@ class SubstrateBagMetricsOut(BaseModel):
     parent_spawn_bag_ref: Optional[str] = None
     source_liquid_culture_id: Optional[int] = None
     source_liquid_culture_code: Optional[str] = None
+    source_purchased_spawn_lot_id: Optional[int] = None
+    source_purchased_spawn_lot_code: Optional[str] = None
     spawn_generation: Optional[int] = None
     source_sterilization_run_id: Optional[int] = None
     source_sterilization_run_code: Optional[str] = None
@@ -711,7 +779,9 @@ class LineageChildBagOut(BaseModel):
     parent_spawn_bag_ref: Optional[str] = None
     source_liquid_culture_id: Optional[int] = None
     source_liquid_culture_code: Optional[str] = None
-    inoculation_source_type: Optional[Literal["LIQUID_CULTURE", "SPAWN_BAG"]] = None
+    source_purchased_spawn_lot_id: Optional[int] = None
+    source_purchased_spawn_lot_code: Optional[str] = None
+    inoculation_source_type: Optional[Literal["LIQUID_CULTURE", "SPAWN_BAG", "PURCHASED_SPAWN"]] = None
     source_sterilization_run_id: Optional[int] = None
     source_sterilization_run_code: Optional[str] = None
     target_dry_kg: Optional[float] = None
@@ -742,6 +812,7 @@ class ProductionReportOut(BaseModel):
     contamination_by_species: List[ReportGroupOut]
     contamination_by_liquid_culture: List[ReportGroupOut]
     contamination_by_inoculation_source_type: List[ReportGroupOut]
+    contamination_by_purchased_spawn_lot: List[ReportGroupOut]
     contamination_by_spawn_generation: List[ReportGroupOut]
     contamination_by_source_sterilization_run: List[ReportGroupOut]
     contamination_by_pasteurization_run: List[ReportGroupOut]

@@ -181,6 +181,100 @@ def create_liquid_culture(db: Session, data: dict):
     return culture
 
 
+# --- Purchased spawn lots (REF-11) ---
+
+def list_purchased_spawn_lots(db: Session, *, usable_only: bool = False):
+    """Newest first. `usable_only` leaves out lots that are deactivated or used up."""
+    stmt = (
+        select(models.PurchasedSpawnLot)
+        .options(joinedload(models.PurchasedSpawnLot.species), joinedload(models.PurchasedSpawnLot.grain_type))
+        .order_by(models.PurchasedSpawnLot.received_at.desc(), models.PurchasedSpawnLot.purchased_spawn_lot_id.desc())
+    )
+    if usable_only:
+        stmt = stmt.where(
+            models.PurchasedSpawnLot.is_active.is_(True), models.PurchasedSpawnLot.used_up_at.is_(None)
+        )
+    return db.execute(stmt).scalars().all()
+
+
+def get_purchased_spawn_lot(db: Session, lot_id: int):
+    return db.get(models.PurchasedSpawnLot, lot_id)
+
+
+def _next_purchased_lot_code(db: Session, species_code: str, received_at) -> str:
+    """PL-LM-261105A: purchased lot, species, the day it arrived, a letter for that day."""
+    import string
+
+    from .bag_id import farm_date
+
+    stem = f"PL-{species_code}-{farm_date(received_at).strftime('%y%m%d')}"
+    used = set(
+        db.execute(
+            select(models.PurchasedSpawnLot.lot_code).where(models.PurchasedSpawnLot.lot_code.like(f"{stem}_"))
+        ).scalars().all()
+    )
+    for letter in string.ascii_uppercase:
+        if f"{stem}{letter}" not in used:
+            return f"{stem}{letter}"
+    raise ConflictError("Too many lots of that species were received on that day.")
+
+
+def create_purchased_spawn_lot(db: Session, data: dict):
+    data = dict(data)
+    # The species row is locked until commit, so two people recording a lot of
+    # the same species at the same moment are given different letters.
+    species = db.execute(
+        select(models.MushroomSpecies)
+        .where(models.MushroomSpecies.species_id == data.get("species_id"))
+        .with_for_update()
+    ).scalar_one_or_none()
+    if species is None:
+        raise NotFoundError("Species not found")
+    if not species.is_active:
+        raise DomainError(f"{species.name} is deactivated. Reactivate it before recording a lot of it.")
+    if data.get("grain_type_id") is not None and db.get(models.GrainType, data["grain_type_id"]) is None:
+        raise NotFoundError("Grain type not found")
+    data["lot_code"] = _next_purchased_lot_code(db, species.code, data["received_at"])
+    lot = models.PurchasedSpawnLot(**data)
+    db.add(lot)
+    db.commit()
+    db.refresh(lot)
+    return lot
+
+
+def update_purchased_spawn_lot(db: Session, lot_id: int, data: dict):
+    from .crud_status import _now
+
+    lot = db.get(models.PurchasedSpawnLot, lot_id)
+    if lot is None:
+        return None
+    data = dict(data)
+    if "used_up" in data:
+        used_up = data.pop("used_up")
+        if used_up is True and lot.used_up_at is None:
+            lot.used_up_at = _now()
+        elif used_up is False:
+            lot.used_up_at = None
+    if "species_id" in data and data["species_id"] != lot.species_id:
+        in_use = db.execute(
+            select(models.Bag.bag_id).where(models.Bag.source_purchased_spawn_lot_id == lot_id).limit(1)
+        ).first()
+        if in_use:
+            raise DomainError("This lot has already inoculated bags, so its species cannot be changed.")
+        if db.get(models.MushroomSpecies, data["species_id"]) is None:
+            raise NotFoundError("Species not found")
+    if data.get("grain_type_id") is not None and db.get(models.GrainType, data["grain_type_id"]) is None:
+        raise NotFoundError("Grain type not found")
+    for required in ("vendor", "species_id", "received_at", "is_active"):
+        if required in data and data[required] is None:
+            data.pop(required)
+    for key, value in data.items():
+        setattr(lot, key, value)
+    db.commit()
+    db.refresh(lot)
+    return lot
+
+
 # --- Grain types ---
 
 def list_grain_types(db: Session):

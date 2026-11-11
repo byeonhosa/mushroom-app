@@ -128,6 +128,7 @@ def _bag_lineage_options():
         joinedload(models.Bag.sterilization_run),
         joinedload(models.Bag.parent_spawn_bag).joinedload(models.Bag.sterilization_run),
         joinedload(models.Bag.source_liquid_culture),
+        joinedload(models.Bag.source_purchased_spawn_lot),
         joinedload(models.Bag.harvest_events),
         joinedload(models.Bag.status_events),
     )

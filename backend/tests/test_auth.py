@@ -32,6 +32,7 @@ def _operations():
             .replace("{species_id}", "1")
             .replace("{grain_type_id}", "1")
             .replace("{user_id}", "1")
+            .replace("{lot_id}", "1")
             .replace("{code}", "lions_mane")
         )
         assert "{" not in concrete, f"add a sample value for {path}"

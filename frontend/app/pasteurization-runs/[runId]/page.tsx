@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiGet, apiPost } from "../../../lib/api";
 import type { Bag, PasteurizationRunDetail } from "../../../lib/types";
+import { SubstrateSourceFields, useUsableSpawnLots, type SubstrateSource } from "../../../lib/spawn-lots";
 
 function formatPercent(value: number | null | undefined) {
   if (value == null) {
@@ -31,6 +32,17 @@ export default function PasteurizationRunDetailPage() {
   const [actualDryKg, setActualDryKg] = useState("");
   const [inoculateCount, setInoculateCount] = useState(1);
   const [spawnBagRef, setSpawnBagRef] = useState("");
+  // The farm inoculates substrate from purchased spawn far more often than from its own spawn bags.
+  const [source, setSource] = useState<SubstrateSource>("PURCHASED_SPAWN");
+  const [lotId, setLotId] = useState<number | "">("");
+  const { lots, loaded: lotsLoaded } = useUsableSpawnLots();
+  // With no purchased lot open, the only possible source is one of our own spawn bags.
+  useEffect(() => {
+    if (lotsLoaded && lots.length === 0) setSource("SPAWN_BAG");
+  }, [lotsLoaded, lots]);
+  useEffect(() => {
+    if (lots.length === 1) setLotId((current) => current || lots[0].purchased_spawn_lot_id);
+  }, [lots]);
   const [isCreating, setIsCreating] = useState(false);
   const [isInoculating, setIsInoculating] = useState(false);
 
@@ -133,7 +145,11 @@ export default function PasteurizationRunDetailPage() {
       setActionError(`Only ${unlabeledBags.length} unlabeled substrate record(s) are available in this run.`);
       return;
     }
-    if (!spawnBagRef.trim()) {
+    if (source === "PURCHASED_SPAWN" && lotId === "") {
+      setActionError("Select the purchased spawn lot that supplied the grain.");
+      return;
+    }
+    if (source === "SPAWN_BAG" && !spawnBagRef.trim()) {
       setActionError("Enter or select one ready spawn bag code.");
       return;
     }
@@ -147,7 +163,9 @@ export default function PasteurizationRunDetailPage() {
       const inoculatedBags = await apiPost<Bag[]>("/inoculations/batch", {
         pasteurization_run_id: run.pasteurization_run_id,
         bag_count: inoculateCount,
-        spawn_bag_id: spawnBagRef.trim(),
+        ...(source === "PURCHASED_SPAWN"
+          ? { purchased_spawn_lot_id: lotId }
+          : { spawn_bag_id: spawnBagRef.trim() }),
       });
       await reloadRunData();
       setSubstrateLabelRefs(inoculatedBags.map((bag) => bag.bag_ref));
@@ -235,15 +253,16 @@ export default function PasteurizationRunDetailPage() {
             <form onSubmit={inoculateRunBags} className="form" style={{ marginTop: 24 }}>
               <h3>Inoculate Unlabeled Substrate Records</h3>
               <p>Available unlabeled records in this run: {unlabeledBags.length}</p>
-              <label>
-                Ready spawn bag code
-                <input
-                  list="ready-spawn-bag-options"
-                  value={spawnBagRef}
-                  onChange={(e) => setSpawnBagRef(e.target.value)}
-                  placeholder="Scan or enter a ready spawn bag code"
-                />
-              </label>
+              <SubstrateSourceFields
+                source={source}
+                onSourceChange={setSource}
+                lots={lots}
+                lotId={lotId}
+                onLotChange={setLotId}
+                spawnBagRef={spawnBagRef}
+                onSpawnBagChange={setSpawnBagRef}
+                spawnBagListId="ready-spawn-bag-options"
+              />
               <datalist id="ready-spawn-bag-options">
                 {readySpawnBags.map((bag) => (
                   <option key={bag.bag_id} value={bag.bag_ref} />

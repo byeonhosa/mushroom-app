@@ -139,6 +139,26 @@ def create_liquid_culture(payload: schemas.LiquidCultureCreate, db: Session = De
         raise
 
 
+# --- Purchased spawn lots (REF-11, INO-7). An input of the day's work: any signed-in user. ---
+
+@router.get("/purchased-spawn-lots", response_model=list[schemas.PurchasedSpawnLotOut])
+def list_purchased_spawn_lots(usable_only: bool = False, db: Session = Depends(get_db)):
+    return crud.list_purchased_spawn_lots(db, usable_only=usable_only)
+
+
+@router.post("/purchased-spawn-lots", response_model=schemas.PurchasedSpawnLotOut)
+def create_purchased_spawn_lot(payload: schemas.PurchasedSpawnLotCreate, db: Session = Depends(get_db)):
+    return crud.create_purchased_spawn_lot(db, payload.model_dump(exclude_unset=True))
+
+
+@router.patch("/purchased-spawn-lots/{lot_id}", response_model=schemas.PurchasedSpawnLotOut)
+def update_purchased_spawn_lot(lot_id: int, payload: schemas.PurchasedSpawnLotUpdate, db: Session = Depends(get_db)):
+    lot = crud.update_purchased_spawn_lot(db, lot_id, payload.model_dump(exclude_unset=True))
+    if not lot:
+        raise HTTPException(404, "Purchased spawn lot not found")
+    return lot
+
+
 @router.get("/grain-types", response_model=list[schemas.GrainTypeOut])
 def list_grain_types(db: Session = Depends(get_db)):
     return crud.list_grain_types(db)
@@ -422,6 +442,7 @@ def inoculate_spawn_bags(payload: schemas.SpawnInoculationBatchCreate, db: Sessi
             payload.source_type,
             liquid_culture_id=payload.liquid_culture_id,
             donor_spawn_bag_ref=payload.donor_spawn_bag_id,
+            purchased_spawn_lot_id=payload.purchased_spawn_lot_id,
             inoculated_at=payload.inoculated_at,
             notes=payload.notes,
         )
@@ -461,6 +482,7 @@ def create_inoculation_batch(payload: schemas.InoculationBatchCreate, db: Sessio
             payload.spawn_bag_id,
             inoculated_at=payload.inoculated_at,
             notes=payload.notes,
+            purchased_spawn_lot_id=payload.purchased_spawn_lot_id,
         )
         return bags
     except LookupError as e:

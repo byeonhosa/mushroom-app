@@ -21,6 +21,7 @@ class DisposalReason(str, enum.Enum):
 class InoculationSourceType(str, enum.Enum):
     LIQUID_CULTURE = "LIQUID_CULTURE"
     SPAWN_BAG = "SPAWN_BAG"
+    PURCHASED_SPAWN = "PURCHASED_SPAWN"
 
 
 class BagStatusEventType(str, enum.Enum):
@@ -225,6 +226,49 @@ class LiquidCulture(Base):
     species = relationship("MushroomSpecies")
 
 
+class PurchasedSpawnLot(Base):
+    """Colonized grain spawn bought from a supplier (SRS REF-11).
+
+    One lot can inoculate any number of sessions until the operator marks it
+    used up (INO-7). It is never consumed automatically.
+    """
+
+    __tablename__ = "purchased_spawn_lots"
+    purchased_spawn_lot_id = Column(Integer, primary_key=True)
+    # The farm's own short name for the lot, proposed by the app: PL-LM-261105A.
+    lot_code = Column(String(40), nullable=False, unique=True)
+    vendor = Column(String(160), nullable=False)
+    vendor_lot_number = Column(String(120))
+    species_id = Column(Integer, ForeignKey("mushroom_species.species_id"), nullable=False)
+    grain_type_id = Column(Integer, ForeignKey("grain_types.grain_type_id", ondelete="SET NULL"))
+    received_at = Column(DateTime(timezone=True), nullable=False)
+    quantity = Column(Numeric(10, 2))
+    quantity_unit = Column(String(20))
+    notes = Column(Text)
+    is_active = Column(Boolean, nullable=False, default=True)
+    used_up_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    species = relationship("MushroomSpecies")
+    grain_type = relationship("GrainType")
+
+    @property
+    def species_code(self) -> str | None:
+        return self.species.code if self.species else None
+
+    @property
+    def species_name(self) -> str | None:
+        return self.species.name if self.species else None
+
+    @property
+    def grain_type_name(self) -> str | None:
+        return self.grain_type.name if self.grain_type else None
+
+    @property
+    def is_used_up(self) -> bool:
+        return self.used_up_at is not None
+
+
 class PasteurizationRun(Base):
     __tablename__ = "pasteurization_runs"
     pasteurization_run_id = Column(Integer, primary_key=True)
@@ -274,6 +318,9 @@ class Bag(Base):
     grain_type_id = Column(Integer, ForeignKey("grain_types.grain_type_id", ondelete="SET NULL"))
     parent_spawn_bag_id = Column(String(80), ForeignKey("bags.bag_id", ondelete="SET NULL"))
     source_liquid_culture_id = Column(Integer, ForeignKey("liquid_cultures.liquid_culture_id", ondelete="SET NULL"))
+    source_purchased_spawn_lot_id = Column(
+        Integer, ForeignKey("purchased_spawn_lots.purchased_spawn_lot_id", ondelete="SET NULL")
+    )
     target_dry_kg = Column(Numeric(10, 3))
     actual_dry_kg = Column(Numeric(10, 3))
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -297,6 +344,7 @@ class Bag(Base):
     grain_type = relationship("GrainType")
     parent_spawn_bag = relationship("Bag", remote_side=[bag_id])
     source_liquid_culture = relationship("LiquidCulture", foreign_keys=[source_liquid_culture_id])
+    source_purchased_spawn_lot = relationship("PurchasedSpawnLot", foreign_keys=[source_purchased_spawn_lot_id])
     inoculation = relationship(
         "Inoculation",
         back_populates="substrate_bag",
@@ -328,7 +376,15 @@ class Bag(Base):
             return InoculationSourceType.SPAWN_BAG.value
         if self.source_liquid_culture_id:
             return InoculationSourceType.LIQUID_CULTURE.value
+        if self.source_purchased_spawn_lot_id:
+            return InoculationSourceType.PURCHASED_SPAWN.value
         return None
+
+    @property
+    def source_purchased_spawn_lot_code(self) -> str | None:
+        if not self.source_purchased_spawn_lot:
+            return None
+        return self.source_purchased_spawn_lot.lot_code
 
     @property
     def source_spawn_bag_id(self) -> str | None:
@@ -397,12 +453,16 @@ class InoculationBatch(Base):
     source_type = Column(String(20), nullable=False)
     source_spawn_bag_id = Column(String(80), ForeignKey("bags.bag_id", ondelete="SET NULL"))
     source_liquid_culture_id = Column(Integer, ForeignKey("liquid_cultures.liquid_culture_id", ondelete="SET NULL"))
+    source_purchased_spawn_lot_id = Column(
+        Integer, ForeignKey("purchased_spawn_lots.purchased_spawn_lot_id", ondelete="SET NULL")
+    )
     species_id = Column(Integer, ForeignKey("mushroom_species.species_id", ondelete="SET NULL"))
     inoculated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     notes = Column(Text)
 
     source_spawn_bag = relationship("Bag", foreign_keys=[source_spawn_bag_id])
     source_liquid_culture = relationship("LiquidCulture", foreign_keys=[source_liquid_culture_id])
+    source_purchased_spawn_lot = relationship("PurchasedSpawnLot", foreign_keys=[source_purchased_spawn_lot_id])
     species = relationship("MushroomSpecies")
     targets = relationship(
         "InoculationBatchTarget",

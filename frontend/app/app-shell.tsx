@@ -22,6 +22,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/reports", label: "Reports" },
   { href: "/species", label: "Species" },
   { href: "/reference/species", label: "Species Reference" },
+  { href: "/purchased-spawn-lots", label: "Purchased Spawn" },
   { href: "/liquid-cultures", label: "Liquid Cultures" },
   { href: "/pasteurization-runs", label: "Pasteurization" },
   { href: "/sterilization-runs", label: "Sterilization" },

@@ -342,6 +342,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/purchased-spawn-lots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Purchased Spawn Lots */
+        get: operations["list_purchased_spawn_lots_api_purchased_spawn_lots_get"];
+        put?: never;
+        /** Create Purchased Spawn Lot */
+        post: operations["create_purchased_spawn_lot_api_purchased_spawn_lots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchased-spawn-lots/{lot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Purchased Spawn Lot */
+        patch: operations["update_purchased_spawn_lot_api_purchased_spawn_lots__lot_id__patch"];
+        trace?: never;
+    };
     "/api/grain-types": {
         parameters: {
             query?: never;
@@ -1009,8 +1044,12 @@ export interface components {
             source_liquid_culture_id?: number | null;
             /** Source Liquid Culture Code */
             source_liquid_culture_code?: string | null;
+            /** Source Purchased Spawn Lot Id */
+            source_purchased_spawn_lot_id?: number | null;
+            /** Source Purchased Spawn Lot Code */
+            source_purchased_spawn_lot_code?: string | null;
             /** Inoculation Source Type */
-            inoculation_source_type?: ("LIQUID_CULTURE" | "SPAWN_BAG") | null;
+            inoculation_source_type?: ("LIQUID_CULTURE" | "SPAWN_BAG" | "PURCHASED_SPAWN") | null;
             /** Target Dry Kg */
             target_dry_kg?: number | null;
             /** Actual Dry Kg */
@@ -1107,8 +1146,12 @@ export interface components {
             source_liquid_culture_id?: number | null;
             /** Source Liquid Culture Code */
             source_liquid_culture_code?: string | null;
+            /** Source Purchased Spawn Lot Id */
+            source_purchased_spawn_lot_id?: number | null;
+            /** Source Purchased Spawn Lot Code */
+            source_purchased_spawn_lot_code?: string | null;
             /** Inoculation Source Type */
-            inoculation_source_type?: ("LIQUID_CULTURE" | "SPAWN_BAG") | null;
+            inoculation_source_type?: ("LIQUID_CULTURE" | "SPAWN_BAG" | "PURCHASED_SPAWN") | null;
             /** Target Dry Kg */
             target_dry_kg?: number | null;
             /** Actual Dry Kg */
@@ -1563,10 +1606,15 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
-        /** InoculationBatchCreate */
+        /**
+         * InoculationBatchCreate
+         * @description Inoculate unlabeled substrate bags of a run from a ready spawn bag or a purchased spawn lot (INO-3, INO-6).
+         */
         InoculationBatchCreate: {
             /** Spawn Bag Id */
-            spawn_bag_id: string;
+            spawn_bag_id?: string | null;
+            /** Purchased Spawn Lot Id */
+            purchased_spawn_lot_id?: number | null;
             /** Pasteurization Run Id */
             pasteurization_run_id: number;
             /** Bag Count */
@@ -1648,8 +1696,12 @@ export interface components {
             source_liquid_culture_id?: number | null;
             /** Source Liquid Culture Code */
             source_liquid_culture_code?: string | null;
+            /** Source Purchased Spawn Lot Id */
+            source_purchased_spawn_lot_id?: number | null;
+            /** Source Purchased Spawn Lot Code */
+            source_purchased_spawn_lot_code?: string | null;
             /** Inoculation Source Type */
-            inoculation_source_type?: ("LIQUID_CULTURE" | "SPAWN_BAG") | null;
+            inoculation_source_type?: ("LIQUID_CULTURE" | "SPAWN_BAG" | "PURCHASED_SPAWN") | null;
             /** Source Sterilization Run Id */
             source_sterilization_run_id?: number | null;
             /** Source Sterilization Run Code */
@@ -1949,6 +2001,8 @@ export interface components {
             contamination_by_liquid_culture: components["schemas"]["ReportGroupOut"][];
             /** Contamination By Inoculation Source Type */
             contamination_by_inoculation_source_type: components["schemas"]["ReportGroupOut"][];
+            /** Contamination By Purchased Spawn Lot */
+            contamination_by_purchased_spawn_lot: components["schemas"]["ReportGroupOut"][];
             /** Contamination By Spawn Generation */
             contamination_by_spawn_generation: components["schemas"]["ReportGroupOut"][];
             /** Contamination By Source Sterilization Run */
@@ -1987,6 +2041,94 @@ export interface components {
             /** Overall Bio Efficiency */
             overall_bio_efficiency?: number | null;
         };
+        /** PurchasedSpawnLotCreate */
+        PurchasedSpawnLotCreate: {
+            /** Vendor */
+            vendor: string;
+            /** Vendor Lot Number */
+            vendor_lot_number?: string | null;
+            /** Species Id */
+            species_id: number;
+            /** Grain Type Id */
+            grain_type_id?: number | null;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Quantity */
+            quantity?: number | null;
+            /** Quantity Unit */
+            quantity_unit?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** PurchasedSpawnLotOut */
+        PurchasedSpawnLotOut: {
+            /** Purchased Spawn Lot Id */
+            purchased_spawn_lot_id: number;
+            /** Lot Code */
+            lot_code: string;
+            /** Vendor */
+            vendor: string;
+            /** Vendor Lot Number */
+            vendor_lot_number?: string | null;
+            /** Species Id */
+            species_id: number;
+            /** Species Code */
+            species_code?: string | null;
+            /** Species Name */
+            species_name?: string | null;
+            /** Grain Type Id */
+            grain_type_id?: number | null;
+            /** Grain Type Name */
+            grain_type_name?: string | null;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Quantity */
+            quantity?: number | null;
+            /** Quantity Unit */
+            quantity_unit?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Used Up */
+            is_used_up: boolean;
+            /** Used Up At */
+            used_up_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PurchasedSpawnLotUpdate */
+        PurchasedSpawnLotUpdate: {
+            /** Vendor */
+            vendor?: string | null;
+            /** Vendor Lot Number */
+            vendor_lot_number?: string | null;
+            /** Species Id */
+            species_id?: number | null;
+            /** Grain Type Id */
+            grain_type_id?: number | null;
+            /** Received At */
+            received_at?: string | null;
+            /** Quantity */
+            quantity?: number | null;
+            /** Quantity Unit */
+            quantity_unit?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Used Up */
+            used_up?: boolean | null;
+        };
         /** ReportGroupOut */
         ReportGroupOut: {
             /** Key */
@@ -2000,7 +2142,10 @@ export interface components {
             /** Contamination Rate */
             contamination_rate: number;
         };
-        /** SpawnInoculationBatchCreate */
+        /**
+         * SpawnInoculationBatchCreate
+         * @description Inoculate unlabeled spawn bags of a run from one source (INO-1, INO-2, INO-6).
+         */
         SpawnInoculationBatchCreate: {
             /** Sterilization Run Id */
             sterilization_run_id: number;
@@ -2008,11 +2153,13 @@ export interface components {
              * Source Type
              * @enum {string}
              */
-            source_type: "LIQUID_CULTURE" | "SPAWN_BAG";
+            source_type: "LIQUID_CULTURE" | "SPAWN_BAG" | "PURCHASED_SPAWN";
             /** Liquid Culture Id */
             liquid_culture_id?: number | null;
             /** Donor Spawn Bag Id */
             donor_spawn_bag_id?: string | null;
+            /** Purchased Spawn Lot Id */
+            purchased_spawn_lot_id?: number | null;
             /** Bag Count */
             bag_count: number;
             /** Inoculated At */
@@ -2248,6 +2395,10 @@ export interface components {
             source_liquid_culture_id?: number | null;
             /** Source Liquid Culture Code */
             source_liquid_culture_code?: string | null;
+            /** Source Purchased Spawn Lot Id */
+            source_purchased_spawn_lot_id?: number | null;
+            /** Source Purchased Spawn Lot Code */
+            source_purchased_spawn_lot_code?: string | null;
             /** Spawn Generation */
             spawn_generation?: number | null;
             /** Source Sterilization Run Id */
@@ -3010,6 +3161,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LiquidCultureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_purchased_spawn_lots_api_purchased_spawn_lots_get: {
+        parameters: {
+            query?: {
+                usable_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchasedSpawnLotOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_purchased_spawn_lot_api_purchased_spawn_lots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchasedSpawnLotCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchasedSpawnLotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_purchased_spawn_lot_api_purchased_spawn_lots__lot_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchasedSpawnLotUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchasedSpawnLotOut"];
                 };
             };
             /** @description Validation Error */

@@ -785,6 +785,135 @@
         }
       }
     },
+    "/api/purchased-spawn-lots": {
+      "get": {
+        "summary": "List Purchased Spawn Lots",
+        "operationId": "list_purchased_spawn_lots_api_purchased_spawn_lots_get",
+        "parameters": [
+          {
+            "name": "usable_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Usable Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PurchasedSpawnLotOut"
+                  },
+                  "title": "Response List Purchased Spawn Lots Api Purchased Spawn Lots Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Purchased Spawn Lot",
+        "operationId": "create_purchased_spawn_lot_api_purchased_spawn_lots_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchasedSpawnLotCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasedSpawnLotOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchased-spawn-lots/{lot_id}": {
+      "patch": {
+        "summary": "Update Purchased Spawn Lot",
+        "operationId": "update_purchased_spawn_lot_api_purchased_spawn_lots__lot_id__patch",
+        "parameters": [
+          {
+            "name": "lot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lot Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchasedSpawnLotUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasedSpawnLotOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/grain-types": {
       "get": {
         "summary": "List Grain Types",
@@ -2651,13 +2780,36 @@
             ],
             "title": "Source Liquid Culture Code"
           },
+          "source_purchased_spawn_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Id"
+          },
+          "source_purchased_spawn_lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Code"
+          },
           "inoculation_source_type": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": [
                   "LIQUID_CULTURE",
-                  "SPAWN_BAG"
+                  "SPAWN_BAG",
+                  "PURCHASED_SPAWN"
                 ]
               },
               {
@@ -3079,13 +3231,36 @@
             ],
             "title": "Source Liquid Culture Code"
           },
+          "source_purchased_spawn_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Id"
+          },
+          "source_purchased_spawn_lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Code"
+          },
           "inoculation_source_type": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": [
                   "LIQUID_CULTURE",
-                  "SPAWN_BAG"
+                  "SPAWN_BAG",
+                  "PURCHASED_SPAWN"
                 ]
               },
               {
@@ -4586,8 +4761,26 @@
       "InoculationBatchCreate": {
         "properties": {
           "spawn_bag_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Spawn Bag Id"
+          },
+          "purchased_spawn_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased Spawn Lot Id"
           },
           "pasteurization_run_id": {
             "type": "integer",
@@ -4624,11 +4817,11 @@
         },
         "type": "object",
         "required": [
-          "spawn_bag_id",
           "pasteurization_run_id",
           "bag_count"
         ],
-        "title": "InoculationBatchCreate"
+        "title": "InoculationBatchCreate",
+        "description": "Inoculate unlabeled substrate bags of a run from a ready spawn bag or a purchased spawn lot (INO-3, INO-6)."
       },
       "InoculationCreate": {
         "properties": {
@@ -4894,13 +5087,36 @@
             ],
             "title": "Source Liquid Culture Code"
           },
+          "source_purchased_spawn_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Id"
+          },
+          "source_purchased_spawn_lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Code"
+          },
           "inoculation_source_type": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": [
                   "LIQUID_CULTURE",
-                  "SPAWN_BAG"
+                  "SPAWN_BAG",
+                  "PURCHASED_SPAWN"
                 ]
               },
               {
@@ -5960,6 +6176,13 @@
             "type": "array",
             "title": "Contamination By Inoculation Source Type"
           },
+          "contamination_by_purchased_spawn_lot": {
+            "items": {
+              "$ref": "#/components/schemas/ReportGroupOut"
+            },
+            "type": "array",
+            "title": "Contamination By Purchased Spawn Lot"
+          },
           "contamination_by_spawn_generation": {
             "items": {
               "$ref": "#/components/schemas/ReportGroupOut"
@@ -6025,6 +6248,7 @@
           "contamination_by_species",
           "contamination_by_liquid_culture",
           "contamination_by_inoculation_source_type",
+          "contamination_by_purchased_spawn_lot",
           "contamination_by_spawn_generation",
           "contamination_by_source_sterilization_run",
           "contamination_by_pasteurization_run",
@@ -6095,6 +6319,362 @@
         ],
         "title": "ProductionReportSummaryOut"
       },
+      "PurchasedSpawnLotCreate": {
+        "properties": {
+          "vendor": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Vendor"
+          },
+          "vendor_lot_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Lot Number"
+          },
+          "species_id": {
+            "type": "integer",
+            "title": "Species Id"
+          },
+          "grain_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grain Type Id"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "quantity_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Unit"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "vendor",
+          "species_id",
+          "received_at"
+        ],
+        "title": "PurchasedSpawnLotCreate"
+      },
+      "PurchasedSpawnLotOut": {
+        "properties": {
+          "purchased_spawn_lot_id": {
+            "type": "integer",
+            "title": "Purchased Spawn Lot Id"
+          },
+          "lot_code": {
+            "type": "string",
+            "title": "Lot Code"
+          },
+          "vendor": {
+            "type": "string",
+            "title": "Vendor"
+          },
+          "vendor_lot_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Lot Number"
+          },
+          "species_id": {
+            "type": "integer",
+            "title": "Species Id"
+          },
+          "species_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Code"
+          },
+          "species_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Name"
+          },
+          "grain_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grain Type Id"
+          },
+          "grain_type_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grain Type Name"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "quantity_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Unit"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "is_used_up": {
+            "type": "boolean",
+            "title": "Is Used Up"
+          },
+          "used_up_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Up At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "purchased_spawn_lot_id",
+          "lot_code",
+          "vendor",
+          "species_id",
+          "received_at",
+          "is_active",
+          "is_used_up",
+          "created_at"
+        ],
+        "title": "PurchasedSpawnLotOut"
+      },
+      "PurchasedSpawnLotUpdate": {
+        "properties": {
+          "vendor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor"
+          },
+          "vendor_lot_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Lot Number"
+          },
+          "species_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Id"
+          },
+          "grain_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grain Type Id"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received At"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "quantity_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Unit"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "used_up": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Up"
+          }
+        },
+        "type": "object",
+        "title": "PurchasedSpawnLotUpdate"
+      },
       "ReportGroupOut": {
         "properties": {
           "key": {
@@ -6138,7 +6718,8 @@
             "type": "string",
             "enum": [
               "LIQUID_CULTURE",
-              "SPAWN_BAG"
+              "SPAWN_BAG",
+              "PURCHASED_SPAWN"
             ],
             "title": "Source Type"
           },
@@ -6163,6 +6744,17 @@
               }
             ],
             "title": "Donor Spawn Bag Id"
+          },
+          "purchased_spawn_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased Spawn Lot Id"
           },
           "bag_count": {
             "type": "integer",
@@ -6199,7 +6791,8 @@
           "source_type",
           "bag_count"
         ],
-        "title": "SpawnInoculationBatchCreate"
+        "title": "SpawnInoculationBatchCreate",
+        "description": "Inoculate unlabeled spawn bags of a run from one source (INO-1, INO-2, INO-6)."
       },
       "SpawnRecipeOut": {
         "properties": {
@@ -7160,6 +7753,28 @@
               }
             ],
             "title": "Source Liquid Culture Code"
+          },
+          "source_purchased_spawn_lot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Id"
+          },
+          "source_purchased_spawn_lot_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Purchased Spawn Lot Code"
           },
           "spawn_generation": {
             "anyOf": [
