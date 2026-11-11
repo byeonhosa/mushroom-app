@@ -83,7 +83,7 @@ Left for later, recorded so that it is not lost: an audit trail of administrator
 - [x] Purchased spawn lots, and inoculation of substrate or spawn bags from a lot. Multi-session use until marked used up. (REF-11, INO-6, INO-7) The setting that lets the farm's own spawn bags serve several sessions moves to WP-4 (D-037).
 - [ ] Liquid culture parent link. (REF-12)
 - [ ] Edit a run after creation. (RUN-5)
-- [ ] First version of the demo data generator. (Brief section 7)
+- [x] First version of the demo data generator: `python -m app.seed_demo` (`docs/OPERATIONS.md` 3a). The reports are checked against its own books. Still to do with it: use it in the browser tests (WP-6, when the reports are reworked) and for the user guide's screenshots (WP-7); a third flush when the flush limit becomes a setting (WP-4). (Brief section 7)
 
 ### WP-4. Fit the model to the farm: events, harvest, corrections
 

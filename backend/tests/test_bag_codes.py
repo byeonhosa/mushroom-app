@@ -4,7 +4,7 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from app import bag_id, models
+from app import bag_id, clock, models
 
 from .conftest import iso
 
@@ -46,12 +46,7 @@ def test_next_run_code_is_the_date_and_the_first_free_letter(farm):
 
 def test_next_run_code_defaults_to_today_at_the_farm(farm, monkeypatch):
     # 02:30 UTC on November 10 is still the evening of November 9 in Virginia.
-    class _Clock(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return datetime(2026, 11, 10, 2, 30, tzinfo=timezone.utc).astimezone(tz)
-
-    monkeypatch.setattr(bag_id, "datetime", _Clock)
+    monkeypatch.setattr(clock, "now", lambda: datetime(2026, 11, 10, 2, 30, tzinfo=timezone.utc))
     assert bag_id.farm_today() == date(2026, 11, 9)
     assert farm.get("/api/pasteurization-runs/next-code") == {"run_code": "261109A", "run_date": "2026-11-09"}
 

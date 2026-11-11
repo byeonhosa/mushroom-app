@@ -9,11 +9,11 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 
-from . import models
+from . import clock, models
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return clock.now()
 
 
 def _as_utc(value: datetime | None) -> datetime | None:
