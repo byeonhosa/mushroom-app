@@ -587,7 +587,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Pasteurization Run
+         * @description Correct a run after it was created (RUN-5).
+         */
+        patch: operations["update_pasteurization_run_api_pasteurization_runs__run_id__patch"];
         trace?: never;
     };
     "/api/pasteurization-runs/{run_id}/detail": {
@@ -659,7 +663,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Sterilization Run
+         * @description Correct a run after it was created (RUN-5).
+         */
+        patch: operations["update_sterilization_run_api_sterilization_runs__run_id__patch"];
         trace?: never;
     };
     "/api/sterilization-runs/{run_id}/detail": {
@@ -2126,6 +2134,28 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * PasteurizationRunUpdate
+         * @description A correction to a run (RUN-5). Only the fields sent are changed.
+         */
+        PasteurizationRunUpdate: {
+            /** Run Code */
+            run_code?: string | null;
+            /** Mix Lot Id */
+            mix_lot_id?: number | null;
+            /** Substrate Recipe Version Id */
+            substrate_recipe_version_id?: number | null;
+            /** Steam Start At */
+            steam_start_at?: string | null;
+            /** Steam End At */
+            steam_end_at?: string | null;
+            /** Unloaded At */
+            unloaded_at?: string | null;
+            /** Bag Count */
+            bag_count?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** ProductionReportOut */
         ProductionReportOut: {
             /**
@@ -2515,6 +2545,34 @@ export interface components {
             unloaded_at: string;
             /** Bag Count */
             bag_count: number;
+            /** Temp C */
+            temp_c?: number | null;
+            /** Psi */
+            psi?: number | null;
+            /** Hold Minutes */
+            hold_minutes?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * SterilizationRunUpdate
+         * @description A correction to a run (RUN-5). Only the fields sent are changed.
+         */
+        SterilizationRunUpdate: {
+            /** Run Code */
+            run_code?: string | null;
+            /** Spawn Recipe Id */
+            spawn_recipe_id?: number | null;
+            /** Grain Type Id */
+            grain_type_id?: number | null;
+            /** Cycle Start At */
+            cycle_start_at?: string | null;
+            /** Cycle End At */
+            cycle_end_at?: string | null;
+            /** Unloaded At */
+            unloaded_at?: string | null;
+            /** Bag Count */
+            bag_count?: number | null;
             /** Temp C */
             temp_c?: number | null;
             /** Psi */
@@ -4015,6 +4073,41 @@ export interface operations {
             };
         };
     };
+    update_pasteurization_run_api_pasteurization_runs__run_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasteurizationRunUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasteurizationRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_pasteurization_run_detail_api_pasteurization_runs__run_id__detail_get: {
         parameters: {
             query?: never;
@@ -4153,6 +4246,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SterilizationRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_sterilization_run_api_sterilization_runs__run_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SterilizationRunUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

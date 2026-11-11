@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { apiGet, apiPost } from "../../../lib/api";
 import type { Bag, LiquidCulture, SterilizationRunDetail } from "../../../lib/types";
 import { lotLabel, useUsableSpawnLots } from "../../../lib/spawn-lots";
+import { RunCorrection } from "../../../lib/run-correction";
 
 type SpawnSource = "LIQUID_CULTURE" | "SPAWN_BAG" | "PURCHASED_SPAWN";
 
@@ -222,6 +223,25 @@ export default function SterilizationRunDetailPage() {
           </>
         )}
       </div>
+
+      {run && (
+        <RunCorrection
+          path={`/sterilization-runs/${run.sterilization_run_id}`}
+          values={run}
+          onSaved={reloadRunData}
+          fields={[
+            { key: "run_code", label: "Run code", kind: "text", required: true, hint: "Six digits for the date and a letter, for example 261109A. Fixed once a label carries it." },
+            { key: "unloaded_at", label: "Unloaded at", kind: "datetime", required: true },
+            { key: "cycle_start_at", label: "Cycle started at", kind: "datetime" },
+            { key: "cycle_end_at", label: "Cycle ended at", kind: "datetime" },
+            { key: "bag_count", label: "Planned bag count", kind: "integer", required: true, hint: "Not lower than the bag records the run already has." },
+            { key: "temp_c", label: "Temperature (°C)", kind: "number" },
+            { key: "psi", label: "Pressure (psi)", kind: "number" },
+            { key: "hold_minutes", label: "Hold time (minutes)", kind: "integer" },
+            { key: "notes", label: "Notes", kind: "text" },
+          ]}
+        />
+      )}
 
       {run && (
         <>

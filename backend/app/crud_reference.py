@@ -3,7 +3,7 @@ CRUD for reference / supporting entities: species, liquid cultures, grain types,
 fill profiles, spawn/substrate recipes, mix lots, ingredients, and run records.
 """
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from . import models
 from .errors import ConflictError, DomainError, NotFoundError
@@ -441,15 +441,96 @@ def get_pasteurization_run(db: Session, pasteurization_run_id: int):
     return db.get(models.PasteurizationRun, pasteurization_run_id)
 
 
-def update_pasteurization_run(db: Session, pasteurization_run_id: int, data: dict):
-    r = db.get(models.PasteurizationRun, pasteurization_run_id)
-    if not r:
-        return None
-    for k, v in data.items():
-        setattr(r, k, v)
+def _correct_run(
+    db: Session,
+    run,
+    bag_run_column,
+    data: dict,
+    *,
+    label: str,
+    times: tuple[str, str],
+    fixed_once_bags_exist: tuple[str, ...],
+    keep_when_null: tuple[str, ...],
+):
+    """Apply a correction to a run (RUN-5), refusing what would falsify its bags.
+
+    A run's bags copy its recipe when their records are created and print its
+    code when they are labelled. So: the recipe, grain and mix lot can change
+    only while the run has no bag records; the run code only while none of
+    its bags has a label; and the planned count can never drop below the
+    records that exist, nor cross 100 once labels exist, because that changes
+    how many digits the bag number is printed with.
+    """
+    from .crud_status import _as_utc
+
+    data = {key: value for key, value in data.items() if not (value is None and key in keep_when_null)}
+    bag_filter = bag_run_column == getattr(run, bag_run_column.key)
+    records = db.execute(select(func.count()).select_from(models.Bag).where(bag_filter)).scalar_one()
+    labelled = db.execute(
+        select(func.count()).select_from(models.Bag).where(bag_filter, models.Bag.bag_code.is_not(None))
+    ).scalar_one()
+
+    changed = {key: value for key, value in data.items() if getattr(run, key) != value}
+    for key in fixed_once_bags_exist:
+        if key in changed and records:
+            raise DomainError(
+                f"{label} already has {records} bag record(s) made with its recipe. "
+                "The recipe, grain and mix lot cannot be changed now."
+            )
+    if "run_code" in changed and labelled:
+        raise DomainError(
+            f"The run code is printed on {labelled} bag label(s) and cannot be changed now."
+        )
+    if "bag_count" in changed:
+        if changed["bag_count"] < records:
+            raise DomainError(
+                f"{label} already has {records} bag record(s); the planned count cannot be lower than that."
+            )
+        if labelled and (run.bag_count >= 100) != (changed["bag_count"] >= 100):
+            raise DomainError(
+                "Labels have been issued for this run. Its planned count cannot cross 100 now, "
+                "because that changes how bag numbers are printed."
+            )
+
+    for key, value in changed.items():
+        setattr(run, key, value)
+
+    start, end = (_as_utc(getattr(run, name)) for name in times)
+    unloaded = _as_utc(run.unloaded_at)
+    if start and end and end < start:
+        raise DomainError("The cycle cannot end before it starts.")
+    if end and unloaded and unloaded < end:
+        raise DomainError("The run cannot be unloaded before its cycle ends.")
+    if start and unloaded and unloaded < start:
+        raise DomainError("The run cannot be unloaded before its cycle starts.")
+
     db.commit()
-    db.refresh(r)
-    return r
+    db.refresh(run)
+    return run
+
+
+def update_pasteurization_run(db: Session, pasteurization_run_id: int, data: dict):
+    run = db.get(models.PasteurizationRun, pasteurization_run_id)
+    if not run:
+        return None
+    if data.get("mix_lot_id") is not None and data["mix_lot_id"] != run.mix_lot_id:
+        if db.get(models.MixLot, data["mix_lot_id"]) is None:
+            raise NotFoundError("Mix lot not found")
+    if (
+        data.get("substrate_recipe_version_id") is not None
+        and data["substrate_recipe_version_id"] != run.substrate_recipe_version_id
+    ):
+        _usable(db, models.SubstrateRecipeVersion, data["substrate_recipe_version_id"], "Substrate recipe")
+    return _correct_run(
+        db,
+        run,
+        models.Bag.pasteurization_run_id,
+        data,
+        label=f"Pasteurization run {run.run_code}",
+        times=("steam_start_at", "steam_end_at"),
+        fixed_once_bags_exist=("mix_lot_id", "substrate_recipe_version_id"),
+        keep_when_null=("run_code", "mix_lot_id", "substrate_recipe_version_id", "unloaded_at", "bag_count"),
+    )
 
 
 # --- Sterilization runs ---
@@ -492,11 +573,20 @@ def get_sterilization_run(db: Session, sterilization_run_id: int):
 
 
 def update_sterilization_run(db: Session, sterilization_run_id: int, data: dict):
-    r = db.get(models.SterilizationRun, sterilization_run_id)
-    if not r:
+    run = db.get(models.SterilizationRun, sterilization_run_id)
+    if not run:
         return None
-    for k, v in data.items():
-        setattr(r, k, v)
-    db.commit()
-    db.refresh(r)
-    return r
+    if data.get("spawn_recipe_id") is not None and data["spawn_recipe_id"] != run.spawn_recipe_id:
+        _usable(db, models.SpawnRecipe, data["spawn_recipe_id"], "Spawn recipe")
+    if data.get("grain_type_id") is not None and data["grain_type_id"] != run.grain_type_id:
+        _usable(db, models.GrainType, data["grain_type_id"], "Grain type")
+    return _correct_run(
+        db,
+        run,
+        models.Bag.sterilization_run_id,
+        data,
+        label=f"Sterilization run {run.run_code}",
+        times=("cycle_start_at", "cycle_end_at"),
+        fixed_once_bags_exist=("spawn_recipe_id", "grain_type_id"),
+        keep_when_null=("run_code", "spawn_recipe_id", "grain_type_id", "unloaded_at", "bag_count"),
+    )

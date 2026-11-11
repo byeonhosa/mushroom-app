@@ -20,7 +20,7 @@ One dated entry per lead-developer session, newest last. What changed, how it wa
 | 29 | WP-1: bag count validation, duplicate and sort errors, UTC offsets, one status path, legacy routes and `zones` removed | Merged, deployed |
 | 30 | WP-1: short bag codes, proposed run codes, concurrency-safe IDs | Merged, deployed |
 | 31 | WP-2: sign-in, roles, sessions, user management, attribution, phone menu | Merged, deployed |
-| 32 | WP-2: Caddy proxy, one origin, HTTPS when a hostname is set, Dependabot ignore rules, this log | Open at the time of writing; see the roadmap's deployment state |
+| 32 | WP-2: Caddy proxy, one origin, HTTPS when a hostname is set, Dependabot ignore rules, this log | Merged, deployed |
 
 ### Requirements closed
 
@@ -65,4 +65,72 @@ Screens were checked in a real browser at 1280 and 390 pixels wide for every pul
 
 ### Next session starts at
 
-WP-3: one species list with the cultivation profile attached, the website's eighteen codes and slugs, purchased spawn lots as an inoculation source, reference-data screens, run editing, and the first version of the demo data generator.
+Superseded by the entry below: the session went on into WP-3.
+
+## 2026-11-11, continued: WP-3 (the model fitted to the farm's sources and reference data)
+
+The same session, after the entry above was written.
+
+### What the owner can do now that he could not before
+
+Still gated by owner actions O2, O3 and O4 (nobody can sign in until they are done). Once they are:
+
+- **Set the farm up from the screens.** Recipes, fill profiles, grain types and liquid cultures can be added, changed and switched off. Before, only the one seeded recipe could be used and fill profiles had no screen.
+- **Record what the farm really does with spawn.** A delivery of bought spawn is recorded once as a lot (`PL-BO-261111A`) and then chosen as the source every time substrate or spawn bags are inoculated from it, until it is marked used up.
+- **See the farm's eighteen varieties**, with the website's own codes and slugs, and say per variety what the website may show.
+- **Fix a run entered wrongly** (date, count, settings, notes) from its own page.
+- **See the app full.** `python -m app.seed_demo` fills an empty database with twelve weeks of realistic work, so screens and reports can be judged with a thousand bags in them.
+
+### Pull requests
+
+| # | What | Result |
+|---|---|---|
+| 33 | WP-3: one species list, the website's eighteen codes and slugs, 18 profiles (7 researched) | Merged, deployed |
+| 34 | WP-3: purchased spawn lots as an inoculation source | Merged, deployed |
+| 35 | WP-3: demo data generator and the app's clock | Merged, deployed |
+| 36 | WP-3: recipes, fill profiles, deactivation, a culture's parent | Merged, deployed |
+| 37 | WP-3: correct a run after creating it; this entry | See the roadmap's deployment state |
+
+### Requirements closed
+
+REF-1 to REF-6, REF-10 to REF-12, REF-14, INO-6, INO-7 (purchased lots), RUN-5, SPR-1, SPR-2, and the generator of brief section 7. TRC-3 and RPT-2 extended to purchased lots.
+
+### Tests
+
+| Suite | When the entry above was written | Now |
+|---|---|---|
+| Backend (pytest) | 135 passed, 3 skipped | 217 passed, 5 skipped (the skipped ones need PostgreSQL and run in CI) |
+| PostgreSQL in CI | migrations; eight simultaneous sessions on bags | the same, and eight people recording a lot of one species at once, and eight sessions inoculating from one lot |
+| Browser (Playwright) | 10 | 22, three of them at 390 pixels wide |
+| Generated data | none | the production report equals totals added up from the generator's own books: counts, harvest, dry weight, biological efficiency, contamination by species, by run, and by root culture or lot followed back through the farm's own spawn |
+
+Every screen changed was looked at in a real browser at 1280 and 390 pixels wide. That found two things the tests had not: labels crammed against their fields on the new forms (now above them), and unstyled fields when a table row is edited in place.
+
+### Found by testing, and fixed
+
+- Two people recording a lot of the same species at the same moment were given the same lot code, and one got a server error (found by a new PostgreSQL test; the species row is now locked while the code is chosen).
+- Migration 015 seeds one mix lot, so the generator's "does this database hold real records?" check refused every new database. Mix lots no longer count; a real one is always followed by a run, which does.
+
+### Measured
+
+- Generating the demo farm: 35 seconds per thousand bags on PostgreSQL; 5 minutes 25 seconds for 10,028 bags.
+- With 10,028 bags in PostgreSQL: dashboard 12.8 seconds, production report 6.1 seconds and 7.3 MB, bag list 0.03 seconds. At the farm's own volume, about a second. This is the baseline for WP-6.
+
+### Found and not fixed
+
+- **The report's overall biological efficiency reads low on a working farm.** It divides total harvest by the dry weight of every substrate bag, including those still incubating: 43% on the demo farm, whose finished bags come to 100%. Added to WP-6.
+- **Nothing records who corrected a run, or what it said before.** RUN-5 is met; the history belongs with COR-1 to COR-3 in WP-4.
+- The recipe, grain and mix lot of a run can be corrected through the API only (and only before the run has bag records); the screen offers the code, times, count, settings and notes.
+- Ingredients can be renamed and deactivated through the API but not yet on their screen, and a mix lot cannot be edited. One unticked line in WP-3.
+- On a phone, the Actions column of the set-up tables (recipes, cultures, lots) is reached by scrolling the table sideways. The daily event screens are WP-5's subject; these are used rarely.
+- The setting that lets one of the farm's own spawn bags serve several sessions is deferred to WP-4 with the other farm settings (D-037).
+- The demo generator is not yet used by the browser tests or for user-guide screenshots, and stops at two flushes because the app does.
+- Dependabot pull requests #24, #26 and #27 are still open and need rebasing; #23 and #25 are still open and must not be merged.
+- The local Docker daemon used for PostgreSQL tests in the cloud session does not survive a worker restart; start it again before running `tests/test_postgres_concurrency.py` locally. CI runs them regardless.
+
+### Next session starts at
+
+1. Rebase and merge Dependabot #24, #26 and #27 when green.
+2. The unticked line in WP-3 (Ingredients and Mix Lots screens).
+3. WP-4, research first (brief section 8): bulk steps and group harvest. Then the farm settings table (flush limit, weight unit, partial use of the farm's own spawn), date and time on every event, and corrections with history.
+
