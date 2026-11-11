@@ -34,6 +34,8 @@ type Props = {
   noun: string;
   fields: ReferenceField[];
   canEdit: boolean;
+  /** Called after a record is added or changed, for a page that shows the list elsewhere too. */
+  onChanged?: () => void;
 };
 
 function emptyDraft(fields: ReferenceField[]): Draft {
@@ -59,7 +61,7 @@ function shown(field: ReferenceField, value: unknown): string {
   return field.unit ? `${value} ${field.unit}` : String(value);
 }
 
-export function ReferenceList({ title, intro, path, idKey, noun, fields, canEdit }: Props) {
+export function ReferenceList({ title, intro, path, idKey, noun, fields, canEdit, onChanged }: Props) {
   const formId = useId();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(fields));
@@ -78,6 +80,7 @@ export function ReferenceList({ title, intro, path, idKey, noun, fields, canEdit
   }, [refresh]);
 
   const nameOf = (row: Row) => String(row[fields[0].key] ?? "");
+  const article = /^[aeiou]/i.test(noun) ? "an" : "a";
 
   async function act(work: () => Promise<string>) {
     setBusy(true);
@@ -86,6 +89,7 @@ export function ReferenceList({ title, intro, path, idKey, noun, fields, canEdit
     try {
       const done = await work();
       await refresh();
+      onChanged?.();
       setMessage(done);
     } catch (e: any) {
       setError(e?.message || String(e));
@@ -209,8 +213,8 @@ export function ReferenceList({ title, intro, path, idKey, noun, fields, canEdit
       )}
 
       {canEdit && (
-        <form className="form stackedForm" onSubmit={add} aria-label={`Add a ${noun}`}>
-          <h3>Add a {noun}</h3>
+        <form className="form stackedForm" onSubmit={add} aria-label={`Add ${article} ${noun}`}>
+          <h3>Add {article} {noun}</h3>
           {fields.map((field) => {
             const hintId = `${formId}-${field.key}-hint`;
             return (

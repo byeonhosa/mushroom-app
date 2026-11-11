@@ -2,7 +2,7 @@
 
 The order of work for the Mushroom Farm App and its current state. Maintained by the lead developer (see `docs/LEAD_DEVELOPER_BRIEF.md`). Requirement IDs refer to `docs/SRS.md`.
 
-Last updated: November 11, 2026, end of the first lead-developer session (WP-1 done, WP-2 built, WP-3 done but for two small screens).
+Last updated: November 11, 2026, end of the first lead-developer session (WP-1 done, WP-2 built, WP-3 done).
 
 ## Owner actions needed
 
@@ -17,12 +17,13 @@ The app is built, deployed and running on the droplet, and nobody can reach it o
 | O5 | Regain the droplet | SEC-6, SEC-7, the pending reboot, off-server backups | DigitalOcean console > the droplet > **Access > Launch Droplet Console**. Add a new SSH public key to `/root/.ssh/authorized_keys` and remove the old one. In the **Backups** tab enable weekly droplet backups (this is the only copy of the database off the server). Take a snapshot, then reboot the droplet once: it has not restarted in seven months, and the stack now comes back by itself. |
 | O6 | Optional: give Claude Code read access to DigitalOcean | Lets the lead developer do O4 and check droplet health itself | Create a DigitalOcean API token (API > Tokens), then in claude.ai/code open the environment's settings > **Network secrets** > **Add secret**: allowed website `api.digitalocean.com`, header `Authorization`, prefix `Bearer`, value the token. |
 | O7 | Label printer and stock, when chosen | LBL-3 | Tell the lead developer the model and label size. |
+| O8 | Check what the website may say about each variety | Correct data for the website integration (WP-9) | After first sign-in, open **Species**. Each of the eighteen varieties shows a website tier, a sale state and whether it is growing now. They were set from the website's current list on November 11, 2026. Use **Edit** on any row that does not say what the farm means. Nothing reads these fields until WP-9, so this can wait. |
 
 ## Deployment state
 
 | Item | State | As of |
 |---|---|---|
-| `main` | WP-1 complete, WP-2 merged, WP-3 merged but for two small screens (pull requests #22, #28 to #37). | Nov 11, 2026 |
+| `main` | WP-1, WP-2 and WP-3 merged (pull requests #22, #28 to #38). | Nov 11, 2026 |
 | Droplet and runner | Online. Every deploy on November 11 succeeded. Uptime seven months; a reboot is still pending (O5). 48 GB disk, 40% used (the first prune freed 18 GB of build cache). SSH key still lost. | Nov 11, 2026 |
 | Containers | `db`, `api`, `frontend`, `backup`, `proxy`: all `restart=unless-stopped`, logs rotated. Only the proxy publishes ports (80, 443); the rest are on the loopback interface. | Nov 11, 2026 |
 | Backups | Daily dump to `/var/backups/mushroom-app`, 14 kept, plus one before each deploy. Restore test passes on every deploy. No copy off the server yet (O5). | Nov 11, 2026 |
@@ -75,12 +76,12 @@ Done: pull requests #31 and #32. Nothing but the health checks and the sign-in r
 
 Left for later, recorded so that it is not lost: an audit trail of administrator actions on users (who changed a role or reset a password); a sessions list with "sign out everywhere" on the account page.
 
-### WP-3. Fit the model to the farm: sources and reference data (done November 11, 2026, but for the one unticked item)
+### WP-3. Fit the model to the farm: sources and reference data (done November 11, 2026)
 
 - [x] One species list with the cultivation profile attached; stable slug per species; the four portal fields. Migrate the eight existing profiles onto it. (REF-1, REF-2, brief section 10)
 - [x] Load the farm's eighteen varieties, with the website's codes and slugs. Eleven profiles come from the farm's sources and seven from research, marked as such (`docs/research/species-profiles-2026-11-11.md`). (SPR-2)
 - [x] Screens to add and edit spawn recipes, substrate recipes, fill profiles, grain types and liquid cultures; all reachable from the menu; deactivate in place of delete. (REF-3 to REF-6, REF-10, REF-14)
-- [ ] The same for the two that remain: rename and deactivate on the Ingredients screen (the API has it), and edit on the Mix Lots screen. (REF-7, REF-8)
+- [x] The same for the two that remained: rename and deactivate on the Ingredients screen, and corrections on the Mix Lots screen. (REF-7, REF-8, D-048)
 - [x] Purchased spawn lots, and inoculation of substrate or spawn bags from a lot. Multi-session use until marked used up. (REF-11, INO-6, INO-7) The setting that lets the farm's own spawn bags serve several sessions moves to WP-4 (D-037).
 - [x] Liquid culture parent link. (REF-12)
 - [x] Correct a run after creation, within what its bags and labels allow. (RUN-5, D-047)

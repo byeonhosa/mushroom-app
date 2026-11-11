@@ -734,6 +734,56 @@
         }
       }
     },
+    "/api/mix-lots/{mix_lot_id}": {
+      "patch": {
+        "summary": "Update Mix Lot",
+        "description": "Correct a mix lot after it was recorded (REF-8).",
+        "operationId": "update_mix_lot_api_mix_lots__mix_lot_id__patch",
+        "parameters": [
+          {
+            "name": "mix_lot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mix Lot Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MixLotUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MixLotOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/species": {
       "get": {
         "summary": "List Species",
@@ -6046,6 +6096,7 @@
         "properties": {
           "lot_code": {
             "type": "string",
+            "maxLength": 120,
             "title": "Lot Code"
           },
           "substrate_recipe_version_id": {
@@ -6132,6 +6183,70 @@
           "mixed_at"
         ],
         "title": "MixLotOut"
+      },
+      "MixLotUpdate": {
+        "properties": {
+          "lot_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lot Code"
+          },
+          "substrate_recipe_version_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substrate Recipe Version Id"
+          },
+          "fill_profile_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill Profile Id"
+          },
+          "mixed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mixed At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "MixLotUpdate",
+        "description": "A correction to a mix lot (REF-8). Only the fields sent are changed."
       },
       "MushroomSpeciesCreate": {
         "properties": {

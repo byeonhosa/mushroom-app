@@ -117,6 +117,15 @@ def list_mix_lots(db: Session = Depends(get_db)):
     return crud.list_mix_lots(db)
 
 
+@router.patch("/mix-lots/{mix_lot_id}", response_model=schemas.MixLotOut, dependencies=ADMIN_ONLY)
+def update_mix_lot(mix_lot_id: int, payload: schemas.MixLotUpdate, db: Session = Depends(get_db)):
+    """Correct a mix lot after it was recorded (REF-8)."""
+    row = crud.update_mix_lot(db, mix_lot_id, payload.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Mix lot not found")
+    return row
+
+
 @router.post("/mix-lots", response_model=schemas.MixLotOut)
 def create_mix_lot(payload: schemas.MixLotCreate, db: Session = Depends(get_db)):
     try:

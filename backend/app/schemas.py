@@ -213,9 +213,19 @@ class SpawnRecipeOut(BaseModel):
 
 # --- Mix lots ---
 class MixLotCreate(BaseModel):
-    lot_code: str
+    lot_code: Name = Field(..., max_length=120)
     substrate_recipe_version_id: int
     fill_profile_id: int
+    mixed_at: Optional[InputDatetime] = None
+    notes: Optional[str] = None
+
+
+class MixLotUpdate(BaseModel):
+    """A correction to a mix lot (REF-8). Only the fields sent are changed."""
+
+    lot_code: Optional[Name] = Field(default=None, max_length=120)
+    substrate_recipe_version_id: Optional[int] = None
+    fill_profile_id: Optional[int] = None
     mixed_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
 
