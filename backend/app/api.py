@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from psycopg.errors import UniqueViolation
 
 from .db import get_db
+from .errors import is_unique_violation
 from . import schemas, crud, ops
 
 router = APIRouter()
@@ -65,7 +65,7 @@ def create_mix_lot(payload: schemas.MixLotCreate, db: Session = Depends(get_db))
     try:
         return crud.create_mix_lot(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Mix lot code already exists.")
         raise
 
@@ -80,7 +80,7 @@ def create_species(payload: schemas.MushroomSpeciesCreate, db: Session = Depends
     try:
         return crud.create_species(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Species code already exists.")
         raise
 
@@ -90,7 +90,7 @@ def update_species(species_id: int, payload: schemas.MushroomSpeciesUpdate, db: 
     try:
         row = crud.update_species(db, species_id, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Species code already exists.")
         raise
     if not row:
@@ -123,7 +123,7 @@ def create_liquid_culture(payload: schemas.LiquidCultureCreate, db: Session = De
     try:
         return crud.create_liquid_culture(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Liquid culture code already exists.")
         raise
 
@@ -138,7 +138,7 @@ def create_grain_type(payload: schemas.GrainTypeCreate, db: Session = Depends(ge
     try:
         return crud.create_grain_type(db, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Grain type already exists.")
         raise
 
@@ -148,7 +148,7 @@ def update_grain_type(grain_type_id: int, payload: schemas.GrainTypeUpdate, db: 
     try:
         row = crud.update_grain_type(db, grain_type_id, payload.model_dump(exclude_unset=True))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Grain type already exists.")
         raise
     if not row:
@@ -187,8 +187,10 @@ def list_pasteurization_runs(db: Session = Depends(get_db)):
 def create_pasteurization_run(payload: schemas.PasteurizationRunCreate, db: Session = Depends(get_db)):
     try:
         return crud.create_pasteurization_run(db, payload.model_dump(exclude_unset=True))
+    except LookupError as e:
+        raise HTTPException(404, str(e))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Run code already exists.")
         raise
 
@@ -218,15 +220,22 @@ def list_sterilization_runs(
     sort_order: str = "desc",
     db: Session = Depends(get_db),
 ):
-    return crud.list_sterilization_runs(db, run_code_contains=run_code_contains, sort_by=sort_by, sort_order=sort_order)
+    try:
+        return crud.list_sterilization_runs(
+            db, run_code_contains=run_code_contains, sort_by=sort_by, sort_order=sort_order
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @router.post("/sterilization-runs", response_model=schemas.SterilizationRunOut)
 def create_sterilization_run(payload: schemas.SterilizationRunCreate, db: Session = Depends(get_db)):
     try:
         return crud.create_sterilization_run(db, payload.model_dump(exclude_unset=True))
+    except LookupError as e:
+        raise HTTPException(404, str(e))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Run code already exists.")
         raise
 
@@ -412,7 +421,7 @@ def create_inoculation(payload: schemas.InoculationCreate, db: Session = Depends
     except ValueError as e:
         raise HTTPException(400, str(e))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "Substrate bag already inoculated.")
         raise
 
@@ -434,7 +443,7 @@ def create_inoculation_batch(payload: schemas.InoculationBatchCreate, db: Sessio
     except ValueError as e:
         raise HTTPException(400, str(e))
     except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        if is_unique_violation(e):
             raise HTTPException(409, "One or more substrate bags are already inoculated.")
         raise
 

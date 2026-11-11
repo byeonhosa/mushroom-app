@@ -1,6 +1,22 @@
-from datetime import datetime
-from typing import Optional, List, Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from datetime import datetime, timezone
+from typing import Annotated, Optional, List, Literal
+from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+
+
+def _as_utc(value: datetime) -> datetime:
+    """Normalise a time to UTC. SQLite hands back naive values, which are UTC."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+# SRS 5.2: every time the API sends carries its UTC offset, so that a browser
+# never has to guess. Use UtcDatetime for every time in a response model.
+UtcDatetime = Annotated[datetime, AfterValidator(_as_utc)]
+
+# A time sent by a client must say which zone it is in. A value without an
+# offset is refused; it would otherwise be stored as if it were UTC.
+InputDatetime = Annotated[AwareDatetime, AfterValidator(_as_utc)]
 
 
 class HealthCheckOut(BaseModel):
@@ -14,7 +30,7 @@ class HealthLiveOut(BaseModel):
     service: str
     version: str
     environment: str
-    checked_at: datetime
+    checked_at: UtcDatetime
 
 
 class HealthReadyOut(HealthLiveOut):
@@ -45,7 +61,7 @@ class SubstrateRecipeVersionCreate(BaseModel):
 
 class SubstrateRecipeVersionOut(SubstrateRecipeVersionCreate):
     substrate_recipe_version_id: int
-    created_at: datetime
+    created_at: UtcDatetime
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -57,7 +73,7 @@ class SpawnRecipeCreate(BaseModel):
 
 class SpawnRecipeOut(SpawnRecipeCreate):
     spawn_recipe_id: int
-    created_at: datetime
+    created_at: UtcDatetime
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -66,7 +82,7 @@ class MixLotCreate(BaseModel):
     lot_code: str
     substrate_recipe_version_id: int
     fill_profile_id: int
-    mixed_at: Optional[datetime] = None
+    mixed_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
 
 
@@ -75,7 +91,7 @@ class MixLotOut(BaseModel):
     lot_code: str
     substrate_recipe_version_id: int
     fill_profile_id: int
-    mixed_at: datetime
+    mixed_at: UtcDatetime
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -158,7 +174,7 @@ class LiquidCultureCreate(BaseModel):
     culture_code: str
     species_id: int
     source: Optional[str] = None
-    prepared_at: Optional[datetime] = None
+    prepared_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = True
 
@@ -168,8 +184,8 @@ class LiquidCultureOut(BaseModel):
     culture_code: str
     species_id: int
     source: Optional[str] = None
-    prepared_at: Optional[datetime] = None
-    created_at: datetime
+    prepared_at: Optional[UtcDatetime] = None
+    created_at: UtcDatetime
     notes: Optional[str] = None
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
@@ -198,10 +214,10 @@ class PasteurizationRunCreate(BaseModel):
     run_code: str
     mix_lot_id: int
     substrate_recipe_version_id: int
-    steam_start_at: Optional[datetime] = None
-    steam_end_at: Optional[datetime] = None
-    unloaded_at: datetime
-    bag_count: int
+    steam_start_at: Optional[InputDatetime] = None
+    steam_end_at: Optional[InputDatetime] = None
+    unloaded_at: InputDatetime
+    bag_count: int = Field(..., gt=0, le=999)
     notes: Optional[str] = None
 
 
@@ -210,9 +226,9 @@ class PasteurizationRunOut(BaseModel):
     run_code: str
     mix_lot_id: int
     substrate_recipe_version_id: int
-    steam_start_at: Optional[datetime] = None
-    steam_end_at: Optional[datetime] = None
-    unloaded_at: datetime
+    steam_start_at: Optional[UtcDatetime] = None
+    steam_end_at: Optional[UtcDatetime] = None
+    unloaded_at: UtcDatetime
     bag_count: int
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
@@ -223,10 +239,10 @@ class SterilizationRunCreate(BaseModel):
     run_code: str
     spawn_recipe_id: int
     grain_type_id: int
-    cycle_start_at: Optional[datetime] = None
-    cycle_end_at: Optional[datetime] = None
-    unloaded_at: datetime
-    bag_count: int
+    cycle_start_at: Optional[InputDatetime] = None
+    cycle_end_at: Optional[InputDatetime] = None
+    unloaded_at: InputDatetime
+    bag_count: int = Field(..., gt=0, le=999)
     temp_c: Optional[float] = None
     psi: Optional[float] = None
     hold_minutes: Optional[int] = None
@@ -238,9 +254,9 @@ class SterilizationRunOut(BaseModel):
     run_code: str
     spawn_recipe_id: int
     grain_type_id: int
-    cycle_start_at: Optional[datetime] = None
-    cycle_end_at: Optional[datetime] = None
-    unloaded_at: datetime
+    cycle_start_at: Optional[UtcDatetime] = None
+    cycle_end_at: Optional[UtcDatetime] = None
+    unloaded_at: UtcDatetime
     bag_count: int
     temp_c: Optional[float] = None
     psi: Optional[float] = None
@@ -287,15 +303,15 @@ class BagOut(BaseModel):
     dry_weight_kg: Optional[float] = None
     dry_weight_source: Optional[Literal["ACTUAL", "TARGET"]] = None
     bio_efficiency: Optional[float] = None
-    created_at: datetime
-    labeled_at: Optional[datetime] = None
-    inoculated_at: Optional[datetime] = None
-    incubation_start_at: Optional[datetime] = None
-    ready_at: Optional[datetime] = None
-    fruiting_start_at: Optional[datetime] = None
-    disposed_at: Optional[datetime] = None
+    created_at: UtcDatetime
+    labeled_at: Optional[UtcDatetime] = None
+    inoculated_at: Optional[UtcDatetime] = None
+    incubation_start_at: Optional[UtcDatetime] = None
+    ready_at: Optional[UtcDatetime] = None
+    fruiting_start_at: Optional[UtcDatetime] = None
+    disposed_at: Optional[UtcDatetime] = None
     disposal_reason: Optional[Literal["CONTAMINATION", "FINAL_HARVEST"]] = None
-    consumed_at: Optional[datetime] = None
+    consumed_at: Optional[UtcDatetime] = None
     status: str
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
@@ -317,7 +333,7 @@ class BagStatusEventOut(BaseModel):
         "CONSUMED",
         "DISPOSED",
     ]
-    occurred_at: datetime
+    occurred_at: UtcDatetime
     detail: Optional[str] = None
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
@@ -334,7 +350,7 @@ class BagDetailOut(BagOut):
 class InoculationCreate(BaseModel):
     substrate_bag_id: str
     spawn_bag_id: str
-    inoculated_at: Optional[datetime] = None
+    inoculated_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
 
 
@@ -344,7 +360,7 @@ class SpawnInoculationBatchCreate(BaseModel):
     liquid_culture_id: Optional[int] = None
     donor_spawn_bag_id: Optional[str] = None
     bag_count: int = Field(..., gt=0)
-    inoculated_at: Optional[datetime] = None
+    inoculated_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
 
     @model_validator(mode="after")
@@ -366,7 +382,7 @@ class InoculationBatchCreate(BaseModel):
     spawn_bag_id: str
     pasteurization_run_id: int
     bag_count: int = Field(..., gt=0)
-    inoculated_at: Optional[datetime] = None
+    inoculated_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
 
 
@@ -376,7 +392,7 @@ class InoculationOut(BaseModel):
     substrate_bag_ref: str
     spawn_bag_id: str
     spawn_bag_ref: str
-    inoculated_at: datetime
+    inoculated_at: UtcDatetime
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -386,7 +402,7 @@ class HarvestEventCreate(BaseModel):
     bag_id: str
     flush_number: Literal[1, 2]
     fresh_weight_kg: float = Field(..., gt=0)
-    harvested_at: Optional[datetime] = None
+    harvested_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
 
 
@@ -396,7 +412,7 @@ class HarvestEventOut(BaseModel):
     bag_ref: str
     flush_number: Literal[1, 2]
     fresh_weight_kg: float
-    harvested_at: datetime
+    harvested_at: UtcDatetime
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -442,7 +458,7 @@ class IngredientLotCreate(BaseModel):
     ingredient_id: int
     vendor: Optional[str] = None
     lot_code: Optional[str] = None
-    received_at: Optional[datetime] = None
+    received_at: Optional[InputDatetime] = None
     unit_cost_per_kg: Optional[float] = None
     notes: Optional[str] = None
 
@@ -452,7 +468,7 @@ class IngredientLotOut(BaseModel):
     ingredient_id: int
     vendor: Optional[str] = None
     lot_code: Optional[str] = None
-    received_at: Optional[datetime] = None
+    received_at: Optional[UtcDatetime] = None
     unit_cost_per_kg: Optional[float] = None
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
@@ -517,7 +533,7 @@ class ContaminationCaseOut(BaseModel):
     bag_type: Literal["SPAWN", "SUBSTRATE"]
     status: str
     disposal_reason: Optional[Literal["CONTAMINATION", "FINAL_HARVEST"]] = None
-    contaminated_at: Optional[datetime] = None
+    contaminated_at: Optional[UtcDatetime] = None
     species_id: Optional[int] = None
     species_code: Optional[str] = None
     species_name: Optional[str] = None
@@ -585,7 +601,7 @@ class ProductionReportSummaryOut(BaseModel):
 
 
 class ProductionReportOut(BaseModel):
-    generated_at: datetime
+    generated_at: UtcDatetime
     summary: ProductionReportSummaryOut
     contamination_by_bag_type: List[ReportGroupOut]
     contamination_by_species: List[ReportGroupOut]
@@ -614,7 +630,7 @@ class DashboardRunSummaryOut(BaseModel):
     run_type: Literal["STERILIZATION", "PASTEURIZATION"]
     run_id: int
     run_code: str
-    unloaded_at: datetime
+    unloaded_at: UtcDatetime
     planned_bag_count: int
     total_bags: int
     unlabeled_bags: int
@@ -628,7 +644,7 @@ class DashboardRunSummaryOut(BaseModel):
 
 
 class DashboardActivityOut(BaseModel):
-    occurred_at: datetime
+    occurred_at: UtcDatetime
     bag_id: str
     bag_ref: str
     bag_type: Literal["SPAWN", "SUBSTRATE"]
@@ -646,7 +662,7 @@ class DashboardAlertOut(BaseModel):
 
 
 class DashboardOverviewOut(BaseModel):
-    generated_at: datetime
+    generated_at: UtcDatetime
     summary: ProductionReportSummaryOut
     queues: List[DashboardQueueOut]
     sterilization_runs: List[DashboardRunSummaryOut]

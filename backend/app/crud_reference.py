@@ -6,6 +6,17 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 
 from . import models
+from .errors import DomainError, NotFoundError
+
+# Columns a run list may be sorted by (RUN-8). Anything else is refused.
+STERILIZATION_RUN_SORT_FIELDS = (
+    "sterilization_run_id",
+    "run_code",
+    "unloaded_at",
+    "cycle_start_at",
+    "cycle_end_at",
+    "bag_count",
+)
 
 
 # --- Fill profiles ---
@@ -203,6 +214,10 @@ def create_ingredient_lot(db: Session, data: dict):
 # --- Pasteurization runs ---
 
 def create_pasteurization_run(db: Session, data: dict):
+    if db.get(models.MixLot, data.get("mix_lot_id")) is None:
+        raise NotFoundError("Mix lot not found")
+    if db.get(models.SubstrateRecipeVersion, data.get("substrate_recipe_version_id")) is None:
+        raise NotFoundError("Substrate recipe not found")
     r = models.PasteurizationRun(**data)
     db.add(r)
     db.commit()
@@ -234,6 +249,10 @@ def update_pasteurization_run(db: Session, pasteurization_run_id: int, data: dic
 # --- Sterilization runs ---
 
 def create_sterilization_run(db: Session, data: dict):
+    if db.get(models.SpawnRecipe, data.get("spawn_recipe_id")) is None:
+        raise NotFoundError("Spawn recipe not found")
+    if db.get(models.GrainType, data.get("grain_type_id")) is None:
+        raise NotFoundError("Grain type not found")
     r = models.SterilizationRun(**data)
     db.add(r)
     db.commit()
@@ -250,8 +269,17 @@ def list_sterilization_runs(
     stmt = select(models.SterilizationRun)
     if run_code_contains:
         stmt = stmt.where(models.SterilizationRun.run_code.ilike(f"%{run_code_contains}%"))
-    sort_col = getattr(models.SterilizationRun, sort_by, models.SterilizationRun.sterilization_run_id)
-    stmt = stmt.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
+    if sort_by not in STERILIZATION_RUN_SORT_FIELDS:
+        raise DomainError(
+            f"Cannot sort by '{sort_by}'. Use one of: {', '.join(STERILIZATION_RUN_SORT_FIELDS)}."
+        )
+    if sort_order not in ("asc", "desc"):
+        raise DomainError("sort_order must be 'asc' or 'desc'.")
+    sort_col = getattr(models.SterilizationRun, sort_by)
+    stmt = stmt.order_by(
+        sort_col.desc() if sort_order == "desc" else sort_col.asc(),
+        models.SterilizationRun.sterilization_run_id.desc(),
+    )
     return db.execute(stmt).scalars().all()
 
 

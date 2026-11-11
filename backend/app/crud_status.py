@@ -24,37 +24,6 @@ def _as_utc(value: datetime | None) -> datetime | None:
     return value.astimezone(timezone.utc)
 
 
-def _derive_bag_status_from_caches(bag: models.Bag) -> str:
-    if bag.disposed_at:
-        return "CONTAMINATED" if bag.disposal_reason == "CONTAMINATION" else "DISPOSED"
-
-    if bag.bag_type == "SPAWN":
-        if bag.consumed_at:
-            return "CONSUMED"
-        if bag.ready_at:
-            return "READY"
-        if bag.incubation_start_at:
-            return "INCUBATING"
-        if bag.inoculated_at:
-            return "INOCULATED"
-        return "STERILIZED"
-
-    harvest_count = len(bag.harvest_events)
-    if harvest_count >= 2:
-        return "FLUSH_2_COMPLETE"
-    if harvest_count >= 1:
-        return "FLUSH_1_COMPLETE"
-    if bag.fruiting_start_at:
-        return "FRUITING"
-    if bag.ready_at:
-        return "READY"
-    if bag.incubation_start_at:
-        return "INCUBATING"
-    if bag.inoculated_at:
-        return "INOCULATED"
-    return "PASTEURIZED"
-
-
 def _event_time_by_type(bag: models.Bag) -> dict[str, datetime]:
     event_times: dict[str, datetime] = {}
     for event in sorted(
@@ -65,59 +34,57 @@ def _event_time_by_type(bag: models.Bag) -> dict[str, datetime]:
     return event_times
 
 
-def _derive_bag_status_from_history(bag: models.Bag, event_times: dict[str, datetime]) -> str:
-    if event_times.get(models.BagStatusEventType.DISPOSED.value) or bag.disposed_at:
+def _derive_bag_status(bag: models.Bag, times: dict) -> str:
+    """The one place a bag's status is worked out (SRS MNT-3).
+
+    `times` is the stage timeline from `_bag_history_snapshot`: the event
+    history first, with the cached column as the fallback for a bag that has
+    no event of that type. A bag record is created from a run that has already
+    been heat-treated, so the starting status is STERILIZED or PASTEURIZED.
+    """
+    if times["disposed_at"]:
         return "CONTAMINATED" if bag.disposal_reason == "CONTAMINATION" else "DISPOSED"
 
     if bag.bag_type == "SPAWN":
-        if event_times.get(models.BagStatusEventType.CONSUMED.value) or bag.consumed_at:
+        if times["consumed_at"]:
             return "CONSUMED"
-        if event_times.get(models.BagStatusEventType.READY.value) or bag.ready_at:
-            return "READY"
-        if event_times.get(models.BagStatusEventType.INCUBATION_STARTED.value) or bag.incubation_start_at:
-            return "INCUBATING"
-        if event_times.get(models.BagStatusEventType.INOCULATED.value) or bag.inoculated_at:
-            return "INOCULATED"
-        if event_times.get(models.BagStatusEventType.STERILIZED.value):
-            return "STERILIZED"
-        return "CREATED"
+    else:
+        harvest_count = len(bag.harvest_events)
+        if harvest_count >= 2:
+            return "FLUSH_2_COMPLETE"
+        if harvest_count >= 1:
+            return "FLUSH_1_COMPLETE"
+        if times["fruiting_start_at"]:
+            return "FRUITING"
 
-    harvest_count = len(bag.harvest_events)
-    if harvest_count >= 2:
-        return "FLUSH_2_COMPLETE"
-    if harvest_count >= 1:
-        return "FLUSH_1_COMPLETE"
-    if event_times.get(models.BagStatusEventType.FRUITING_STARTED.value) or bag.fruiting_start_at:
-        return "FRUITING"
-    if event_times.get(models.BagStatusEventType.READY.value) or bag.ready_at:
+    if times["ready_at"]:
         return "READY"
-    if event_times.get(models.BagStatusEventType.INCUBATION_STARTED.value) or bag.incubation_start_at:
+    if times["incubation_start_at"]:
         return "INCUBATING"
-    if event_times.get(models.BagStatusEventType.INOCULATED.value) or bag.inoculated_at:
+    if times["inoculated_at"]:
         return "INOCULATED"
-    if event_times.get(models.BagStatusEventType.PASTEURIZED.value):
-        return "PASTEURIZED"
-    return "CREATED"
+    return "STERILIZED" if bag.bag_type == "SPAWN" else "PASTEURIZED"
 
 
 def _bag_history_snapshot(bag: models.Bag) -> dict:
     event_times = _event_time_by_type(bag)
-    if event_times:
-        status = _derive_bag_status_from_history(bag, event_times)
-    else:
-        status = _derive_bag_status_from_caches(bag)
+    event_type = models.BagStatusEventType
 
-    return {
-        "created_at": event_times.get(models.BagStatusEventType.CREATED.value, _as_utc(bag.created_at)),
-        "labeled_at": event_times.get(models.BagStatusEventType.BAG_CODE_ASSIGNED.value, _as_utc(bag.labeled_at)),
-        "inoculated_at": event_times.get(models.BagStatusEventType.INOCULATED.value, _as_utc(bag.inoculated_at)),
-        "incubation_start_at": event_times.get(models.BagStatusEventType.INCUBATION_STARTED.value, _as_utc(bag.incubation_start_at)),
-        "ready_at": event_times.get(models.BagStatusEventType.READY.value, _as_utc(bag.ready_at)),
-        "fruiting_start_at": event_times.get(models.BagStatusEventType.FRUITING_STARTED.value, _as_utc(bag.fruiting_start_at)),
-        "disposed_at": event_times.get(models.BagStatusEventType.DISPOSED.value, _as_utc(bag.disposed_at)),
-        "consumed_at": event_times.get(models.BagStatusEventType.CONSUMED.value, _as_utc(bag.consumed_at)),
-        "status": status,
+    def stage_time(kind: models.BagStatusEventType, cached: datetime | None) -> datetime | None:
+        return event_times.get(kind.value) or _as_utc(cached)
+
+    snapshot = {
+        "created_at": stage_time(event_type.CREATED, bag.created_at),
+        "labeled_at": stage_time(event_type.BAG_CODE_ASSIGNED, bag.labeled_at),
+        "inoculated_at": stage_time(event_type.INOCULATED, bag.inoculated_at),
+        "incubation_start_at": stage_time(event_type.INCUBATION_STARTED, bag.incubation_start_at),
+        "ready_at": stage_time(event_type.READY, bag.ready_at),
+        "fruiting_start_at": stage_time(event_type.FRUITING_STARTED, bag.fruiting_start_at),
+        "disposed_at": stage_time(event_type.DISPOSED, bag.disposed_at),
+        "consumed_at": stage_time(event_type.CONSUMED, bag.consumed_at),
     }
+    snapshot["status"] = _derive_bag_status(bag, snapshot)
+    return snapshot
 
 
 def _sync_bag_status(bag: models.Bag) -> str:

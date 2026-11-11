@@ -13,5 +13,10 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        # A request that failed part-way must not leave half of its work, or a
+        # broken transaction, behind.
+        db.rollback()
+        raise
     finally:
         db.close()

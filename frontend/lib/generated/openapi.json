@@ -4941,6 +4941,8 @@
           },
           "bag_count": {
             "type": "integer",
+            "maximum": 999.0,
+            "exclusiveMinimum": 0.0,
             "title": "Bag Count"
           },
           "notes": {
@@ -5946,6 +5948,8 @@
           },
           "bag_count": {
             "type": "integer",
+            "maximum": 999.0,
+            "exclusiveMinimum": 0.0,
             "title": "Bag Count"
           },
           "temp_c": {

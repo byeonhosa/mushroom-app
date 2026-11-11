@@ -5,9 +5,8 @@
 from .crud_status import (  # noqa: F401
     _now,
     _as_utc,
-    _derive_bag_status_from_caches,
     _event_time_by_type,
-    _derive_bag_status_from_history,
+    _derive_bag_status,
     _bag_history_snapshot,
     _sync_bag_status,
     _record_bag_event,
@@ -57,7 +56,6 @@ from .crud_reporting import (  # noqa: F401
     _build_substrate_metrics_row,
     _build_lineage_row,
     _summarize_bags,
-    _summarize_substrate_metric_rows,
     get_sterilization_run_detail,
     get_pasteurization_run_detail,
     get_production_report,
