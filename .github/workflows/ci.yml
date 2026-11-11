@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
@@ -33,7 +33,7 @@ jobs:
         run: pytest -q
 
   migration-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
@@ -73,7 +73,7 @@ jobs:
         run: pytest -q tests/test_migrations.py
 
   api-contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
         run: npm run check:api-contract
 
   frontend-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
@@ -131,7 +131,7 @@ jobs:
         run: npm run build
 
   e2e-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [backend-tests, frontend-build]
     steps:
       - name: Checkout
