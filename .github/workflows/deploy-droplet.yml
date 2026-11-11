@@ -50,10 +50,24 @@ jobs:
           docker compose version
 
       - name: Update non-secret settings in .env
+        env:
+          # Repository variable (Settings > Secrets and variables > Actions >
+          # Variables), set once DNS points the name at this server (roadmap,
+          # owner action O3). Empty until then.
+          APP_HOSTNAME: ${{ vars.APP_HOSTNAME }}
         run: |
           # Database dumps live outside the repository checkout so that no git
           # operation can touch them.
           bash ops/deploy/set-env.sh .env BACKUP_DIR /var/backups/mushroom-app
+          # With a hostname the proxy serves HTTPS and the API trusts that
+          # origin; without one the proxy serves plain HTTP on port 80.
+          bash ops/deploy/set-env.sh .env APP_HOSTNAME "$APP_HOSTNAME"
+          if [ -n "$APP_HOSTNAME" ]; then
+            bash ops/deploy/set-env.sh .env CORS_ORIGINS "https://$APP_HOSTNAME"
+            echo "hostname: $APP_HOSTNAME"
+          else
+            echo "::notice::No APP_HOSTNAME variable is set, so the proxy serves plain HTTP on port 80 and the app is not reachable from outside (roadmap, owner action O3)."
+          fi
 
       - name: Back up the database before changing anything
         run: |
@@ -145,6 +159,38 @@ jobs:
             echo "::warning::No administrator account exists, so nobody can sign in. Set the repository secrets BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (roadmap, owner action O2) and re-run this workflow."
           fi
 
+      - name: Through the proxy
+        env:
+          APP_HOSTNAME: ${{ vars.APP_HOSTNAME }}
+        run: |
+          set -e
+          for i in $(seq 1 12); do
+            if docker compose exec -T proxy wget -q -O /dev/null http://127.0.0.1:8081/healthz 2> /dev/null; then break; fi
+            sleep 5
+          done
+          docker compose exec -T proxy wget -q -O /dev/null http://127.0.0.1:8081/healthz
+          if [ -z "$APP_HOSTNAME" ]; then
+            curl -fsS -o /dev/null -w "proxy -> API health: HTTP %{http_code}\n" http://127.0.0.1/api/health
+            curl -fsS -o /dev/null -w "proxy -> sign-in page: HTTP %{http_code}\n" http://127.0.0.1/login
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/api/bags)
+            echo "proxy -> /api/bags without a session: $code"
+            test "$code" = "401"
+          else
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $APP_HOSTNAME" http://127.0.0.1/login)
+            echo "plain HTTP for $APP_HOSTNAME -> $code (308 = sent on to HTTPS)"
+            test "$code" = "308"
+            # The certificate needs DNS and ports 80 and 443 open (owner
+            # actions O3 and O4). Until both are done this cannot succeed, so
+            # it is reported and does not fail the deploy.
+            if curl -fsS --resolve "$APP_HOSTNAME:443:127.0.0.1" -o /dev/null "https://$APP_HOSTNAME/api/health"; then
+              echo "HTTPS for $APP_HOSTNAME: certificate valid, API healthy"
+              code=$(curl -s --resolve "$APP_HOSTNAME:443:127.0.0.1" -o /dev/null -w '%{http_code}' "https://$APP_HOSTNAME/api/bags")
+              test "$code" = "401"
+            else
+              echo "::warning::HTTPS for $APP_HOSTNAME is not working yet. The proxy obtains its certificate once DNS points at this server and ports 80 and 443 are open in the DigitalOcean firewall (roadmap, owner actions O3 and O4)."
+            fi
+          fi
+
       - name: Row counts (is there real data yet?)
         run: |
           # Counts only. The lead developer brief treats the database as empty,
@@ -191,6 +237,9 @@ jobs:
           echo ""
           echo "=== frontend logs (tail 50) ==="
           docker compose logs --tail 50 frontend || true
+          echo ""
+          echo "=== proxy logs (tail 50) ==="
+          docker compose logs --tail 50 proxy || true
           echo ""
           echo "=== backup logs (tail 50) ==="
           docker compose logs --tail 50 backup || true

@@ -41,13 +41,17 @@ Services:
 - `api`: FastAPI backend with migrations applied at startup
 - `frontend`: Next.js operator UI
 - `backup`: daily database dumps (section 5)
+- `proxy`: Caddy, the one way in from outside (section 6a)
 
-Every service has `restart: unless-stopped`, so the stack comes back by itself after a crash or a reboot. Ports are published on `127.0.0.1` only. Container logs rotate at 10 MB, five files each.
+Every service has `restart: unless-stopped`, so the stack comes back by itself after a crash or a reboot. The database, the API and the frontend are published on `127.0.0.1` only; the proxy publishes 80 and 443. Container logs rotate at 10 MB, five files each.
 
 Default local URLs:
 
-- frontend: `http://localhost:3000`
-- backend API: `http://localhost:8000/api`
+- the app, through the proxy: `http://localhost`
+- frontend directly: `http://localhost:3000`
+- backend API directly: `http://localhost:8000/api`
+
+To sign in to a local stack, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` in `.env` before the first start.
 
 ## 4. Health Checks
 
@@ -107,6 +111,26 @@ docker compose up -d
 ```
 
 `RESTORE_CONFIRM` must equal the database name (`POSTGRES_DB`); without it the command refuses. A safety dump of the current state is written to `predeploy/` before anything is replaced.
+
+## 6a. Sign-in, users and the way in
+
+**The way in.** The `proxy` service (Caddy, `ops/proxy/`) is the only service published beyond the server itself, on ports 80 and 443. It sends `/api/*` to the API and everything else to the frontend. When the repository variable `APP_HOSTNAME` is set it serves HTTPS with a certificate it obtains and renews by itself, and sends plain HTTP on to HTTPS. Certificates live in the `caddy_data` volume.
+
+**The first administrator.** Created by the deploy workflow from the repository secrets `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`, once, when no user exists. After that the secrets are not used again and can be deleted.
+
+**Adding and removing people.** An administrator does this in the app, on the **Users** screen. Nobody is deleted: a person who leaves is deactivated, which signs them out at once and keeps their name on the events they entered.
+
+**A forgotten password.** Another administrator resets it on the Users screen. If the only administrator is locked out, from the server (DigitalOcean console > the droplet > Access > Launch Droplet Console):
+
+```bash
+cd /opt/mushroom-app
+docker compose run --rm --no-deps -e NEW_PASSWORD='a new password of 10+ characters' \
+  api python -m app.manage reset-password --email you@example.com
+```
+
+The account is signed out everywhere and must choose a new password at next sign-in.
+
+**Who can do what.** An operator records runs, bags, inoculations, events and harvests, and reads the reports. An administrator can also maintain species, grain types, fill profiles and ingredients, and manage users.
 
 ## 7. Release Checklist
 

@@ -1,0 +1,54 @@
+# The one way in from outside (SRS SEC-1, SEC-2).
+#
+# Serves the frontend and the API from a single origin: /api/* goes to the API
+# container, everything else to the frontend. Nothing else on the server is
+# published beyond the loopback interface.
+#
+# APP_SITE_ADDRESS is the public hostname once there is one (docker-compose.yml
+# takes it from APP_HOSTNAME). Caddy then obtains and renews a certificate by
+# itself and redirects plain HTTP to HTTPS. Without a hostname it serves plain
+# HTTP on port 80, which is only useful from the server itself: the app
+# refuses a production sign-in over HTTP from the internet.
+{
+	# No remote administration endpoint. Configuration changes arrive as a
+	# new image, built by the deploy workflow.
+	admin off
+}
+
+(security_headers) {
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		# The camera is for scanning bag labels (LBL-5).
+		Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+		# Next.js needs inline scripts and styles for its own bootstrap; nothing
+		# is loaded from any other origin.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+	@https protocol https
+	header @https Strict-Transport-Security "max-age=31536000"
+}
+
+{$APP_SITE_ADDRESS::80} {
+	# Empty in production (a public certificate). CI sets "tls internal" to
+	# exercise the HTTPS path with a certificate Caddy signs itself.
+	{$APP_TLS_DIRECTIVE}
+
+	encode zstd gzip
+	import security_headers
+
+	@api path /api/*
+	handle @api {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
+
+# For the container's own health check; not published.
+:8081 {
+	respond /healthz "ok" 200
+}

@@ -31,12 +31,26 @@ updates:
       - /backend
       - /frontend
       - /ops/backup
+      - /ops/proxy
     schedule:
       interval: weekly
       day: monday
     groups:
       docker:
         patterns: ["*"]
+    # Runtime versions are changed on purpose, never by a weekly bump
+    # (docs/DECISIONS.md D-025):
+    # - a new PostgreSQL major version cannot read the existing data volume;
+    # - Python and Node must move together with CI and the lockfiles.
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "caddy"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker-compose
     directory: /
@@ -46,6 +60,10 @@ updates:
     groups:
       compose:
         patterns: ["*"]
+    ignore:
+      # See the docker entry above: a major version needs a dump and restore.
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

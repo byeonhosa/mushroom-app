@@ -2,8 +2,9 @@
 # configuration: the deploy workflow runs `docker compose up -d --build`.
 #
 # - Every service restarts by itself after a crash or a reboot (REL-1).
-# - Ports are published on the loopback interface only (SEC-2). Nothing here is
-#   reachable from outside the host.
+# - The proxy is the only service published to the outside, on ports 80 and
+#   443. The database, the API and the frontend are published on the loopback
+#   interface only (SEC-2).
 # - Container logs are rotated so they cannot fill the disk.
 # - The pgdata volume holds the database. Never remove it.
 
@@ -96,6 +97,37 @@ services:
       timeout: 5s
       retries: 5
 
+  # The way in from outside: one origin for the frontend and /api, with HTTPS
+  # as soon as APP_HOSTNAME names a host whose DNS points here (ops/proxy/).
+  proxy:
+    build:
+      context: .
+      dockerfile: ops/proxy/Dockerfile
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      # The hostname when there is one, otherwise plain HTTP on port 80.
+      APP_SITE_ADDRESS: ${APP_HOSTNAME:-:80}
+      APP_TLS_DIRECTIVE: ${APP_TLS_DIRECTIVE:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Certificates and their renewal state. Losing this volume only costs a
+      # new certificate, but repeated loss runs into the issuer's rate limits.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
   # Daily pg_dump into a host directory, 14 copies kept (REL-2). See
   # ops/backup/backup.sh. BACKUP_DIR is set on the droplet to a path outside
   # the repository checkout; locally it defaults to ./backups (gitignored).
@@ -127,3 +159,5 @@ services:
 
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
