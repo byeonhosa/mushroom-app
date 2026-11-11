@@ -5,11 +5,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# requirements.txt is a hashed lockfile (see requirements.in).
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --require-hashes -r requirements.txt
 
 COPY backend /app
 
+# The API needs no write access to its own files; run it unprivileged.
+RUN useradd --system --uid 10001 --no-create-home app
+USER app
+
 EXPOSE 8000
 
-CMD ["sh", "-c", "python -m app.migrate && python -m app.seed_species && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python -m app.migrate && python -m app.seed_species && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]

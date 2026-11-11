@@ -167,6 +167,75 @@ jobs:
         working-directory: frontend
         run: npm audit --omit=dev --audit-level=high
 
+  compose-stack:
+    # Builds the images exactly as the droplet does and runs the whole stack,
+    # so a broken Dockerfile or Compose file is caught here and not in
+    # production. Also proves that a backup can be restored (REL-3).
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and start the stack
+        run: |
+          cp .env.example .env
+          docker compose up -d --build
+          docker compose ps
+
+      - name: Wait for the API and the frontend
+        run: |
+          for i in $(seq 1 36); do
+            if curl -fsS -m 5 http://127.0.0.1:8000/api/health/ready > /dev/null 2>&1 \
+              && curl -fsS -m 5 -o /dev/null http://127.0.0.1:3000/ 2> /dev/null; then
+              echo "stack responding after $((i * 5))s"
+              break
+            fi
+            sleep 5
+          done
+          curl -fsS http://127.0.0.1:8000/api/health/ready
+          curl -fsS -o /dev/null -w "frontend: HTTP %{http_code}\n" http://127.0.0.1:3000/
+
+      - name: Restart policy, log rotation, loopback-only ports
+        run: bash ops/ci/check-hardening.sh
+
+      - name: Containers do not run as root
+        run: |
+          test "$(docker compose exec -T api id -u)" != "0"
+          test "$(docker compose exec -T frontend id -u)" != "0"
+
+      - name: Backup, status and restore test
+        run: |
+          docker compose exec -T backup backup once predeploy
+          for i in $(seq 1 12); do
+            if docker compose exec -T backup backup status > /dev/null 2>&1; then break; fi
+            sleep 5
+          done
+          docker compose exec -T backup backup status
+          docker compose exec -T -e VERIFY_STRICT=1 backup backup verify
+          sudo find backups -type f | sort
+
+      - name: Stack survives a restart of the Docker daemon
+        run: |
+          sudo systemctl restart docker
+          for i in $(seq 1 36); do
+            if curl -fsS -m 5 http://127.0.0.1:8000/api/health/ready > /dev/null 2>&1 \
+              && curl -fsS -m 5 -o /dev/null http://127.0.0.1:3000/ 2> /dev/null; then
+              echo "stack back after $((i * 5))s"
+              break
+            fi
+            sleep 5
+          done
+          curl -fsS http://127.0.0.1:8000/api/health/ready > /dev/null
+          curl -fsS -o /dev/null http://127.0.0.1:3000/
+          docker compose ps
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose ps -a
+          docker compose logs --tail 80
+
   e2e-tests:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-build]

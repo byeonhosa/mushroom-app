@@ -13,35 +13,28 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY frontend ./
 
 ARG NEXT_PUBLIC_API_BASE=http://localhost:8000/api
-ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE} \
+    NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
 
-FROM node:22-bookworm-slim AS prod-deps
-
-WORKDIR /app
-
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --omit=dev
-
+# next.config.js sets output: "standalone", so the build leaves a self-contained
+# server in .next/standalone with only the node_modules files it needs. The
+# runtime image carries that and the static assets, nothing else.
 FROM node:22-bookworm-slim AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production \
     PORT=3000 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    NEXT_TELEMETRY_DISABLED=1
 
-COPY --from=builder /app/package.json ./package.json
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
-COPY --from=builder /app/app ./app
-COPY --from=builder /app/lib ./lib
-COPY --from=builder /app/next.config.js ./next.config.js
-COPY --from=builder /app/next-env.d.ts ./next-env.d.ts
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
+USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]
