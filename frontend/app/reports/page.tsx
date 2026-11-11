@@ -184,6 +184,10 @@ export default function ReportsPage() {
           <GroupTable title="Contamination By Species" groups={report.contamination_by_species} />
           <GroupTable title="Contamination By Liquid Culture" groups={report.contamination_by_liquid_culture} />
           <GroupTable
+            title="Contamination By Purchased Spawn Lot"
+            groups={report.contamination_by_purchased_spawn_lot}
+          />
+          <GroupTable
             title="Contamination By Inoculation Source Type"
             groups={report.contamination_by_inoculation_source_type}
           />

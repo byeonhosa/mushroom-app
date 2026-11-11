@@ -111,6 +111,10 @@ export default function BagPage() {
               ) : (
                 bag.source_spawn_bag_id ?? "-"
               )
+            ) : bag.inoculation_source_type === "PURCHASED_SPAWN" ? (
+              <a href="/purchased-spawn-lots">
+                Purchased spawn lot {bag.source_purchased_spawn_lot_code ?? bag.source_purchased_spawn_lot_id}
+              </a>
             ) : (
               "-"
             )}

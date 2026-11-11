@@ -41,3 +41,4 @@ export type SterilizationRunDetail = Schema<"SterilizationRunDetailOut">;
 export type PasteurizationRunDetail = Schema<"PasteurizationRunDetailOut">;
 export type CurrentUser = Schema<"CurrentUserOut">;
 export type User = Schema<"UserOut">;
+export type PurchasedSpawnLot = Schema<"PurchasedSpawnLotOut">;

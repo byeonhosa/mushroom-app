@@ -105,6 +105,7 @@ def _seed(Session):
             "sterilization_run_id": sterilization.sterilization_run_id,
             "pasteurization_run_id": pasteurization.pasteurization_run_id,
             "liquid_culture_id": culture.liquid_culture_id,
+            "species_id": species.species_id,
         }
 
 
@@ -175,3 +176,55 @@ def test_inoculation_sessions_on_one_run_at_the_same_moment_get_different_bag_co
     with pg_sessions() as db:
         labeled = db.query(models.Bag).filter(models.Bag.bag_code.is_not(None)).count()
         assert labeled == per_session * WORKERS
+
+
+def test_lots_of_one_species_recorded_at_the_same_moment_get_different_codes(pg_sessions):
+    ids = _seed(pg_sessions)
+    received = datetime(2026, 11, 5, 15, 0, tzinfo=timezone.utc)
+
+    def record(db, job):
+        lot = crud.create_purchased_spawn_lot(
+            db, {"vendor": f"Supplier {job}", "species_id": ids["species_id"], "received_at": received}
+        )
+        return lot.lot_code
+
+    codes = _run_together(pg_sessions, record, list(range(WORKERS)))
+
+    assert sorted(codes) == [f"PL-LM-261105{letter}" for letter in "ABCDEFGH"[:WORKERS]]
+
+
+def test_sessions_inoculating_from_one_purchased_lot_at_the_same_moment(pg_sessions):
+    """Also proves migration 027 against the models: every column is read and written here."""
+    ids = _seed(pg_sessions)
+    per_session = 5
+    with pg_sessions() as db:
+        lot = crud.create_purchased_spawn_lot(
+            db,
+            {
+                "vendor": "North Spore",
+                "vendor_lot_number": "NS-1",
+                "species_id": ids["species_id"],
+                "received_at": datetime.now(timezone.utc),
+                "quantity": 4,
+                "quantity_unit": "bags",
+            },
+        )
+        lot_id = lot.purchased_spawn_lot_id
+        crud.create_substrate_bags(db, ids["pasteurization_run_id"], per_session * WORKERS)
+
+    def inoculate(db, job):
+        bags = crud.create_inoculation_batch(
+            db, ids["pasteurization_run_id"], per_session, purchased_spawn_lot_id=lot_id
+        )
+        return [(bag.bag_id, bag.bag_code) for bag in bags]
+
+    results = _run_together(pg_sessions, inoculate, list(range(WORKERS)))
+    pairs = [pair for session in results for pair in session]
+
+    assert len({code for _, code in pairs}) == per_session * WORKERS
+    assert len({bag_id for bag_id, _ in pairs}) == per_session * WORKERS
+    with pg_sessions() as db:
+        lot = db.get(models.PurchasedSpawnLot, lot_id)
+        assert lot.used_up_at is None and lot.is_active
+        from_lot = db.query(models.Bag).filter(models.Bag.source_purchased_spawn_lot_id == lot_id).count()
+        assert from_lot == per_session * WORKERS

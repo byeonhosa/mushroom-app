@@ -94,6 +94,32 @@ def _root_liquid_culture_for_bag(
     return result
 
 
+def _root_purchased_lot_for_bag(
+    bag: models.Bag,
+    bag_index: dict[str, models.Bag],
+    memo: dict[str, tuple[int | None, str | None]],
+    visiting: set[str] | None = None,
+) -> tuple[int | None, str | None]:
+    """The purchased spawn lot at the root of a bag's line, if there is one (TRC-3, TRC-4)."""
+    if bag.bag_id in memo:
+        return memo[bag.bag_id]
+    if visiting is None:
+        visiting = set()
+    if bag.bag_id in visiting:
+        return (None, None)
+
+    visiting.add(bag.bag_id)
+    if bag.source_purchased_spawn_lot_id is not None:
+        result = (bag.source_purchased_spawn_lot_id, bag.source_purchased_spawn_lot_code)
+    elif bag.parent_spawn_bag_id and bag.parent_spawn_bag_id in bag_index:
+        result = _root_purchased_lot_for_bag(bag_index[bag.parent_spawn_bag_id], bag_index, memo, visiting)
+    else:
+        result = (None, None)
+    visiting.remove(bag.bag_id)
+    memo[bag.bag_id] = result
+    return result
+
+
 def _spawn_generation_for_bag(
     bag: models.Bag,
     bag_index: dict[str, models.Bag],
@@ -111,7 +137,9 @@ def _spawn_generation_for_bag(
     visiting.add(bag.bag_id)
     generation: int | None
     if bag.bag_type == "SPAWN":
-        if bag.source_liquid_culture_id is not None:
+        # A spawn bag made from a liquid culture or from purchased spawn is the
+        # farm's first generation.
+        if bag.source_liquid_culture_id is not None or bag.source_purchased_spawn_lot_id is not None:
             generation = 1
         elif bag.parent_spawn_bag_id and bag.parent_spawn_bag_id in bag_index:
             parent_generation = _spawn_generation_for_bag(bag_index[bag.parent_spawn_bag_id], bag_index, memo, visiting)
@@ -123,6 +151,10 @@ def _spawn_generation_for_bag(
             generation = _spawn_generation_for_bag(bag_index[bag.parent_spawn_bag_id], bag_index, memo, visiting)
         elif bag.source_liquid_culture_id is not None:
             generation = 1
+        elif bag.source_purchased_spawn_lot_id is not None:
+            # Substrate inoculated straight from purchased spawn: no
+            # generation of the farm's own spawn stands between them.
+            generation = 0
         else:
             generation = None
     visiting.remove(bag.bag_id)
@@ -135,15 +167,21 @@ def _build_lineage_metadata(
     bag_index: dict[str, models.Bag],
     liquid_culture_memo: dict[str, tuple[int | None, str | None]],
     generation_memo: dict[str, int | None],
+    purchased_lot_memo: dict[str, tuple[int | None, str | None]] | None = None,
 ) -> dict:
     source_liquid_culture_id, source_liquid_culture_code = _root_liquid_culture_for_bag(
         bag,
         bag_index,
         liquid_culture_memo,
     )
+    lot_id, lot_code = _root_purchased_lot_for_bag(
+        bag, bag_index, purchased_lot_memo if purchased_lot_memo is not None else {}
+    )
     return {
         "source_liquid_culture_id": source_liquid_culture_id,
         "source_liquid_culture_code": source_liquid_culture_code,
+        "source_purchased_spawn_lot_id": lot_id,
+        "source_purchased_spawn_lot_code": lot_code,
         "spawn_generation": _spawn_generation_for_bag(bag, bag_index, generation_memo),
     }
 
@@ -157,14 +195,16 @@ def _build_data_quality_issues(bags: list[models.Bag]) -> list[dict]:
             lambda bag, snapshot: bag.bag_type == "SPAWN"
             and snapshot["inoculated_at"] is not None
             and bag.source_liquid_culture_id is None
+            and bag.source_purchased_spawn_lot_id is None
             and bag.parent_spawn_bag_id is None,
         ),
         (
             "INOCULATED_SUBSTRATE_MISSING_PARENT",
-            "Inoculated substrate bags missing a parent spawn bag",
+            "Inoculated substrate bags with neither a parent spawn bag nor a purchased spawn lot",
             lambda bag, snapshot: bag.bag_type == "SUBSTRATE"
             and snapshot["inoculated_at"] is not None
-            and bag.parent_spawn_bag_id is None,
+            and bag.parent_spawn_bag_id is None
+            and bag.source_purchased_spawn_lot_id is None,
         ),
         (
             "INOCULATED_BAG_MISSING_SPECIES",
@@ -235,6 +275,8 @@ def _bag_payload(bag: models.Bag) -> dict:
         "source_spawn_bag_ref": bag.source_spawn_bag_ref,
         "source_liquid_culture_id": bag.source_liquid_culture_id,
         "source_liquid_culture_code": bag.source_liquid_culture_code,
+        "source_purchased_spawn_lot_id": bag.source_purchased_spawn_lot_id,
+        "source_purchased_spawn_lot_code": bag.source_purchased_spawn_lot_code,
         "inoculation_source_type": bag.inoculation_source_type,
         "target_dry_kg": float(bag.target_dry_kg) if bag.target_dry_kg is not None else None,
         "actual_dry_kg": float(bag.actual_dry_kg) if bag.actual_dry_kg is not None else None,
@@ -267,7 +309,13 @@ def _build_substrate_metrics_row(bag: models.Bag, lineage_metadata: dict | None 
         lineage_metadata = {
             "source_liquid_culture_id": bag.source_liquid_culture_id,
             "source_liquid_culture_code": bag.source_liquid_culture_code,
-            "spawn_generation": 1 if bag.source_liquid_culture_id is not None else None,
+            "source_purchased_spawn_lot_id": bag.source_purchased_spawn_lot_id,
+            "source_purchased_spawn_lot_code": bag.source_purchased_spawn_lot_code,
+            "spawn_generation": (
+                1 if bag.source_liquid_culture_id is not None
+                else 0 if bag.source_purchased_spawn_lot_id is not None
+                else None
+            ),
         }
     return {
         "bag_id": bag.bag_id,
@@ -284,6 +332,8 @@ def _build_substrate_metrics_row(bag: models.Bag, lineage_metadata: dict | None 
         "parent_spawn_bag_ref": bag.parent_spawn_bag_ref,
         "source_liquid_culture_id": lineage_metadata["source_liquid_culture_id"],
         "source_liquid_culture_code": lineage_metadata["source_liquid_culture_code"],
+        "source_purchased_spawn_lot_id": lineage_metadata["source_purchased_spawn_lot_id"],
+        "source_purchased_spawn_lot_code": lineage_metadata["source_purchased_spawn_lot_code"],
         "spawn_generation": lineage_metadata["spawn_generation"],
         "source_sterilization_run_id": (
             source_sterilization_run.sterilization_run_id if source_sterilization_run is not None else None
@@ -326,6 +376,8 @@ def _build_lineage_row(bag: models.Bag, generation: int) -> dict:
         "parent_spawn_bag_ref": bag.parent_spawn_bag_ref,
         "source_liquid_culture_id": bag.source_liquid_culture_id,
         "source_liquid_culture_code": bag.source_liquid_culture_code,
+        "source_purchased_spawn_lot_id": bag.source_purchased_spawn_lot_id,
+        "source_purchased_spawn_lot_code": bag.source_purchased_spawn_lot_code,
         "inoculation_source_type": bag.inoculation_source_type,
         "source_sterilization_run_id": (
             source_sterilization_run.sterilization_run_id if source_sterilization_run is not None else None
@@ -443,9 +495,11 @@ def get_production_report(db: Session) -> dict:
 
     bag_index = {bag.bag_id: bag for bag in bags}
     liquid_culture_memo: dict[str, tuple[int | None, str | None]] = {}
+    purchased_lot_memo: dict[str, tuple[int | None, str | None]] = {}
     generation_memo: dict[str, int | None] = {}
 
     substrate_rows: list[dict] = []
+    contamination_by_purchased_lot_entries: list[tuple[str, str, bool]] = []
     contamination_by_bag_type_entries: list[tuple[str, str, bool]] = []
     contamination_by_species_entries: list[tuple[str, str, bool]] = []
     contamination_by_liquid_culture_entries: list[tuple[str, str, bool]] = []
@@ -463,7 +517,17 @@ def get_production_report(db: Session) -> dict:
     for bag in bags:
         contaminated = _is_contaminated(bag)
         bag_snapshot = _bag_history_snapshot(bag)
-        lineage_metadata = _build_lineage_metadata(bag, bag_index, liquid_culture_memo, generation_memo)
+        lineage_metadata = _build_lineage_metadata(
+            bag, bag_index, liquid_culture_memo, generation_memo, purchased_lot_memo
+        )
+        if lineage_metadata["source_purchased_spawn_lot_id"] is not None:
+            contamination_by_purchased_lot_entries.append(
+                (
+                    str(lineage_metadata["source_purchased_spawn_lot_id"]),
+                    lineage_metadata["source_purchased_spawn_lot_code"] or "Purchased lot",
+                    contaminated,
+                )
+            )
         source_liquid_culture_id = lineage_metadata["source_liquid_culture_id"]
         source_liquid_culture_code = lineage_metadata["source_liquid_culture_code"]
         spawn_generation = lineage_metadata["spawn_generation"]
@@ -480,14 +544,22 @@ def get_production_report(db: Session) -> dict:
             )
 
         if bag.inoculation_source_type is not None:
-            source_type_label = "Liquid Culture" if bag.inoculation_source_type == "LIQUID_CULTURE" else "Spawn Bag"
+            source_type_label = {
+                "LIQUID_CULTURE": "Liquid Culture",
+                "SPAWN_BAG": "Spawn Bag",
+                "PURCHASED_SPAWN": "Purchased Spawn",
+            }[bag.inoculation_source_type]
             contamination_by_inoculation_source_type_entries.append(
                 (bag.inoculation_source_type, source_type_label, contaminated)
             )
 
         if spawn_generation is not None:
             contamination_by_spawn_generation_entries.append(
-                (str(spawn_generation), f"Generation {spawn_generation}", contaminated)
+                (
+                    str(spawn_generation),
+                    "Straight from purchased spawn" if spawn_generation == 0 else f"Generation {spawn_generation}",
+                    contaminated,
+                )
             )
 
         source_sterilization_run = bag.sterilization_run
@@ -620,6 +692,7 @@ def get_production_report(db: Session) -> dict:
         "contamination_by_species": _build_group_summary(contamination_by_species_entries),
         "contamination_by_liquid_culture": _build_group_summary(contamination_by_liquid_culture_entries),
         "contamination_by_inoculation_source_type": _build_group_summary(contamination_by_inoculation_source_type_entries),
+        "contamination_by_purchased_spawn_lot": _build_group_summary(contamination_by_purchased_lot_entries),
         "contamination_by_spawn_generation": _build_group_summary(contamination_by_spawn_generation_entries),
         "contamination_by_source_sterilization_run": _build_group_summary(contamination_by_source_sterilization_entries),
         "contamination_by_pasteurization_run": _build_group_summary(contamination_by_pasteurization_entries),

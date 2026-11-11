@@ -197,6 +197,7 @@ async function createSubstrateBagFromSpawn(
   const inoculationForm = page
     .locator("form")
     .filter({ has: page.getByRole("heading", { name: "Inoculate Unlabeled Substrate Records" }) });
+  await inoculationForm.getByRole("combobox", { name: "Inoculated from" }).selectOption("SPAWN_BAG");
   await inoculationForm.getByLabel("Ready spawn bag code").fill(spawnBagRef);
   await inoculationForm.getByLabel("Inoculation count").fill("1");
   await inoculationForm.getByRole("button", { name: "Assign Codes & Print Labels" }).click();

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "../../../lib/api";
 import type { SterilizationRun, LiquidCulture, Bag } from "../../../lib/types";
+import { lotLabel, useUsableSpawnLots } from "../../../lib/spawn-lots";
+
+type SpawnSource = "LIQUID_CULTURE" | "SPAWN_BAG" | "PURCHASED_SPAWN";
 
 export default function SpawnInoculationPage() {
   const router = useRouter();
@@ -11,7 +14,9 @@ export default function SpawnInoculationPage() {
   const [liquidCultures, setLiquidCultures] = useState<LiquidCulture[]>([]);
   const [readySpawnBags, setReadySpawnBags] = useState<Bag[]>([]);
   const [runId, setRunId] = useState<number | "">("");
-  const [sourceType, setSourceType] = useState<"LIQUID_CULTURE" | "SPAWN_BAG">("LIQUID_CULTURE");
+  const [sourceType, setSourceType] = useState<SpawnSource>("LIQUID_CULTURE");
+  const [lotId, setLotId] = useState<number | "">("");
+  const { lots } = useUsableSpawnLots();
   const [liquidCultureId, setLiquidCultureId] = useState<number | "">("");
   const [donorSpawnBagId, setDonorSpawnBagId] = useState<string>("");
   const [count, setCount] = useState(1);
@@ -53,6 +58,10 @@ export default function SpawnInoculationPage() {
       setError("Select a liquid culture.");
       return;
     }
+    if (sourceType === "PURCHASED_SPAWN" && lotId === "") {
+      setError("Select the purchased spawn lot.");
+      return;
+    }
     if (sourceType === "SPAWN_BAG" && !donorSpawnBagId) {
       setError("Select a donor spawn bag.");
       return;
@@ -65,6 +74,7 @@ export default function SpawnInoculationPage() {
         source_type: sourceType,
         liquid_culture_id: sourceType === "LIQUID_CULTURE" ? liquidCultureId : undefined,
         donor_spawn_bag_id: sourceType === "SPAWN_BAG" ? donorSpawnBagId : undefined,
+        purchased_spawn_lot_id: sourceType === "PURCHASED_SPAWN" ? lotId : undefined,
       });
       router.push(
         `/bags/create/spawn/labels?ids=${bags.map((bag) => encodeURIComponent(bag.bag_ref)).join(",")}`,
@@ -97,13 +107,26 @@ export default function SpawnInoculationPage() {
           Source Type
           <select
             value={sourceType}
-            onChange={(e) => setSourceType(e.target.value as "LIQUID_CULTURE" | "SPAWN_BAG")}
+            onChange={(e) => setSourceType(e.target.value as SpawnSource)}
           >
             <option value="LIQUID_CULTURE">Liquid Culture</option>
             <option value="SPAWN_BAG">Donor Spawn Bag</option>
+            <option value="PURCHASED_SPAWN">Purchased Spawn Lot</option>
           </select>
         </label>
-        {sourceType === "LIQUID_CULTURE" ? (
+        {sourceType === "PURCHASED_SPAWN" ? (
+          <label>
+            Purchased Spawn Lot
+            <select value={lotId} onChange={(e) => setLotId(Number(e.target.value) || "")} required>
+              <option value="">— Select —</option>
+              {lots.map((lot) => (
+                <option key={lot.purchased_spawn_lot_id} value={lot.purchased_spawn_lot_id}>
+                  {lotLabel(lot)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : sourceType === "LIQUID_CULTURE" ? (
           <label>
             Liquid Culture
             <select value={liquidCultureId} onChange={(e) => setLiquidCultureId(Number(e.target.value) || "")} required>

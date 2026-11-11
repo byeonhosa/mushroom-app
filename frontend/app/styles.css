@@ -855,10 +855,26 @@ select:focus-visible {
 /* One field per row, label above its input, large enough for a thumb. */
 .signInCard .form label,
 .accountCard .form label,
+.stackedForm label,
 .inlineForm label {
   display: grid;
   gap: 6px;
   font-weight: 600;
+}
+
+.stackedForm input,
+.stackedForm select {
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.stackedForm .btn {
+  max-width: 420px;
+  min-height: 46px;
+  font-size: 1rem;
 }
 
 .signInCard .form input,

@@ -109,6 +109,24 @@ def _resolve_spawn_source(db: Session, spawn_bag_ref: str) -> models.Bag:
     return spawn
 
 
+def _resolve_purchased_lot(db: Session, lot_id: int | None) -> models.PurchasedSpawnLot:
+    """A purchased spawn lot that can inoculate now (REF-11, INO-7)."""
+    if lot_id is None:
+        raise ValueError("Choose the purchased spawn lot that supplied the grain")
+    lot = db.get(models.PurchasedSpawnLot, lot_id)
+    if not lot:
+        raise LookupError("Purchased spawn lot not found")
+    if not lot.is_active:
+        raise ValueError(f"Purchased spawn lot {lot.lot_code} is deactivated")
+    if lot.used_up_at is not None:
+        raise ValueError(f"Purchased spawn lot {lot.lot_code} is marked used up. Reopen it if some is left")
+    return lot
+
+
+def _purchased_lot_detail(lot: models.PurchasedSpawnLot) -> str:
+    return f"Inoculated from purchased spawn lot {lot.lot_code} ({lot.vendor})"
+
+
 def list_bag_status_events(db: Session, bag_ref: str):
     bag = _resolve_bag(db, bag_ref)
     if not bag:
@@ -409,6 +427,7 @@ def inoculate_spawn_bags(
     source_type: str,
     liquid_culture_id: int | None = None,
     donor_spawn_bag_ref: str | None = None,
+    purchased_spawn_lot_id: int | None = None,
     inoculated_at=None,
     notes: str | None = None,
 ):
@@ -428,7 +447,11 @@ def inoculate_spawn_bags(
 
     source_spawn_bag = None
     source_liquid_culture = None
-    if source_type == models.InoculationSourceType.LIQUID_CULTURE.value:
+    source_lot = None
+    if source_type == models.InoculationSourceType.PURCHASED_SPAWN.value:
+        source_lot = _resolve_purchased_lot(db, purchased_spawn_lot_id)
+        species_id = source_lot.species_id
+    elif source_type == models.InoculationSourceType.LIQUID_CULTURE.value:
         if liquid_culture_id is None:
             raise ValueError("Liquid culture is required for liquid-culture spawn inoculation")
         source_liquid_culture = db.get(models.LiquidCulture, liquid_culture_id)
@@ -446,11 +469,12 @@ def inoculate_spawn_bags(
         raise ValueError("Unsupported source_type")
 
     performed_at = inoculated_at or _now()
-    inoculation_detail = (
-        f"Inoculated from liquid culture {source_liquid_culture.culture_code}"
-        if source_liquid_culture is not None
-        else f"Inoculated from spawn bag {source_spawn_bag.bag_ref}"
-    )
+    if source_lot is not None:
+        inoculation_detail = _purchased_lot_detail(source_lot)
+    elif source_liquid_culture is not None:
+        inoculation_detail = f"Inoculated from liquid culture {source_liquid_culture.culture_code}"
+    else:
+        inoculation_detail = f"Inoculated from spawn bag {source_spawn_bag.bag_ref}"
     bag_codes = bag_id.generate_spawn_bag_ids(db, sterilization_run_id, species_id, len(bags))
     batch = models.InoculationBatch(
         source_type=source_type,
@@ -458,6 +482,7 @@ def inoculate_spawn_bags(
         source_liquid_culture_id=(
             source_liquid_culture.liquid_culture_id if source_liquid_culture is not None else None
         ),
+        source_purchased_spawn_lot_id=source_lot.purchased_spawn_lot_id if source_lot is not None else None,
         species_id=species_id,
         inoculated_at=performed_at,
         notes=notes,
@@ -470,6 +495,9 @@ def inoculate_spawn_bags(
         bag.parent_spawn_bag_id = source_spawn_bag.bag_id if source_spawn_bag else None
         bag.source_liquid_culture_id = (
             source_liquid_culture.liquid_culture_id if source_liquid_culture is not None else None
+        )
+        bag.source_purchased_spawn_lot_id = (
+            source_lot.purchased_spawn_lot_id if source_lot is not None else None
         )
         bag.bag_code = bag_code
         bag.labeled_at = performed_at
@@ -519,14 +547,32 @@ def inoculate_spawn_bags(
 def _create_substrate_inoculations_for_bags(
     db: Session,
     substrate_bags: list[models.Bag],
-    spawn_bag_ref: str,
+    spawn_bag_ref: str | None = None,
     inoculated_at=None,
     notes: str | None = None,
+    *,
+    purchased_spawn_lot_id: int | None = None,
 ):
+    """Inoculate substrate bags from one ready spawn bag, or from a purchased spawn lot.
+
+    A spawn bag is consumed by the session (today's rule). A purchased lot is
+    not: it serves any number of sessions until it is marked used up (INO-7).
+    """
     if not substrate_bags:
         raise ValueError("At least one substrate bag is required")
 
-    spawn = _resolve_spawn_source(db, spawn_bag_ref)
+    spawn = None
+    lot = None
+    if purchased_spawn_lot_id is not None:
+        if spawn_bag_ref:
+            raise ValueError("Give either a spawn bag or a purchased spawn lot, not both")
+        lot = _resolve_purchased_lot(db, purchased_spawn_lot_id)
+        species_id = lot.species_id
+    else:
+        if not spawn_bag_ref:
+            raise ValueError("Give the ready spawn bag, or the purchased spawn lot, that supplied the grain")
+        spawn = _resolve_spawn_source(db, spawn_bag_ref)
+        species_id = spawn.species_id
 
     pasteurization_run_id = substrate_bags[0].pasteurization_run_id
     if pasteurization_run_id is None:
@@ -538,37 +584,47 @@ def _create_substrate_inoculations_for_bags(
             raise ValueError("Substrate bag must be SUBSTRATE type")
         if bag_snapshot["disposed_at"]:
             raise ValueError("Disposed substrate bags cannot be inoculated")
-        if bag.inoculation is not None:
+        if bag.inoculation is not None or bag_snapshot["inoculated_at"] is not None:
             raise ValueError(f"Substrate bag already inoculated: {bag.bag_ref}")
         if bag.pasteurization_run_id != pasteurization_run_id:
             raise ValueError("All substrate bags in one inoculation batch must come from the same pasteurization run")
 
     performed_at = inoculated_at or _now()
-    inoculation_detail = f"Inoculated from spawn bag {spawn.bag_ref}"
-    bag_codes = bag_id.generate_substrate_bag_ids(db, pasteurization_run_id, spawn.species_id, len(substrate_bags))
+    inoculation_detail = (
+        _purchased_lot_detail(lot) if lot is not None else f"Inoculated from spawn bag {spawn.bag_ref}"
+    )
+    bag_codes = bag_id.generate_substrate_bag_ids(db, pasteurization_run_id, species_id, len(substrate_bags))
     batch = models.InoculationBatch(
-        source_type=models.InoculationSourceType.SPAWN_BAG.value,
-        source_spawn_bag_id=spawn.bag_id,
+        source_type=(
+            models.InoculationSourceType.PURCHASED_SPAWN.value
+            if lot is not None
+            else models.InoculationSourceType.SPAWN_BAG.value
+        ),
+        source_spawn_bag_id=spawn.bag_id if spawn is not None else None,
         source_liquid_culture_id=None,
-        species_id=spawn.species_id,
+        source_purchased_spawn_lot_id=lot.purchased_spawn_lot_id if lot is not None else None,
+        species_id=species_id,
         inoculated_at=performed_at,
         notes=notes,
     )
     db.add(batch)
-    inoculations: list[models.Inoculation] = []
 
     for bag, bag_code in zip(substrate_bags, bag_codes):
         should_record_label_assignment = bag.bag_code is None or bag.labeled_at is None
-        inoc = models.Inoculation(
-            substrate_bag_id=bag.bag_id,
-            spawn_bag_id=spawn.bag_id,
-            inoculated_at=performed_at,
-            notes=notes,
-        )
-        db.add(inoc)
-        bag.parent_spawn_bag_id = spawn.bag_id
+        if spawn is not None:
+            # The spawn-bag lineage link (TRC-2). A purchased lot is not a bag.
+            db.add(
+                models.Inoculation(
+                    substrate_bag_id=bag.bag_id,
+                    spawn_bag_id=spawn.bag_id,
+                    inoculated_at=performed_at,
+                    notes=notes,
+                )
+            )
+        bag.parent_spawn_bag_id = spawn.bag_id if spawn is not None else None
         bag.source_liquid_culture_id = None
-        bag.species_id = spawn.species_id
+        bag.source_purchased_spawn_lot_id = lot.purchased_spawn_lot_id if lot is not None else None
+        bag.species_id = species_id
         bag.bag_code = bag.bag_code or bag_code
         bag.labeled_at = bag.labeled_at or performed_at
         bag.inoculated_at = performed_at
@@ -589,19 +645,19 @@ def _create_substrate_inoculations_for_bags(
             notes=notes,
         )
         _sync_bag_status(bag)
-        inoculations.append(inoc)
         db.add(models.InoculationBatchTarget(inoculation_batch=batch, bag=bag))
 
-    spawn.consumed_at = performed_at
-    _record_bag_event(
-        db,
-        spawn,
-        models.BagStatusEventType.CONSUMED.value,
-        occurred_at=performed_at,
-        detail="Used to inoculate substrate bags",
-        notes=notes,
-    )
-    _sync_bag_status(spawn)
+    if spawn is not None:
+        spawn.consumed_at = performed_at
+        _record_bag_event(
+            db,
+            spawn,
+            models.BagStatusEventType.CONSUMED.value,
+            occurred_at=performed_at,
+            detail="Used to inoculate substrate bags",
+            notes=notes,
+        )
+        _sync_bag_status(spawn)
 
     try:
         db.commit()
@@ -618,9 +674,11 @@ def create_inoculation_batch(
     db: Session,
     pasteurization_run_id: int,
     bag_count: int,
-    spawn_bag_id: str,
+    spawn_bag_id: str | None = None,
     inoculated_at=None,
     notes: str | None = None,
+    *,
+    purchased_spawn_lot_id: int | None = None,
 ):
     run = _lock_run(
         db, models.PasteurizationRun, models.PasteurizationRun.pasteurization_run_id, pasteurization_run_id
@@ -640,6 +698,7 @@ def create_inoculation_batch(
         spawn_bag_ref=spawn_bag_id,
         inoculated_at=inoculated_at,
         notes=notes,
+        purchased_spawn_lot_id=purchased_spawn_lot_id,
     )
 
 
