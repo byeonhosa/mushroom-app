@@ -1,11 +1,11 @@
-FROM node:22-bookworm-slim AS deps
+FROM node:26-bookworm-slim AS deps
 
 WORKDIR /app
 
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
-FROM node:22-bookworm-slim AS builder
+FROM node:26-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ RUN npm run build
 # next.config.js sets output: "standalone", so the build leaves a self-contained
 # server in .next/standalone with only the node_modules files it needs. The
 # runtime image carries that and the static assets, nothing else.
-FROM node:22-bookworm-slim AS runner
+FROM node:26-bookworm-slim AS runner
 
 WORKDIR /app
 
