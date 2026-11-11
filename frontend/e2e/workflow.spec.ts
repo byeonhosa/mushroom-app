@@ -1,6 +1,10 @@
 import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
-const apiBaseUrl = "http://localhost:8001/api";
+import { signIn } from "./helpers";
+
+// The API is reached the way the pages reach it: on the app's own origin, with
+// the signed-in browser's cookie. Each helper below is given `page.request`.
+const apiBaseUrl = "/api";
 
 type BagRow = {
   bag_id: string;
@@ -246,10 +250,12 @@ async function recordDisposal(page: Page, bagRef: string, reason: "CONTAMINATION
 }
 
 test.describe("bag workflow e2e", () => {
-  test("supports a happy path from spawn inoculation through final harvest reporting", async ({
-    page,
-    request,
-  }) => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page);
+  });
+
+  test("supports a happy path from spawn inoculation through final harvest reporting", async ({ page }) => {
+    const request = page.request;
     const { spawnBagRef } = await createReadySpawnBag(page, request);
     const { runCode: pasteurizationRunCode, substrateBagRef } = await createSubstrateBagFromSpawn(
       page,
@@ -292,7 +298,8 @@ test.describe("bag workflow e2e", () => {
     await expect(bagRow).toContainText("80.0%");
   });
 
-  test("tracks contamination through run detail and reporting views", async ({ page, request }) => {
+  test("tracks contamination through run detail and reporting views", async ({ page }) => {
+    const request = page.request;
     const { runId: sterilizationRunId, spawnBagRef } = await createReadySpawnBag(page, request);
     const { substrateBagRef } = await createSubstrateBagFromSpawn(page, request, spawnBagRef);
 

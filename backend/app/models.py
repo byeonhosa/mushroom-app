@@ -37,6 +37,55 @@ class BagStatusEventType(str, enum.Enum):
     DISPOSED = "DISPOSED"
 
 
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    OPERATOR = "operator"
+
+
+class User(Base):
+    """A person who signs in (SRS 4.14). The email is stored in lower case."""
+
+    __tablename__ = "users"
+    user_id = Column(Integer, primary_key=True)
+    email = Column(String(254), nullable=False, unique=True)
+    display_name = Column(String(120), nullable=False)
+    role = Column(String(20), nullable=False, default=UserRole.OPERATOR.value)
+    password_hash = Column(String(200), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    must_change_password = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_login_at = Column(DateTime(timezone=True))
+
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+
+
+class UserSession(Base):
+    """A signed-in browser. Only a SHA-256 digest of the cookie value is kept."""
+
+    __tablename__ = "user_sessions"
+    session_id = Column(Integer, primary_key=True)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_seen_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    user_agent = Column(String(300))
+    ip_address = Column(String(64))
+
+    user = relationship("User", back_populates="sessions")
+
+
+class LoginAttempt(Base):
+    """One sign-in attempt, kept to slow down password guessing."""
+
+    __tablename__ = "login_attempts"
+    login_attempt_id = Column(Integer, primary_key=True)
+    email = Column(String(254), nullable=False)
+    ip_address = Column(String(64))
+    attempted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    succeeded = Column(Boolean, nullable=False, default=False)
+
+
 class IdCounter(Base):
     """Next number to hand out for a family of identifiers (see bag_id.py)."""
 
@@ -306,8 +355,15 @@ class BagStatusEvent(Base):
     occurred_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     detail = Column(Text)
     notes = Column(Text)
+    # USR-4: who entered the event. Null for events from before sign-in existed.
+    recorded_by_user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"))
 
     bag = relationship("Bag", back_populates="status_events")
+    recorded_by = relationship("User")
+
+    @property
+    def recorded_by_name(self) -> str | None:
+        return self.recorded_by.display_name if self.recorded_by else None
 
 
 class InoculationBatch(Base):
@@ -376,12 +432,18 @@ class HarvestEvent(Base):
     fresh_weight_kg = Column(Numeric(10, 3), nullable=False)
     harvested_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     notes = Column(Text)
+    recorded_by_user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"))
 
     __table_args__ = (
         UniqueConstraint("bag_id", "flush_number", name="uq_harvest_events_bag_flush"),
     )
 
     bag = relationship("Bag", back_populates="harvest_events")
+    recorded_by = relationship("User")
+
+    @property
+    def recorded_by_name(self) -> str | None:
+        return self.recorded_by.display_name if self.recorded_by else None
 
     @property
     def bag_ref(self) -> str:

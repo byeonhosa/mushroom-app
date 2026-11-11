@@ -13,3 +13,7 @@ pydantic>=2.12,<3
 pydantic-settings>=2.12,<3
 qrcode[pil]>=8.0,<9
 Pillow>=11.3.0
+# Password hashing for sign-in (SRS USR-3).
+bcrypt>=5,<6
+# Time zone data for zoneinfo, so the farm's zone resolves on any base image.
+tzdata>=2025.2

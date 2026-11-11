@@ -160,6 +160,9 @@ body {
 
 .dashboard {
   display: grid;
+  /* minmax(0, ...) lets a column be narrower than its widest table, which
+     then scrolls inside its card instead of widening the whole page. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -467,7 +470,12 @@ body {
   .dashboardGridCompact,
   .dashboardColumns,
   .filterGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* A table wider than a phone scrolls inside its card. */
+  .card {
+    overflow-x: auto;
   }
 
   .hero,
@@ -741,4 +749,167 @@ select:focus-visible {
   .sp-fill {
     transition: none;
   }
+}
+
+/* ---- Sign-in, account and user management (WP-2) ---- */
+
+.header .container {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.header .container + .container {
+  padding-top: 0;
+}
+
+.userBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 0.92rem;
+}
+
+.header .nav {
+  justify-content: flex-start;
+}
+
+/* The menu button exists only where the menu is collapsed. */
+.menuToggle {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .menuToggle {
+    display: inline-block;
+  }
+
+  .header .nav {
+    display: none;
+  }
+
+  .header .nav.navOpen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 12px;
+    padding-bottom: 6px;
+  }
+
+  /* A row tall enough for a thumb. */
+  .header .nav.navOpen a {
+    padding: 11px 4px;
+    border-top: 1px solid #e6ece4;
+    font-size: 1rem;
+  }
+
+  .userBarRole {
+    display: none;
+  }
+
+  /* Name of the app on the left, the person and the menu button on the right. */
+  .header .headerTop {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.userBarName {
+  color: #17341f;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.userBarRole {
+  margin-left: 8px;
+  color: #5b6f60;
+  font-weight: 400;
+}
+
+.btnSmall {
+  padding: 6px 11px;
+  font-size: 0.88rem;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.shellStatus {
+  color: #5b6f60;
+  padding: 24px 0;
+}
+
+.signInCard,
+.accountCard {
+  max-width: 440px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.signInCard {
+  margin-top: 8vh;
+}
+
+/* One field per row, label above its input, large enough for a thumb. */
+.signInCard .form label,
+.accountCard .form label,
+.inlineForm label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.signInCard .form input,
+.accountCard .form input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 46px;
+  font-size: 1rem;
+}
+
+.signInCard .btn,
+.accountCard .btn {
+  min-height: 46px;
+  font-size: 1rem;
+}
+
+.notice {
+  background: #fff8e1;
+  border: 1px solid #ecd9a0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #5c4a12;
+}
+
+.fieldHint {
+  font-weight: 400;
+  font-size: 0.86rem;
+  color: #5b6f60;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.inlineForm input {
+  padding: 8px 10px;
+  border: 1px solid #c9d4cb;
+  border-radius: 12px;
+  min-width: 220px;
 }

@@ -41,8 +41,8 @@ Mushroom Farm Manager — production tracking for The Maury River Mushroom Farm,
 - The droplet host has **no Python or Node toolchain** — everything runs in containers. Use `docker compose exec api ...` inside workflow steps.
 - Repo lives at `/opt/mushroom-app`, owned by the `actions-runner` user, which has Docker access.
 - Postgres data persists in the `pgdata` named volume. Never remove it.
-- `/opt/mushroom-app/.env` holds `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `APP_ENV`, `CORS_ORIGINS`, `NEXT_PUBLIC_API_BASE`. It exists only on the droplet. Never print it.
-- As of June 10, 2026: a DigitalOcean Cloud Firewall blocks 5432, 8000 and 3000; port 22 is open; sshd had password authentication re-enabled by a cloud-init drop-in; all containers ran with `restart=no`; a reboot was pending; no backup had ever run (`pg_dump` is not in the API image); the database held seed rows only.
+- `/opt/mushroom-app/.env` holds `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `APP_ENV`, `CORS_ORIGINS`, `BACKUP_DIR` (set by the deploy workflow) and a leftover `NEXT_PUBLIC_API_BASE` that nothing reads. It exists only on the droplet. Never print it. The deploy workflow changes non-secret keys with `ops/deploy/set-env.sh`.
+- As of November 11, 2026 (deploy logs): the runner is online and deploys succeed; all containers run with `restart=unless-stopped`, rotated logs and loopback-only ports; the `backup` service writes daily dumps to `/var/backups/mushroom-app` and every deploy runs a restore test; the database holds no bags. Not verifiable from the workflow: the cloud firewall (blocked 5432, 8000, 3000 in June), sshd (password authentication was re-enabled by a cloud-init drop-in in June), and the reboot that has been pending since June.
 
 ## Build & Test Commands
 
@@ -65,7 +65,8 @@ Run these in the session before pushing. CI remains the authoritative gate.
 - Bag status derives from immutable event history (`bag_status_events`) first, with a cache-column fallback. The two paths have different defaults; unifying them is in WP-1.
 - `crud.py` is a re-export facade; logic lives in `crud_bags.py`, `crud_dashboard.py`, `crud_reference.py`, `crud_reporting.py`, `crud_status.py`. Add new functions to the appropriate domain module, and add new modules by domain as the code grows.
 - `species_profiles` (read-only cultivation reference, seeded from `backend/app/seeds/mushroom_species.json`) is separate from the operating `mushroom_species` table. Merging them is in WP-3.
-- **No authentication exists yet.** Sign-in is WP-2. Do not expose the app publicly before it is live.
+- **Sign-in exists (WP-2).** Every route but the health checks and `/api/auth/{status,login,logout}` needs a session; `backend/app/auth.py` holds the principal model, the origin check and rate limiting, `api_auth.py` the routes, `manage.py` the server commands (`bootstrap-admin`, `smoke-session`, `reset-password`). New routes go on `router` in `api.py` (signed-in user) and add `dependencies=ADMIN_ONLY` when only an administrator may call them. The path prefix `/api/integration/` is reserved for the website (WP-9). In tests, `client` is a signed-in administrator, `operator_client` an operator and `anon_client` nobody (`backend/tests/conftest.py`).
+- The pages call the API on their own origin at `/api` (`frontend/lib/api.ts`); there is no `NEXT_PUBLIC_API_BASE`. In development set `API_PROXY_TARGET` so that `next dev` forwards `/api/*`.
 - The dashboard loads all bags and rebuilds the full report on each request. Rework is in WP-6.
 
 ## Conventions

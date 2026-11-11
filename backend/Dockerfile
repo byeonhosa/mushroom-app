@@ -17,4 +17,8 @@ USER app
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python -m app.migrate && python -m app.seed_species && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# --proxy-headers: the client's address and scheme arrive in X-Forwarded-*
+# headers from the proxy (Caddy, or the frontend's own /api forwarder). They
+# are trusted from any peer because the only peers are the other containers
+# and the server's loopback interface: the port is not published elsewhere.
+CMD ["sh", "-c", "python -m app.migrate && python -m app.seed_species && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips '*'"]

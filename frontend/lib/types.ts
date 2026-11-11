@@ -39,3 +39,5 @@ export type DashboardAlert = Schema<"DashboardAlertOut">;
 export type DashboardOverview = Schema<"DashboardOverviewOut">;
 export type SterilizationRunDetail = Schema<"SterilizationRunDetailOut">;
 export type PasteurizationRunDetail = Schema<"PasteurizationRunDetailOut">;
+export type CurrentUser = Schema<"CurrentUserOut">;
+export type User = Schema<"UserOut">;

@@ -36,6 +36,7 @@ def _build_status_event_row(event: models.BagStatusEvent) -> dict:
         "occurred_at": _as_utc(event.occurred_at),
         "detail": event.detail,
         "notes": event.notes,
+        "recorded_by_name": event.recorded_by_name,
     }
 
 
@@ -706,6 +707,7 @@ def create_harvest_event(db: Session, bag_ref: str, flush_number: int, fresh_wei
         fresh_weight_kg=fresh_weight_kg,
         harvested_at=harvested_at or _now(),
         notes=notes,
+        recorded_by_user_id=db.info.get("user_id"),
     )
     db.add(ev)
     try:

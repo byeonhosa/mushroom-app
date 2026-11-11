@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app import models
+from app import models, security
 from app.db import get_db
 from app.main import app
 
@@ -35,10 +35,35 @@ def db_session():
         engine.dispose()
 
 
+ADMIN_EMAIL = "admin@example.com"
+OPERATOR_EMAIL = "operator@example.com"
+PASSWORD = "correct horse battery"
+# The app refuses a state-changing request that does not name its own origin.
+# A browser always sends this header; the test client has to be told to.
+ORIGIN = "http://testserver"
+
+
+def make_user(db, email: str, role: str, *, password: str = PASSWORD, **extra) -> models.User:
+    user = models.User(
+        email=email,
+        display_name=extra.pop("display_name", email.split("@")[0].title()),
+        role=role,
+        password_hash=security.hash_password(password),
+        **extra,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @pytest.fixture
-def client(db_session):
+def api(db_session):
+    """The app wired to the test database. Yields a factory for clients."""
+
     def _override_get_db():
         # Same contract as app.db.get_db, on the test's own session.
+        db_session.info.pop("user_id", None)
         try:
             yield db_session
         except Exception:
@@ -47,9 +72,42 @@ def client(db_session):
 
     app.dependency_overrides[get_db] = _override_get_db
     try:
-        yield TestClient(app)
+        yield lambda: TestClient(app, headers={"Origin": ORIGIN})
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+def sign_in(client: TestClient, email: str, password: str = PASSWORD) -> TestClient:
+    response = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200, response.text
+    return client
+
+
+@pytest.fixture
+def anon_client(api):
+    """A browser that has not signed in."""
+    return api()
+
+
+@pytest.fixture
+def admin_user(db_session):
+    return make_user(db_session, ADMIN_EMAIL, "admin", display_name="Ada Admin")
+
+
+@pytest.fixture
+def operator_user(db_session):
+    return make_user(db_session, OPERATOR_EMAIL, "operator", display_name="Olly Operator")
+
+
+@pytest.fixture
+def client(api, admin_user):
+    """Signed in as an administrator: the default for tests of the production workflow."""
+    return sign_in(api(), ADMIN_EMAIL)
+
+
+@pytest.fixture
+def operator_client(api, operator_user):
+    return sign_in(api(), OPERATOR_EMAIL)
 
 
 def iso(value: datetime) -> str:
@@ -90,6 +148,13 @@ class Farm:
             "/api/liquid-cultures",
             {"culture_code": "LC-LM-1", "species_id": self.species["species_id"]},
         )
+
+    def as_user(self, client: TestClient) -> "Farm":
+        """The same farm, worked by another signed-in user."""
+        other = object.__new__(Farm)
+        other.__dict__.update(self.__dict__)
+        other.client = client
+        return other
 
     def post(self, path: str, body: dict | None = None, *, expect: int = 200):
         response = self.client.post(path, json=body or {})

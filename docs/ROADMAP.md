@@ -38,24 +38,24 @@ Work them in order. WP-1 to WP-7 make the app usable. Each may be several pull r
 
 - [x] `docs/SRS.md`, `docs/STATUS_REPORT_2026-11-09.md`, this roadmap, the lead developer brief, refreshed `CLAUDE.md`.
 
-### WP-1. Safe and current
+### WP-1. Safe and current (done November 11, 2026)
 
 Security fixes, server hardening that can be expressed in the repository, and the small defects that would otherwise be baked into real data.
 
-- [ ] Upgrade `next` past the advisory range (above 16.4.0) and clear the other `npm audit` findings. (SEC-4)
-- [ ] Raise the `fastapi` pin to a release that brings a patched `starlette` (1.3.1 or later, or whatever `pip-audit` accepts), fix what breaks, and add a backend lockfile used by the Docker build and CI. (SEC-4, MNT-7)
-- [ ] Add `.github/dependabot.yml` for npm, pip, Docker and Actions.
-- [ ] Upgrade Playwright to a release that supports the current `ubuntu-latest` image. CI is pinned to `ubuntu-24.04` since WP-0 because Playwright 1.58 cannot install Chromium on Ubuntu 26.04.
-- [ ] `docker-compose.yml`: `restart: unless-stopped` on every service; publish Postgres on `127.0.0.1` only; log rotation options on every service. (REL-1, SEC-2)
-- [ ] Backups that work: a `backup` Compose service that runs `pg_dump -Fc` daily into a host-mounted directory outside the repository checkout, keeps 14 copies, and exits non-zero on failure. A restore test in CI against a throwaway PostgreSQL. A workflow step that reports the age of the newest dump after each deploy. (REL-2, REL-3)
-- [ ] Deploy workflow: prune unused images and build cache after a successful deploy; log row counts for `bags` and `harvest_events`; never touch the `pgdata` volume. (Brief section 9)
-- [ ] Bag codes: new format and run-code suggestion; fix the repeated prefix. Existing codes stay as they are. (BAG-5, RUN-6)
-- [ ] Input and error fixes: planned bag count must be positive (RUN-3); unknown sort field returns 400 (RUN-8); duplicate-key handling that does not depend on the database driver (RUN-7); the ready count on the pasteurization summary excludes bags that never reached ready (RUN-4); every API time carries its UTC offset (SRS 5.2); bag ID assignment safe under concurrency (BAG-11).
-- [ ] One status derivation path. (MNT-3)
-- [ ] Remove the nine legacy redirect routes and decide the fate of the `zones` table (keep it for BAG-10 or drop it). (MNT-6)
-- [ ] Frontend image: `output: "standalone"` to cut build size and memory on the 2 GB droplet.
+- [x] Upgrade `next` past the advisory range (above 16.4.0) and clear the other `npm audit` findings. (SEC-4)
+- [x] Raise the `fastapi` pin to a release that brings a patched `starlette` (1.3.1 or later, or whatever `pip-audit` accepts), fix what breaks, and add a backend lockfile used by the Docker build and CI. (SEC-4, MNT-7)
+- [x] Add `.github/dependabot.yml` for npm, pip, Docker and Actions.
+- [x] Upgrade Playwright to a release that supports the current `ubuntu-latest` image. CI is pinned to `ubuntu-24.04` since WP-0 because Playwright 1.58 cannot install Chromium on Ubuntu 26.04.
+- [x] `docker-compose.yml`: `restart: unless-stopped` on every service; publish Postgres on `127.0.0.1` only; log rotation options on every service. (REL-1, SEC-2)
+- [x] Backups that work: a `backup` Compose service that runs `pg_dump -Fc` daily into a host-mounted directory outside the repository checkout, keeps 14 copies, and exits non-zero on failure. A restore test in CI against a throwaway PostgreSQL. A workflow step that reports the age of the newest dump after each deploy. (REL-2, REL-3)
+- [x] Deploy workflow: prune unused images and build cache after a successful deploy; log row counts for `bags` and `harvest_events`; never touch the `pgdata` volume. (Brief section 9)
+- [x] Bag codes: new format and run-code suggestion; fix the repeated prefix. Existing codes stay as they are. (BAG-5, RUN-6)
+- [x] Input and error fixes: planned bag count must be positive (RUN-3); unknown sort field returns 400 (RUN-8); duplicate-key handling that does not depend on the database driver (RUN-7); the ready count on the pasteurization summary excludes bags that never reached ready (RUN-4); every API time carries its UTC offset (SRS 5.2); bag ID assignment safe under concurrency (BAG-11).
+- [x] One status derivation path. (MNT-3)
+- [x] Remove the nine legacy redirect routes and decide the fate of the `zones` table (keep it for BAG-10 or drop it). (MNT-6)
+- [x] Frontend image: `output: "standalone"` to cut build size and memory on the 2 GB droplet.
 
-Done when: CI green, both audits clean, deploy green or the runner confirmed offline and recorded.
+Done: pull requests #22, #28, #29 and #30. CI green, `pip-audit` and `npm audit` clean, every deploy green on the droplet.
 
 ### WP-2. Sign-in and a way in
 
