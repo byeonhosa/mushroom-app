@@ -29,7 +29,7 @@ The app is built, deployed and running on the droplet, and nobody can reach it o
 | Production database | Migrated to 028. The farm's eighteen varieties and their profiles are loaded. No bags, no harvests, no users. Free to migrate and reseed. The demo generator has not been run on it and is not part of the deploy. | Nov 11, 2026 |
 | Reachable by users | No. Needs O2 (an administrator), O3 (hostname) and O4 (ports). The cloud firewall's current rules cannot be read from the workflow. | Nov 11, 2026 |
 | Branch protection, Dependabot alerts, secret scanning | Not turned on (O1). Dependabot version updates run from `.github/dependabot.yml`. | Nov 11, 2026 |
-| Open Dependabot pull requests | #24 (Actions), #26 (frontend packages), #27 (SQLAlchemy 2.1): still open, each to be rebased and merged by the lead developer when its CI is green; first job of the next session. #23 (PostgreSQL 18) and #25 (Python 3.15, Node 26) must not be merged; the ignore rules added in WP-2 make Dependabot close them (decision D-025). | Nov 11, 2026 |
+| Open Dependabot pull requests | #24 (Actions), #26 (frontend packages), #27 (SQLAlchemy 2.1): still open, each to be rebased and merged by the lead developer when its CI is green; first job of the next session. #23 (PostgreSQL 18) and #25 (Python 3.15, Node 26) are closed: the ignore rules added in WP-2 made Dependabot withdraw them (decision D-025). | Nov 11, 2026 |
 
 Update this table after every deploy.
 

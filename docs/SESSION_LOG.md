@@ -125,7 +125,7 @@ Every screen changed was looked at in a real browser at 1280 and 390 pixels wide
 - On a phone, the Actions column of the set-up tables (recipes, cultures, lots) is reached by scrolling the table sideways. The daily event screens are WP-5's subject; these are used rarely.
 - The setting that lets one of the farm's own spawn bags serve several sessions is deferred to WP-4 with the other farm settings (D-037).
 - The demo generator is not yet used by the browser tests or for user-guide screenshots, and stops at two flushes because the app does.
-- Dependabot pull requests #24, #26 and #27 are still open and need rebasing; #23 and #25 are still open and must not be merged.
+- Dependabot pull requests #24 (Actions), #26 (frontend packages) and #27 (SQLAlchemy 2.1) are still open; their checks last ran before WP-3 and must be run again on the current `main` before any is merged. #23 (PostgreSQL 18) and #25 (Python 3.15, Node 26) are closed: the ignore rules of D-025 made Dependabot withdraw them.
 - The local Docker daemon used for PostgreSQL tests in the cloud session does not survive a worker restart; start it again before running `tests/test_postgres_concurrency.py` locally. CI runs them regardless.
 
 ### Next session starts at
