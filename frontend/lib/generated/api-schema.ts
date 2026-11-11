@@ -203,6 +203,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fill-profiles/{fill_profile_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Fill Profile */
+        patch: operations["update_fill_profile_api_fill_profiles__fill_profile_id__patch"];
+        trace?: never;
+    };
     "/api/substrate-recipe-versions": {
         parameters: {
             query?: never;
@@ -213,11 +230,29 @@ export interface paths {
         /** List Substrate Recipe Versions */
         get: operations["list_substrate_recipe_versions_api_substrate_recipe_versions_get"];
         put?: never;
-        post?: never;
+        /** Create Substrate Recipe Version */
+        post: operations["create_substrate_recipe_version_api_substrate_recipe_versions_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/substrate-recipe-versions/{substrate_recipe_version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Substrate Recipe Version */
+        patch: operations["update_substrate_recipe_version_api_substrate_recipe_versions__substrate_recipe_version_id__patch"];
         trace?: never;
     };
     "/api/spawn-recipes": {
@@ -230,11 +265,29 @@ export interface paths {
         /** List Spawn Recipes */
         get: operations["list_spawn_recipes_api_spawn_recipes_get"];
         put?: never;
-        post?: never;
+        /** Create Spawn Recipe */
+        post: operations["create_spawn_recipe_api_spawn_recipes_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/spawn-recipes/{spawn_recipe_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Spawn Recipe */
+        patch: operations["update_spawn_recipe_api_spawn_recipes__spawn_recipe_id__patch"];
         trace?: never;
     };
     "/api/mix-lots": {
@@ -342,6 +395,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/liquid-cultures/{liquid_culture_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Liquid Culture */
+        patch: operations["update_liquid_culture_api_liquid_cultures__liquid_culture_id__patch"];
+        trace?: never;
+    };
     "/api/purchased-spawn-lots": {
         parameters: {
             query?: never;
@@ -428,6 +498,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/ingredients/{ingredient_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Ingredient */
+        patch: operations["update_ingredient_api_ingredients__ingredient_id__patch"];
         trace?: never;
     };
     "/api/ingredient-lots": {
@@ -1427,6 +1514,8 @@ export interface components {
         };
         /** FillProfileOut */
         FillProfileOut: {
+            /** Fill Profile Id */
+            fill_profile_id: number;
             /** Name */
             name: string;
             /** Target Dry Kg Per Bag */
@@ -1435,8 +1524,21 @@ export interface components {
             target_water_kg_per_bag: number;
             /** Notes */
             notes?: string | null;
-            /** Fill Profile Id */
-            fill_profile_id: number;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** FillProfileUpdate */
+        FillProfileUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Target Dry Kg Per Bag */
+            target_dry_kg_per_bag?: number | null;
+            /** Target Water Kg Per Bag */
+            target_water_kg_per_bag?: number | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** GrainTypeCreate */
         GrainTypeCreate: {
@@ -1453,6 +1555,8 @@ export interface components {
             name: string;
             /** Notes */
             notes?: string | null;
+            /** Is Active */
+            is_active: boolean;
         };
         /** GrainTypeUpdate */
         GrainTypeUpdate: {
@@ -1460,6 +1564,8 @@ export interface components {
             name?: string | null;
             /** Notes */
             notes?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1605,6 +1711,19 @@ export interface components {
             category?: string | null;
             /** Notes */
             notes?: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** IngredientUpdate */
+        IngredientUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /**
          * InoculationBatchCreate
@@ -1738,6 +1857,8 @@ export interface components {
              * @default true
              */
             is_active: boolean | null;
+            /** Parent Liquid Culture Id */
+            parent_liquid_culture_id?: number | null;
         };
         /** LiquidCultureOut */
         LiquidCultureOut: {
@@ -1760,6 +1881,26 @@ export interface components {
             notes?: string | null;
             /** Is Active */
             is_active: boolean;
+            /** Parent Liquid Culture Id */
+            parent_liquid_culture_id?: number | null;
+            /** Parent Culture Code */
+            parent_culture_code?: string | null;
+        };
+        /**
+         * LiquidCultureUpdate
+         * @description The code and the species are fixed once the culture exists: bag codes and lineage rest on them.
+         */
+        LiquidCultureUpdate: {
+            /** Source */
+            source?: string | null;
+            /** Prepared At */
+            prepared_at?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Parent Liquid Culture Id */
+            parent_liquid_culture_id?: number | null;
         };
         /** LoginIn */
         LoginIn: {
@@ -2167,19 +2308,37 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
-        /** SpawnRecipeOut */
-        SpawnRecipeOut: {
+        /** SpawnRecipeCreate */
+        SpawnRecipeCreate: {
             /** Recipe Code */
             recipe_code: string;
             /** Notes */
             notes?: string | null;
+        };
+        /** SpawnRecipeOut */
+        SpawnRecipeOut: {
             /** Spawn Recipe Id */
             spawn_recipe_id: number;
+            /** Recipe Code */
+            recipe_code: string;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active: boolean;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+        };
+        /** SpawnRecipeUpdate */
+        SpawnRecipeUpdate: {
+            /** Recipe Code */
+            recipe_code?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** SpeciesProfileOut */
         SpeciesProfileOut: {
@@ -2420,21 +2579,43 @@ export interface components {
             /** Contaminated */
             contaminated: boolean;
         };
-        /** SubstrateRecipeVersionOut */
-        SubstrateRecipeVersionOut: {
+        /** SubstrateRecipeVersionCreate */
+        SubstrateRecipeVersionCreate: {
             /** Name */
             name: string;
             /** Recipe Code */
             recipe_code: string;
             /** Notes */
             notes?: string | null;
+        };
+        /** SubstrateRecipeVersionOut */
+        SubstrateRecipeVersionOut: {
             /** Substrate Recipe Version Id */
             substrate_recipe_version_id: number;
+            /** Name */
+            name: string;
+            /** Recipe Code */
+            recipe_code: string;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active: boolean;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+        };
+        /** SubstrateRecipeVersionUpdate */
+        SubstrateRecipeVersionUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Recipe Code */
+            recipe_code?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** UserCreate */
         UserCreate: {
@@ -2867,6 +3048,41 @@ export interface operations {
             };
         };
     };
+    update_fill_profile_api_fill_profiles__fill_profile_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fill_profile_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FillProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FillProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_substrate_recipe_versions_api_substrate_recipe_versions_get: {
         parameters: {
             query?: never;
@@ -2887,6 +3103,74 @@ export interface operations {
             };
         };
     };
+    create_substrate_recipe_version_api_substrate_recipe_versions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubstrateRecipeVersionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubstrateRecipeVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_substrate_recipe_version_api_substrate_recipe_versions__substrate_recipe_version_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                substrate_recipe_version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubstrateRecipeVersionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubstrateRecipeVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_spawn_recipes_api_spawn_recipes_get: {
         parameters: {
             query?: never;
@@ -2903,6 +3187,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpawnRecipeOut"][];
+                };
+            };
+        };
+    };
+    create_spawn_recipe_api_spawn_recipes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpawnRecipeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpawnRecipeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_spawn_recipe_api_spawn_recipes__spawn_recipe_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                spawn_recipe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpawnRecipeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpawnRecipeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3174,6 +3526,41 @@ export interface operations {
             };
         };
     };
+    update_liquid_culture_api_liquid_cultures__liquid_culture_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                liquid_culture_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiquidCultureUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiquidCultureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_purchased_spawn_lots_api_purchased_spawn_lots_get: {
         parameters: {
             query?: {
@@ -3391,6 +3778,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["IngredientCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngredientOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_ingredient_api_ingredients__ingredient_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ingredient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngredientUpdate"];
             };
         };
         responses: {

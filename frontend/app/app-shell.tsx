@@ -27,6 +27,9 @@ const NAV_LINKS: NavLink[] = [
   { href: "/pasteurization-runs", label: "Pasteurization" },
   { href: "/sterilization-runs", label: "Sterilization" },
   { href: "/mix-lots", label: "Mix Lots" },
+  { href: "/recipes", label: "Recipes" },
+  { href: "/grain-types", label: "Grain Types" },
+  { href: "/ingredients", label: "Ingredients" },
   { href: "/users", label: "Users", adminOnly: true },
 ];
 

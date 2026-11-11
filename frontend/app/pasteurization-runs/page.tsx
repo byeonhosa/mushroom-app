@@ -40,9 +40,10 @@ export default function PasteurizationRunsPage() {
     ]);
     setRuns(r);
     setMixLots(m);
-    setRecipes(rec);
+    const usable = rec.filter((row) => row.is_active);
+    setRecipes(usable);
     if (m.length > 0 && !createMixLotId) setCreateMixLotId(m[0].mix_lot_id);
-    if (rec.length > 0 && !createRecipeId) setCreateRecipeId(rec[0].substrate_recipe_version_id);
+    if (usable.length > 0 && !createRecipeId) setCreateRecipeId(usable[0].substrate_recipe_version_id);
   }
 
   useEffect(() => {

@@ -122,13 +122,12 @@ class Farm:
         self.db = db
         self.now = datetime.now(timezone.utc)
 
-        # Recipes have no create route yet (REF-3, REF-4 land in WP-3).
-        spawn_recipe = models.SpawnRecipe(recipe_code="SR1", notes="Rye")
-        substrate_recipe = models.SubstrateRecipeVersion(name="Masters Mix", recipe_code="MM", notes="")
-        db.add_all([spawn_recipe, substrate_recipe])
-        db.commit()
-        self.spawn_recipe_id = spawn_recipe.spawn_recipe_id
-        self.substrate_recipe_id = substrate_recipe.substrate_recipe_version_id
+        self.spawn_recipe_id = self.post("/api/spawn-recipes", {"recipe_code": "SR1", "notes": "Rye"})[
+            "spawn_recipe_id"
+        ]
+        self.substrate_recipe_id = self.post(
+            "/api/substrate-recipe-versions", {"name": "Masters Mix", "recipe_code": "MM"}
+        )["substrate_recipe_version_id"]
 
         self.species = self.post("/api/species", {"code": "LM", "name": "Lion's Mane"})
         self.grain_type = self.post("/api/grain-types", {"name": "Rye"})

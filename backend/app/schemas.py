@@ -121,40 +121,92 @@ class UserUpdate(BaseModel):
     password: Optional[str] = Field(default=None, min_length=1, max_length=200)
 
 
+def _clean_name(value: str) -> str:
+    """A name or code as a person typed it: outer spaces removed, and not empty."""
+    cleaned = " ".join(value.split())
+    if not cleaned:
+        raise ValueError("This cannot be empty.")
+    return cleaned
+
+
+def _clean_recipe_code(value: str) -> str:
+    cleaned = _clean_name(value).upper()
+    if not re.fullmatch(r"[A-Z0-9][A-Z0-9-]*", cleaned):
+        raise ValueError("A recipe code is capital letters, digits and hyphens, for example MM or GRAIN-1.")
+    return cleaned
+
+
+Name = Annotated[str, AfterValidator(_clean_name)]
+RecipeCode = Annotated[str, AfterValidator(_clean_recipe_code)]
+
+
 # --- Fill profiles ---
 class FillProfileCreate(BaseModel):
+    name: Name = Field(..., max_length=120)
+    target_dry_kg_per_bag: float = Field(..., gt=0, le=50)
+    target_water_kg_per_bag: float = Field(..., ge=0, le=50)
+    notes: Optional[str] = None
+
+
+class FillProfileUpdate(BaseModel):
+    name: Optional[Name] = Field(default=None, max_length=120)
+    target_dry_kg_per_bag: Optional[float] = Field(default=None, gt=0, le=50)
+    target_water_kg_per_bag: Optional[float] = Field(default=None, ge=0, le=50)
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class FillProfileOut(BaseModel):
+    fill_profile_id: int
     name: str
     target_dry_kg_per_bag: float
     target_water_kg_per_bag: float
     notes: Optional[str] = None
-
-
-class FillProfileOut(FillProfileCreate):
-    fill_profile_id: int
+    is_active: bool
     model_config = ConfigDict(from_attributes=True)
 
 
 # --- Substrate recipe versions ---
 class SubstrateRecipeVersionCreate(BaseModel):
-    name: str
-    recipe_code: str
+    name: Name = Field(..., max_length=120)
+    recipe_code: RecipeCode = Field(..., max_length=20)
     notes: Optional[str] = None
 
 
-class SubstrateRecipeVersionOut(SubstrateRecipeVersionCreate):
+class SubstrateRecipeVersionUpdate(BaseModel):
+    name: Optional[Name] = Field(default=None, max_length=120)
+    recipe_code: Optional[RecipeCode] = Field(default=None, max_length=20)
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class SubstrateRecipeVersionOut(BaseModel):
     substrate_recipe_version_id: int
+    name: str
+    recipe_code: str
+    notes: Optional[str] = None
+    is_active: bool
     created_at: UtcDatetime
     model_config = ConfigDict(from_attributes=True)
 
 
 # --- Spawn recipes ---
 class SpawnRecipeCreate(BaseModel):
-    recipe_code: str
+    recipe_code: RecipeCode = Field(..., max_length=40)
     notes: Optional[str] = None
 
 
-class SpawnRecipeOut(SpawnRecipeCreate):
+class SpawnRecipeUpdate(BaseModel):
+    recipe_code: Optional[RecipeCode] = Field(default=None, max_length=40)
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class SpawnRecipeOut(BaseModel):
     spawn_recipe_id: int
+    recipe_code: str
+    notes: Optional[str] = None
+    is_active: bool
     created_at: UtcDatetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -298,12 +350,23 @@ class SpeciesProfileOut(BaseModel):
 
 # --- Liquid cultures ---
 class LiquidCultureCreate(BaseModel):
-    culture_code: str
+    culture_code: Name = Field(..., max_length=120)
     species_id: int
     source: Optional[str] = None
     prepared_at: Optional[InputDatetime] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = True
+    parent_liquid_culture_id: Optional[int] = None
+
+
+class LiquidCultureUpdate(BaseModel):
+    """The code and the species are fixed once the culture exists: bag codes and lineage rest on them."""
+
+    source: Optional[str] = None
+    prepared_at: Optional[InputDatetime] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+    parent_liquid_culture_id: Optional[int] = None
 
 
 class LiquidCultureOut(BaseModel):
@@ -315,6 +378,8 @@ class LiquidCultureOut(BaseModel):
     created_at: UtcDatetime
     notes: Optional[str] = None
     is_active: bool
+    parent_liquid_culture_id: Optional[int] = None
+    parent_culture_code: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -367,19 +432,21 @@ class PurchasedSpawnLotOut(BaseModel):
 
 # --- Grain types ---
 class GrainTypeCreate(BaseModel):
-    name: str
+    name: Name = Field(..., max_length=80)
     notes: Optional[str] = None
 
 
 class GrainTypeUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[Name] = Field(default=None, max_length=80)
     notes: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class GrainTypeOut(BaseModel):
     grain_type_id: int
     name: str
     notes: Optional[str] = None
+    is_active: bool
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -642,9 +709,16 @@ class BagDryWeightUpdate(BaseModel):
 
 # --- Ingredients (reference) ---
 class IngredientCreate(BaseModel):
-    name: str
+    name: Name = Field(..., max_length=120)
     category: Optional[str] = None
     notes: Optional[str] = None
+
+
+class IngredientUpdate(BaseModel):
+    name: Optional[Name] = Field(default=None, max_length=120)
+    category: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class IngredientOut(BaseModel):
@@ -652,6 +726,7 @@ class IngredientOut(BaseModel):
     name: str
     category: Optional[str] = None
     notes: Optional[str] = None
+    is_active: bool
     model_config = ConfigDict(from_attributes=True)
 
 

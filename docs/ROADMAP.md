@@ -79,9 +79,10 @@ Left for later, recorded so that it is not lost: an audit trail of administrator
 
 - [x] One species list with the cultivation profile attached; stable slug per species; the four portal fields. Migrate the eight existing profiles onto it. (REF-1, REF-2, brief section 10)
 - [x] Load the farm's eighteen varieties, with the website's codes and slugs. Eleven profiles come from the farm's sources and seven from research, marked as such (`docs/research/species-profiles-2026-11-11.md`). (SPR-2)
-- [ ] Screens to add and edit spawn recipes, substrate recipes, fill profiles, grain types, ingredients, mix lots and liquid cultures; all reachable from the menu; deactivate in place of delete. (REF-3 to REF-8, REF-10, REF-14)
+- [x] Screens to add and edit spawn recipes, substrate recipes, fill profiles, grain types and liquid cultures; all reachable from the menu; deactivate in place of delete. (REF-3 to REF-6, REF-10, REF-14)
+- [ ] The same for the two that remain: rename and deactivate on the Ingredients screen (the API has it), and edit on the Mix Lots screen. (REF-7, REF-8)
 - [x] Purchased spawn lots, and inoculation of substrate or spawn bags from a lot. Multi-session use until marked used up. (REF-11, INO-6, INO-7) The setting that lets the farm's own spawn bags serve several sessions moves to WP-4 (D-037).
-- [ ] Liquid culture parent link. (REF-12)
+- [x] Liquid culture parent link. (REF-12)
 - [ ] Edit a run after creation. (RUN-5)
 - [x] First version of the demo data generator: `python -m app.seed_demo` (`docs/OPERATIONS.md` 3a). The reports are checked against its own books. Still to do with it: use it in the browser tests (WP-6, when the reports are reworked) and for the user guide's screenshots (WP-7); a third flush when the flush limit becomes a setting (WP-4). (Brief section 7)
 

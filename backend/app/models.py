@@ -102,6 +102,7 @@ class SubstrateRecipeVersion(Base):
     recipe_code = Column(String(20), nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     notes = Column(Text)
+    is_active = Column(Boolean, nullable=False, default=True)
 
 
 class SpawnRecipe(Base):
@@ -110,6 +111,7 @@ class SpawnRecipe(Base):
     recipe_code = Column(String(40), nullable=False, unique=True)
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
 
 
 class FillProfile(Base):
@@ -119,6 +121,7 @@ class FillProfile(Base):
     target_dry_kg_per_bag = Column(Numeric(10, 3), nullable=False)
     target_water_kg_per_bag = Column(Numeric(10, 3), nullable=False)
     notes = Column(Text)
+    is_active = Column(Boolean, nullable=False, default=True)
 
 
 class MixLot(Base):
@@ -141,6 +144,7 @@ class Ingredient(Base):
     name = Column(String(120), nullable=False, unique=True)
     category = Column(String(120))
     notes = Column(Text)
+    is_active = Column(Boolean, nullable=False, default=True)
 
     lots = relationship("IngredientLot", back_populates="ingredient")
 
@@ -175,6 +179,7 @@ class GrainType(Base):
     grain_type_id = Column(Integer, primary_key=True)
     name = Column(String(80), nullable=False, unique=True)
     notes = Column(Text)
+    is_active = Column(Boolean, nullable=False, default=True)
 
 
 # The farm website's own vocabulary (byeonhosa/maury-river-mushroom-farm-web,
@@ -222,8 +227,15 @@ class LiquidCulture(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     notes = Column(Text)
     is_active = Column(Boolean, nullable=False, default=True)
+    # The culture this one was made from (REF-12).
+    parent_liquid_culture_id = Column(Integer, ForeignKey("liquid_cultures.liquid_culture_id", ondelete="SET NULL"))
 
     species = relationship("MushroomSpecies")
+    parent = relationship("LiquidCulture", remote_side=[liquid_culture_id])
+
+    @property
+    def parent_culture_code(self) -> str | None:
+        return self.parent.culture_code if self.parent else None
 
 
 class PurchasedSpawnLot(Base):

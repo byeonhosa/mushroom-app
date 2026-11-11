@@ -21,6 +21,35 @@ STERILIZATION_RUN_SORT_FIELDS = (
 
 # --- Fill profiles ---
 
+def _update_reference_row(db: Session, model, row_id: int, data: dict, *, keep_when_null: tuple[str, ...]):
+    """Change the given fields of one reference row (REF-3 to REF-7, REF-14).
+
+    A null for a field that must have a value means "leave it as it is".
+    Nothing is ever deleted: `is_active` false takes the row out of the pick
+    lists for new work, and the records that used it keep showing it.
+    """
+    row = db.get(model, row_id)
+    if row is None:
+        return None
+    for key, value in data.items():
+        if value is None and key in keep_when_null:
+            continue
+        setattr(row, key, value)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def _usable(db: Session, model, row_id, what: str):
+    """The reference row a new record is about to use: it must exist and be active."""
+    row = db.get(model, row_id) if row_id is not None else None
+    if row is None:
+        raise NotFoundError(f"{what} not found")
+    if not row.is_active:
+        raise DomainError(f"That {what.lower()} is deactivated. Reactivate it, or choose another.")
+    return row
+
+
 def list_fill_profiles(db: Session):
     return db.execute(select(models.FillProfile).order_by(models.FillProfile.fill_profile_id)).scalars().all()
 
@@ -31,6 +60,16 @@ def create_fill_profile(db: Session, name: str, dry: float, water: float, notes:
     db.commit()
     db.refresh(fp)
     return fp
+
+
+def update_fill_profile(db: Session, fill_profile_id: int, data: dict):
+    return _update_reference_row(
+        db,
+        models.FillProfile,
+        fill_profile_id,
+        data,
+        keep_when_null=("name", "target_dry_kg_per_bag", "target_water_kg_per_bag", "is_active"),
+    )
 
 
 # --- Substrate recipe versions ---
@@ -49,6 +88,12 @@ def create_substrate_recipe_version(db: Session, data: dict):
     return r
 
 
+def update_substrate_recipe_version(db: Session, recipe_id: int, data: dict):
+    return _update_reference_row(
+        db, models.SubstrateRecipeVersion, recipe_id, data, keep_when_null=("name", "recipe_code", "is_active")
+    )
+
+
 # --- Spawn recipes ---
 
 def list_spawn_recipes(db: Session):
@@ -63,6 +108,12 @@ def create_spawn_recipe(db: Session, data: dict):
     return r
 
 
+def update_spawn_recipe(db: Session, spawn_recipe_id: int, data: dict):
+    return _update_reference_row(
+        db, models.SpawnRecipe, spawn_recipe_id, data, keep_when_null=("recipe_code", "is_active")
+    )
+
+
 # --- Mix lots ---
 
 def list_mix_lots(db: Session):
@@ -70,6 +121,8 @@ def list_mix_lots(db: Session):
 
 
 def create_mix_lot(db: Session, data: dict):
+    _usable(db, models.SubstrateRecipeVersion, data.get("substrate_recipe_version_id"), "Substrate recipe")
+    _usable(db, models.FillProfile, data.get("fill_profile_id"), "Fill profile")
     m = models.MixLot(**data)
     db.add(m)
     db.commit()
@@ -165,7 +218,7 @@ def get_species_profile(db: Session, code: str):
 def list_liquid_cultures(db: Session, active_only: bool = True):
     stmt = (
         select(models.LiquidCulture)
-        .options(joinedload(models.LiquidCulture.species))
+        .options(joinedload(models.LiquidCulture.species), joinedload(models.LiquidCulture.parent))
         .order_by(models.LiquidCulture.culture_code.asc(), models.LiquidCulture.liquid_culture_id.asc())
     )
     if active_only:
@@ -173,9 +226,44 @@ def list_liquid_cultures(db: Session, active_only: bool = True):
     return db.execute(stmt).scalars().all()
 
 
+def _check_culture_parent(db: Session, culture_id: int | None, species_id: int, parent_id: int) -> None:
+    """A parent must exist, be of the same species, and not descend from the culture itself (REF-12)."""
+    parent = db.get(models.LiquidCulture, parent_id)
+    if parent is None:
+        raise NotFoundError("Parent culture not found")
+    if parent.species_id != species_id:
+        raise DomainError("A culture's parent must be of the same species.")
+    seen: set[int] = set()
+    node = parent
+    while node is not None and node.liquid_culture_id not in seen:
+        if node.liquid_culture_id == culture_id:
+            raise DomainError("A culture cannot be made from itself or from one of its own descendants.")
+        seen.add(node.liquid_culture_id)
+        node = node.parent
+
+
 def create_liquid_culture(db: Session, data: dict):
+    if db.get(models.MushroomSpecies, data.get("species_id")) is None:
+        raise NotFoundError("Species not found")
+    if data.get("parent_liquid_culture_id") is not None:
+        _check_culture_parent(db, None, data["species_id"], data["parent_liquid_culture_id"])
     culture = models.LiquidCulture(**data)
     db.add(culture)
+    db.commit()
+    db.refresh(culture)
+    return culture
+
+
+def update_liquid_culture(db: Session, liquid_culture_id: int, data: dict):
+    culture = db.get(models.LiquidCulture, liquid_culture_id)
+    if culture is None:
+        return None
+    if data.get("parent_liquid_culture_id") is not None:
+        _check_culture_parent(db, culture.liquid_culture_id, culture.species_id, data["parent_liquid_culture_id"])
+    for key, value in data.items():
+        if value is None and key == "is_active":
+            continue
+        setattr(culture, key, value)
     db.commit()
     db.refresh(culture)
     return culture
@@ -292,14 +380,7 @@ def create_grain_type(db: Session, data: dict):
 
 
 def update_grain_type(db: Session, grain_type_id: int, data: dict):
-    g = db.get(models.GrainType, grain_type_id)
-    if not g:
-        return None
-    for k, v in data.items():
-        setattr(g, k, v)
-    db.commit()
-    db.refresh(g)
-    return g
+    return _update_reference_row(db, models.GrainType, grain_type_id, data, keep_when_null=("name", "is_active"))
 
 
 # --- Ingredients ---
@@ -319,14 +400,7 @@ def create_ingredient(db: Session, data: dict):
 
 
 def update_ingredient(db: Session, ingredient_id: int, data: dict):
-    i = db.get(models.Ingredient, ingredient_id)
-    if not i:
-        return None
-    for k, v in data.items():
-        setattr(i, k, v)
-    db.commit()
-    db.refresh(i)
-    return i
+    return _update_reference_row(db, models.Ingredient, ingredient_id, data, keep_when_null=("name", "is_active"))
 
 
 def list_ingredient_lots(db: Session, ingredient_id: int | None = None):
@@ -349,8 +423,7 @@ def create_ingredient_lot(db: Session, data: dict):
 def create_pasteurization_run(db: Session, data: dict):
     if db.get(models.MixLot, data.get("mix_lot_id")) is None:
         raise NotFoundError("Mix lot not found")
-    if db.get(models.SubstrateRecipeVersion, data.get("substrate_recipe_version_id")) is None:
-        raise NotFoundError("Substrate recipe not found")
+    _usable(db, models.SubstrateRecipeVersion, data.get("substrate_recipe_version_id"), "Substrate recipe")
     r = models.PasteurizationRun(**data)
     db.add(r)
     db.commit()
@@ -382,10 +455,8 @@ def update_pasteurization_run(db: Session, pasteurization_run_id: int, data: dic
 # --- Sterilization runs ---
 
 def create_sterilization_run(db: Session, data: dict):
-    if db.get(models.SpawnRecipe, data.get("spawn_recipe_id")) is None:
-        raise NotFoundError("Spawn recipe not found")
-    if db.get(models.GrainType, data.get("grain_type_id")) is None:
-        raise NotFoundError("Grain type not found")
+    _usable(db, models.SpawnRecipe, data.get("spawn_recipe_id"), "Spawn recipe")
+    _usable(db, models.GrainType, data.get("grain_type_id"), "Grain type")
     r = models.SterilizationRun(**data)
     db.add(r)
     db.commit()
