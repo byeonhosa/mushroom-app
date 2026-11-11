@@ -2,7 +2,7 @@
 
 The order of work for the Mushroom Farm App and its current state. Maintained by the lead developer (see `docs/LEAD_DEVELOPER_BRIEF.md`). Requirement IDs refer to `docs/SRS.md`.
 
-Last updated: November 11, 2026, end of the first lead-developer session.
+Last updated: November 11, 2026, end of the first lead-developer session (WP-1 done, WP-2 built, WP-3 done but for two small screens).
 
 ## Owner actions needed
 
@@ -22,14 +22,14 @@ The app is built, deployed and running on the droplet, and nobody can reach it o
 
 | Item | State | As of |
 |---|---|---|
-| `main` | WP-1 complete and WP-2 merged (pull requests #22, #28 to #32). | Nov 11, 2026 |
-| Droplet and runner | Online. Every deploy on November 11 succeeded. Uptime seven months; a reboot is still pending (O5). 48 GB disk, 37% used after the first prune freed 18 GB of build cache. SSH key still lost. | Nov 11, 2026 |
+| `main` | WP-1 complete, WP-2 merged, WP-3 merged but for two small screens (pull requests #22, #28 to #37). | Nov 11, 2026 |
+| Droplet and runner | Online. Every deploy on November 11 succeeded. Uptime seven months; a reboot is still pending (O5). 48 GB disk, 40% used (the first prune freed 18 GB of build cache). SSH key still lost. | Nov 11, 2026 |
 | Containers | `db`, `api`, `frontend`, `backup`, `proxy`: all `restart=unless-stopped`, logs rotated. Only the proxy publishes ports (80, 443); the rest are on the loopback interface. | Nov 11, 2026 |
 | Backups | Daily dump to `/var/backups/mushroom-app`, 14 kept, plus one before each deploy. Restore test passes on every deploy. No copy off the server yet (O5). | Nov 11, 2026 |
-| Production database | Migrated to 025. No bags, no harvests, no users. Free to migrate and reseed. | Nov 11, 2026 |
+| Production database | Migrated to 028. The farm's eighteen varieties and their profiles are loaded. No bags, no harvests, no users. Free to migrate and reseed. The demo generator has not been run on it and is not part of the deploy. | Nov 11, 2026 |
 | Reachable by users | No. Needs O2 (an administrator), O3 (hostname) and O4 (ports). The cloud firewall's current rules cannot be read from the workflow. | Nov 11, 2026 |
 | Branch protection, Dependabot alerts, secret scanning | Not turned on (O1). Dependabot version updates run from `.github/dependabot.yml`. | Nov 11, 2026 |
-| Open Dependabot pull requests | #24 (Actions), #26 (frontend packages), #27 (SQLAlchemy 2.1): to be merged by the lead developer when their CI is green. #23 (PostgreSQL 18) and #25 (Python 3.15, Node 26) must not be merged; the ignore rules added in WP-2 make Dependabot close them (decision D-025). | Nov 11, 2026 |
+| Open Dependabot pull requests | #24 (Actions), #26 (frontend packages), #27 (SQLAlchemy 2.1): still open, each to be rebased and merged by the lead developer when its CI is green; first job of the next session. #23 (PostgreSQL 18) and #25 (Python 3.15, Node 26) are closed: the ignore rules added in WP-2 made Dependabot withdraw them (decision D-025). | Nov 11, 2026 |
 
 Update this table after every deploy.
 
@@ -75,7 +75,7 @@ Done: pull requests #31 and #32. Nothing but the health checks and the sign-in r
 
 Left for later, recorded so that it is not lost: an audit trail of administrator actions on users (who changed a role or reset a password); a sessions list with "sign out everywhere" on the account page.
 
-### WP-3. Fit the model to the farm: sources and reference data (in progress)
+### WP-3. Fit the model to the farm: sources and reference data (done November 11, 2026, but for the one unticked item)
 
 - [x] One species list with the cultivation profile attached; stable slug per species; the four portal fields. Migrate the eight existing profiles onto it. (REF-1, REF-2, brief section 10)
 - [x] Load the farm's eighteen varieties, with the website's codes and slugs. Eleven profiles come from the farm's sources and seven from research, marked as such (`docs/research/species-profiles-2026-11-11.md`). (SPR-2)
@@ -83,7 +83,7 @@ Left for later, recorded so that it is not lost: an audit trail of administrator
 - [ ] The same for the two that remain: rename and deactivate on the Ingredients screen (the API has it), and edit on the Mix Lots screen. (REF-7, REF-8)
 - [x] Purchased spawn lots, and inoculation of substrate or spawn bags from a lot. Multi-session use until marked used up. (REF-11, INO-6, INO-7) The setting that lets the farm's own spawn bags serve several sessions moves to WP-4 (D-037).
 - [x] Liquid culture parent link. (REF-12)
-- [ ] Edit a run after creation. (RUN-5)
+- [x] Correct a run after creation, within what its bags and labels allow. (RUN-5, D-047)
 - [x] First version of the demo data generator: `python -m app.seed_demo` (`docs/OPERATIONS.md` 3a). The reports are checked against its own books. Still to do with it: use it in the browser tests (WP-6, when the reports are reworked) and for the user guide's screenshots (WP-7); a third flush when the flush limit becomes a setting (WP-4). (Brief section 7)
 
 ### WP-4. Fit the model to the farm: events, harvest, corrections
@@ -120,7 +120,8 @@ Research first: scanning and label practice.
 - [ ] Biological efficiency sanity rule in the data-quality list. (RPT-10)
 - [ ] CSV download on every report table. (RPT-9)
 - [ ] Trace page for a liquid culture or purchased lot. (TRC-4)
-- [ ] Dashboard and reports computed in SQL with paging; stage-overdue flags. Performance test at 10,000 bags. (PRF-1, PRF-2, DSH-4)
+- [ ] Dashboard and reports computed in SQL with paging; stage-overdue flags. Performance test at 10,000 bags. (PRF-1, PRF-2, DSH-4) Baseline measured November 11, 2026 on `python -m app.seed_demo --scale 10` (10,028 bags, PostgreSQL): dashboard 12.8 s, production report 6.1 s and 7.3 MB, bag list 0.03 s. At the farm's own volume (1,000 bags) both are about a second.
+- [ ] Overall biological efficiency counts only bags that have finished fruiting. Today it divides total harvest by the dry weight of every substrate bag, including bags still incubating, so it reads low on a working farm: 43% on the demo farm, whose 348 finished bags come to 100%. (RPT-4)
 
 ### WP-7. Prove it and hand it over
 

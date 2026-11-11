@@ -462,6 +462,19 @@ class PasteurizationRunCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class PasteurizationRunUpdate(BaseModel):
+    """A correction to a run (RUN-5). Only the fields sent are changed."""
+
+    run_code: Optional[RunCode] = None
+    mix_lot_id: Optional[int] = None
+    substrate_recipe_version_id: Optional[int] = None
+    steam_start_at: Optional[InputDatetime] = None
+    steam_end_at: Optional[InputDatetime] = None
+    unloaded_at: Optional[InputDatetime] = None
+    bag_count: Optional[int] = Field(default=None, gt=0, le=999)
+    notes: Optional[str] = None
+
+
 class PasteurizationRunOut(BaseModel):
     pasteurization_run_id: int
     run_code: str
@@ -492,6 +505,22 @@ class SterilizationRunCreate(BaseModel):
     temp_c: Optional[float] = None
     psi: Optional[float] = None
     hold_minutes: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class SterilizationRunUpdate(BaseModel):
+    """A correction to a run (RUN-5). Only the fields sent are changed."""
+
+    run_code: Optional[RunCode] = None
+    spawn_recipe_id: Optional[int] = None
+    grain_type_id: Optional[int] = None
+    cycle_start_at: Optional[InputDatetime] = None
+    cycle_end_at: Optional[InputDatetime] = None
+    unloaded_at: Optional[InputDatetime] = None
+    bag_count: Optional[int] = Field(default=None, gt=0, le=999)
+    temp_c: Optional[float] = None
+    psi: Optional[float] = None
+    hold_minutes: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
 
 

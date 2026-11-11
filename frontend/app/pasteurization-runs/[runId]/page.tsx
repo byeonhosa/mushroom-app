@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { apiGet, apiPost } from "../../../lib/api";
 import type { Bag, PasteurizationRunDetail } from "../../../lib/types";
 import { SubstrateSourceFields, useUsableSpawnLots, type SubstrateSource } from "../../../lib/spawn-lots";
+import { RunCorrection } from "../../../lib/run-correction";
 
 function formatPercent(value: number | null | undefined) {
   if (value == null) {
@@ -211,6 +212,22 @@ export default function PasteurizationRunDetailPage() {
           </>
         )}
       </div>
+
+      {run && (
+        <RunCorrection
+          path={`/pasteurization-runs/${run.pasteurization_run_id}`}
+          values={run}
+          onSaved={reloadRunData}
+          fields={[
+            { key: "run_code", label: "Run code", kind: "text", required: true, hint: "Six digits for the date and a letter, for example 261109A. Fixed once a label carries it." },
+            { key: "unloaded_at", label: "Unloaded at", kind: "datetime", required: true },
+            { key: "steam_start_at", label: "Steam started at", kind: "datetime" },
+            { key: "steam_end_at", label: "Steam ended at", kind: "datetime" },
+            { key: "bag_count", label: "Planned bag count", kind: "integer", required: true, hint: "Not lower than the bag records the run already has." },
+            { key: "notes", label: "Notes", kind: "text" },
+          ]}
+        />
+      )}
 
       {run && (
         <>

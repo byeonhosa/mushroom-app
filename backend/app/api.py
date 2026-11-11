@@ -305,6 +305,15 @@ def get_pasteurization_run(run_id: int, db: Session = Depends(get_db)):
     return r
 
 
+@router.patch("/pasteurization-runs/{run_id}", response_model=schemas.PasteurizationRunOut, dependencies=ADMIN_ONLY)
+def update_pasteurization_run(run_id: int, payload: schemas.PasteurizationRunUpdate, db: Session = Depends(get_db)):
+    """Correct a run after it was created (RUN-5)."""
+    row = crud.update_pasteurization_run(db, run_id, payload.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Pasteurization run not found")
+    return row
+
+
 @router.get("/pasteurization-runs/{run_id}/detail", response_model=schemas.PasteurizationRunDetailOut)
 def get_pasteurization_run_detail(run_id: int, db: Session = Depends(get_db)):
     detail = crud.get_pasteurization_run_detail(db, run_id)
@@ -355,6 +364,15 @@ def get_sterilization_run(run_id: int, db: Session = Depends(get_db)):
     if not r:
         raise HTTPException(404, "Sterilization run not found")
     return r
+
+
+@router.patch("/sterilization-runs/{run_id}", response_model=schemas.SterilizationRunOut, dependencies=ADMIN_ONLY)
+def update_sterilization_run(run_id: int, payload: schemas.SterilizationRunUpdate, db: Session = Depends(get_db)):
+    """Correct a run after it was created (RUN-5)."""
+    row = crud.update_sterilization_run(db, run_id, payload.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Sterilization run not found")
+    return row
 
 
 @router.get("/sterilization-runs/{run_id}/detail", response_model=schemas.SterilizationRunDetailOut)

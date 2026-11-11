@@ -18,7 +18,7 @@ Mushroom Farm Manager — production tracking for The Maury River Mushroom Farm,
 
 - **Repo:** https://github.com/byeonhosa/mushroom-app (currently public; private decision parked). GitHub is the only copy and the source of truth. The owner's laptop was lost in November 2026; no local clone exists.
 - **Requirements:** `docs/SRS.md`. **Order of work and current state:** `docs/ROADMAP.md`.
-- **Droplet:** 138.197.88.81 (production-app). State unverified since June 13, 2026.
+- **Droplet:** 138.197.88.81 (production-app). Online and deploying; its state as of the last deploy is in the deployment table of `docs/ROADMAP.md`.
 
 ## Workflow
 - Work on a branch, open a pull request, merge by squash when CI is green.
@@ -70,7 +70,8 @@ Run these in the session before pushing. CI remains the authoritative gate.
 - Every time written to a run, a bag or an event comes from `app.clock.now()` (through `_now()` in `crud_status.py` and `farm_today()` in `bag_id.py`). Do not call `datetime.now()` in farm logic. The demo generator `app.seed_demo` replaces that clock and replays twelve weeks of work through the real `crud` functions; it keeps a ledger of its own decisions, and `tests/test_seed_demo.py` checks the reports against it. When a lifecycle rule changes, the generator must still run: it is the widest test of the rules there is. Sign-in keeps real time (`app.auth`).
 - **Sign-in exists (WP-2).** Every route but the health checks and `/api/auth/{status,login,logout}` needs a session; `backend/app/auth.py` holds the principal model, the origin check and rate limiting, `api_auth.py` the routes, `manage.py` the server commands (`bootstrap-admin`, `smoke-session`, `reset-password`). New routes go on `router` in `api.py` (signed-in user) and add `dependencies=ADMIN_ONLY` when only an administrator may call them. The path prefix `/api/integration/` is reserved for the website (WP-9). In tests, `client` is a signed-in administrator, `operator_client` an operator and `anon_client` nobody (`backend/tests/conftest.py`).
 - The pages call the API on their own origin at `/api` (`frontend/lib/api.ts`); there is no `NEXT_PUBLIC_API_BASE`. In development set `API_PROXY_TARGET` so that `next dev` forwards `/api/*`.
-- The dashboard loads all bags and rebuilds the full report on each request. Rework is in WP-6.
+- A run can be corrected after creation (`_correct_run` in `crud_reference.py`), within what already rests on it: recipe, grain and mix lot only before bag records exist, the run code only before a label carries it (decision D-047).
+- The dashboard loads all bags and rebuilds the full report on each request: 12.8 s at 10,000 bags. Rework is in WP-6.
 
 ## Conventions
 - Pydantic v2: `model_config = ConfigDict(from_attributes=True)`, not `class Config`.
