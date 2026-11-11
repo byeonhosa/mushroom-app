@@ -20,7 +20,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/events/harvest", label: "Harvest" },
   { href: "/events/disposal", label: "Disposal" },
   { href: "/reports", label: "Reports" },
-  { href: "/species", label: "Species", adminOnly: true },
+  { href: "/species", label: "Species" },
   { href: "/reference/species", label: "Species Reference" },
   { href: "/liquid-cultures", label: "Liquid Cultures" },
   { href: "/pasteurization-runs", label: "Pasteurization" },

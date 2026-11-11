@@ -62,7 +62,13 @@ test.describe("roles", () => {
     await expect(menu.getByRole("link", { name: "Harvest" })).toBeVisible();
     await expect(menu.getByRole("link", { name: "Reports" })).toBeVisible();
     await expect(menu.getByRole("link", { name: "Users" })).toHaveCount(0);
-    await expect(menu.getByRole("link", { name: "Species", exact: true })).toHaveCount(0);
+
+    // The species list can be read by anyone signed in, and changed only by an administrator.
+    await menu.getByRole("link", { name: "Species", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "All species" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "lion-s-mane" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Add a species" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
 
     // Typing the address does not help, and neither does calling the API.
     await page.goto("/users");

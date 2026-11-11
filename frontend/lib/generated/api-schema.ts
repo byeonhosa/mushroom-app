@@ -1762,6 +1762,23 @@ export interface components {
              * @default true
              */
             is_active: boolean | null;
+            /** Slug */
+            slug?: string | null;
+            /** Availability Tier */
+            availability_tier?: ("year-round" | "in-rotation-now" | "returning" | "wholesale-only" | "functional-coming-later") | null;
+            /**
+             * Sale Path
+             * @default hidden
+             * @enum {string}
+             */
+            sale_path: "available" | "low-stock" | "sold-out" | "coming-soon" | "seasonal" | "preorder" | "hidden" | "wholesale-only" | "inquiry-only";
+            /**
+             * In Rotation Now
+             * @default false
+             */
+            in_rotation_now: boolean;
+            /** Restrictions */
+            restrictions?: string | null;
         };
         /** MushroomSpeciesOut */
         MushroomSpeciesOut: {
@@ -1777,6 +1794,19 @@ export interface components {
             notes?: string | null;
             /** Is Active */
             is_active: boolean;
+            /** Slug */
+            slug?: string | null;
+            /** Availability Tier */
+            availability_tier?: ("year-round" | "in-rotation-now" | "returning" | "wholesale-only" | "functional-coming-later") | null;
+            /**
+             * Sale Path
+             * @enum {string}
+             */
+            sale_path: "available" | "low-stock" | "sold-out" | "coming-soon" | "seasonal" | "preorder" | "hidden" | "wholesale-only" | "inquiry-only";
+            /** In Rotation Now */
+            in_rotation_now: boolean;
+            /** Restrictions */
+            restrictions?: string | null;
         };
         /** MushroomSpeciesUpdate */
         MushroomSpeciesUpdate: {
@@ -1790,6 +1820,16 @@ export interface components {
             notes?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Slug */
+            slug?: string | null;
+            /** Availability Tier */
+            availability_tier?: ("year-round" | "in-rotation-now" | "returning" | "wholesale-only" | "functional-coming-later") | null;
+            /** Sale Path */
+            sale_path?: ("available" | "low-stock" | "sold-out" | "coming-soon" | "seasonal" | "preorder" | "hidden" | "wholesale-only" | "inquiry-only") | null;
+            /** In Rotation Now */
+            in_rotation_now?: boolean | null;
+            /** Restrictions */
+            restrictions?: string | null;
         };
         /** NextRunCodeOut */
         NextRunCodeOut: {
@@ -1998,6 +2038,17 @@ export interface components {
         SpeciesProfileOut: {
             /** Species Profile Id */
             species_profile_id: number;
+            /** Species Id */
+            species_id: number;
+            /** Species Code */
+            species_code?: string | null;
+            /**
+             * Data Source
+             * @enum {string}
+             */
+            data_source: "farm" | "researched";
+            /** Source Note */
+            source_note?: string | null;
             /** Code */
             code: string;
             /** Common Name */
