@@ -100,6 +100,7 @@ These settle the open decisions in SRS section 9. The owner may overrule any of 
   - checks: `gh api repos/byeonhosa/mushroom-app/commits/<sha>/check-runs`
   - merge: `gh api -X PUT repos/byeonhosa/mushroom-app/pulls/<n>/merge -f merge_method=squash`
 - Merge when CI is green. Then watch the deploy run. If it fails, read the log, fix forward or revert. If it stays queued for more than ten minutes, the droplet's runner is offline: note it in the roadmap under "Deployment state" and keep building. A dead droplet does not stop development.
+- If the session's permission layer refuses a merge or another action, do not look for a way around it. Leave the pull request open with CI green, add it to "Owner actions needed" in the roadmap with the link, and carry on with the next item on a branch stacked on the unmerged one.
 - When a work package is finished, tick it in the roadmap, update the status column of each SRS requirement it touched, and say so in the pull request.
 
 **End of session**
