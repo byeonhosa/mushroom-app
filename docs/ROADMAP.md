@@ -45,6 +45,7 @@ Security fixes, server hardening that can be expressed in the repository, and th
 - [ ] Upgrade `next` past the advisory range (above 16.4.0) and clear the other `npm audit` findings. (SEC-4)
 - [ ] Raise the `fastapi` pin to a release that brings a patched `starlette` (1.3.1 or later, or whatever `pip-audit` accepts), fix what breaks, and add a backend lockfile used by the Docker build and CI. (SEC-4, MNT-7)
 - [ ] Add `.github/dependabot.yml` for npm, pip, Docker and Actions.
+- [ ] Upgrade Playwright to a release that supports the current `ubuntu-latest` image. CI is pinned to `ubuntu-24.04` since WP-0 because Playwright 1.58 cannot install Chromium on Ubuntu 26.04.
 - [ ] `docker-compose.yml`: `restart: unless-stopped` on every service; publish Postgres on `127.0.0.1` only; log rotation options on every service. (REL-1, SEC-2)
 - [ ] Backups that work: a `backup` Compose service that runs `pg_dump -Fc` daily into a host-mounted directory outside the repository checkout, keeps 14 copies, and exits non-zero on failure. A restore test in CI against a throwaway PostgreSQL. A workflow step that reports the age of the newest dump after each deploy. (REL-2, REL-3)
 - [ ] Deploy workflow: prune unused images and build cache after a successful deploy; log row counts for `bags` and `harvest_events`; never touch the `pgdata` volume. (Brief section 9)
