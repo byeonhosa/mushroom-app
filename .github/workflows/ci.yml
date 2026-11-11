@@ -205,6 +205,9 @@ jobs:
       - name: Sign-in works through the built images
         run: bash ops/ci/check-sign-in.sh
 
+      - name: Sign-in works through the proxy over plain HTTP
+        run: BASE=http://127.0.0.1 VIA_PROXY=1 bash ops/ci/check-sign-in.sh
+
       - name: Restart policy, log rotation, loopback-only ports
         run: bash ops/ci/check-hardening.sh
 
@@ -223,6 +226,32 @@ jobs:
           docker compose exec -T backup backup status
           docker compose exec -T -e VERIFY_STRICT=1 backup backup verify
           sudo find backups -type f | sort
+
+      - name: Production mode over HTTPS through the proxy
+        run: |
+          # The path real users take: a hostname, HTTPS at the proxy, the API
+          # in production mode. "tls internal" has Caddy sign the certificate
+          # itself, since a CI runner has no public name to get one for.
+          bash ops/deploy/set-env.sh .env APP_ENV production
+          bash ops/deploy/set-env.sh .env APP_HOSTNAME app.localtest
+          bash ops/deploy/set-env.sh .env APP_TLS_DIRECTIVE "tls internal"
+          bash ops/deploy/set-env.sh .env CORS_ORIGINS https://app.localtest
+          docker compose up -d
+          reach="--resolve app.localtest:443:127.0.0.1 --insecure"
+          for i in $(seq 1 36); do
+            if curl -fsS -m 5 $reach -o /dev/null https://app.localtest/api/health 2> /dev/null; then
+              echo "HTTPS up after $((i * 5))s"
+              break
+            fi
+            sleep 5
+          done
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: app.localtest' http://127.0.0.1/login)
+          echo "plain HTTP -> $code"
+          test "$code" = "308"
+          BASE=https://app.localtest CURL_OPTS="$reach" VIA_PROXY=1 bash ops/ci/check-sign-in.sh
+          # SEC-1: /docs is not served in production, by the API or through the proxy.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/docs)" = "404"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/openapi.json)" = "404"
 
       - name: Stack survives a restart of the Docker daemon
         run: |

@@ -2,19 +2,19 @@
 
 The order of work for the Mushroom Farm App and its current state. Maintained by the lead developer (see `docs/LEAD_DEVELOPER_BRIEF.md`). Requirement IDs refer to `docs/SRS.md`.
 
-Last updated: November 11, 2026.
+Last updated: November 11, 2026, end of the first lead-developer session.
 
 ## Owner actions needed
 
-Nothing here blocks development. Each item unblocks something on the server. They are in order of value.
+The app is built, deployed and running on the droplet, and nobody can reach it or sign in yet. **O2, O3 and O4, in that order, are what stand between you and signing in from your phone.** None of them blocks further development.
 
 | # | Action | Unblocks | How |
 |---|---|---|---|
-| O1 | Turn on the three GitHub safeguards | SEC-4, SEC-5 | In the repository on GitHub: **Settings > Branches > Add branch ruleset** for `main`, require status checks to pass (select the CI jobs) and require a pull request. **Settings > Advanced Security** (or **Code security**): enable Dependabot alerts, Dependabot security updates, secret scanning and push protection. **Settings > General > Pull Requests**: tick "Automatically delete head branches". |
-| O2 | Set the first admin's sign-in | WP-2 going live | **Settings > Secrets and variables > Actions > New repository secret**. Create `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (a long password you will change after first sign-in). |
-| O3 | Point a hostname at the droplet | HTTPS (SEC-1) | At the DNS host for `themauryrivermushroomfarm.com`, add an **A record**: name `app`, value `138.197.88.81`. Then in GitHub **Settings > Secrets and variables > Actions > Variables**, create `APP_HOSTNAME` = `app.themauryrivermushroomfarm.com`. |
-| O4 | Open the web ports, after WP-2 is deployed | Reaching the app | DigitalOcean console > Networking > Firewalls > the mushroom-app firewall: add inbound rules for HTTP (80) and HTTPS (443) from all addresses. Leave 3000, 8000 and 5432 closed. |
-| O5 | Regain the droplet | SEC-6, the pending reboot | DigitalOcean console > the droplet > Access > Launch Droplet Console. Add a new SSH public key to `/root/.ssh/authorized_keys` and remove the old one. Enable weekly droplet backups (Backups tab). Take a snapshot. After WP-1 is deployed, reboot the droplet once. |
+| O2 | Set the first administrator's sign-in | Anyone signing in at all | GitHub > the `mushroom-app` repository > **Settings > Secrets and variables > Actions > Secrets > New repository secret**. Create `BOOTSTRAP_ADMIN_EMAIL` (your email address) and `BOOTSTRAP_ADMIN_PASSWORD` (at least 10 characters; the app makes you replace it at first sign-in). Then **Actions > Deploy to droplet > Run workflow** (branch `main`). The log line `bootstrap-admin: first administrator created` confirms it. |
+| O3 | Point a hostname at the droplet | HTTPS (SEC-1) | At the DNS host for `themauryrivermushroomfarm.com`, add an **A record**: name `app`, value `138.197.88.81`. Then in GitHub **Settings > Secrets and variables > Actions > Variables > New repository variable**: `APP_HOSTNAME` = `app.themauryrivermushroomfarm.com`. |
+| O4 | Open the web ports | Reaching the app from outside | DigitalOcean console > **Networking > Firewalls** > the firewall on the mushroom-app droplet: add inbound rules **HTTP (80)** and **HTTPS (443)** from all IPv4 and IPv6. Leave 3000, 8000 and 5432 closed. Then **Actions > Deploy to droplet > Run workflow** once more. The proxy obtains its certificate within a minute or two of the ports opening, and the deploy log says `HTTPS for app.themauryrivermushroomfarm.com: certificate valid`. Open `https://app.themauryrivermushroomfarm.com` and sign in. |
+| O1 | Turn on the GitHub safeguards | SEC-4, SEC-5 | In the repository: **Settings > Rules > Rulesets > New branch ruleset** for `main`: require a pull request, and require status checks (`backend-tests`, `migration-smoke`, `api-contract`, `dependency-audit`, `frontend-build`, `compose-stack`, `e2e-tests`). **Settings > Advanced Security**: enable Dependabot alerts, Dependabot security updates, secret scanning and push protection. **Settings > General > Pull Requests**: tick "Automatically delete head branches". |
+| O5 | Regain the droplet | SEC-6, SEC-7, the pending reboot, off-server backups | DigitalOcean console > the droplet > **Access > Launch Droplet Console**. Add a new SSH public key to `/root/.ssh/authorized_keys` and remove the old one. In the **Backups** tab enable weekly droplet backups (this is the only copy of the database off the server). Take a snapshot, then reboot the droplet once: it has not restarted in seven months, and the stack now comes back by itself. |
 | O6 | Optional: give Claude Code read access to DigitalOcean | Lets the lead developer do O4 and check droplet health itself | Create a DigitalOcean API token (API > Tokens), then in claude.ai/code open the environment's settings > **Network secrets** > **Add secret**: allowed website `api.digitalocean.com`, header `Authorization`, prefix `Bearer`, value the token. |
 | O7 | Label printer and stock, when chosen | LBL-3 | Tell the lead developer the model and label size. |
 
@@ -22,11 +22,14 @@ Nothing here blocks development. Each item unblocks something on the server. The
 
 | Item | State | As of |
 |---|---|---|
-| `main` | `09a1278` plus the documents added in WP-0 | Nov 11, 2026 |
-| Droplet and runner | Unknown. Last successful deploy June 13, 2026 (UTC). SSH key lost. | Nov 11, 2026 |
-| Production database | Seed rows only | June 10, 2026 |
-| Reachable by users | No. Firewall closed, no proxy, no sign-in. | June 10, 2026 |
-| Branch protection, Dependabot, secret scanning | All off | Nov 11, 2026 |
+| `main` | WP-1 complete and WP-2 merged (pull requests #22, #28 to #32). | Nov 11, 2026 |
+| Droplet and runner | Online. Every deploy on November 11 succeeded. Uptime seven months; a reboot is still pending (O5). 48 GB disk, 37% used after the first prune freed 18 GB of build cache. SSH key still lost. | Nov 11, 2026 |
+| Containers | `db`, `api`, `frontend`, `backup`, `proxy`: all `restart=unless-stopped`, logs rotated. Only the proxy publishes ports (80, 443); the rest are on the loopback interface. | Nov 11, 2026 |
+| Backups | Daily dump to `/var/backups/mushroom-app`, 14 kept, plus one before each deploy. Restore test passes on every deploy. No copy off the server yet (O5). | Nov 11, 2026 |
+| Production database | Migrated to 025. No bags, no harvests, no users. Free to migrate and reseed. | Nov 11, 2026 |
+| Reachable by users | No. Needs O2 (an administrator), O3 (hostname) and O4 (ports). The cloud firewall's current rules cannot be read from the workflow. | Nov 11, 2026 |
+| Branch protection, Dependabot alerts, secret scanning | Not turned on (O1). Dependabot version updates run from `.github/dependabot.yml`. | Nov 11, 2026 |
+| Open Dependabot pull requests | #24 (Actions), #26 (frontend packages), #27 (SQLAlchemy 2.1): to be merged by the lead developer when their CI is green. #23 (PostgreSQL 18) and #25 (Python 3.15, Node 26) must not be merged; the ignore rules added in WP-2 make Dependabot close them (decision D-025). | Nov 11, 2026 |
 
 Update this table after every deploy.
 
@@ -57,18 +60,20 @@ Security fixes, server hardening that can be expressed in the repository, and th
 
 Done: pull requests #22, #28, #29 and #30. CI green, `pip-audit` and `npm audit` clean, every deploy green on the droplet.
 
-### WP-2. Sign-in and a way in
+### WP-2. Sign-in and a way in (built November 11, 2026; going live needs O2 to O4)
 
-- [ ] Users, roles (`admin`, `operator`), password hashing, server-side sessions in an HttpOnly, Secure, SameSite cookie, origin checking on state-changing requests, login rate limiting, sign-out, change password. (USR-1 to USR-3)
-- [ ] First admin created at startup from `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` when no user exists. The deploy workflow passes these from GitHub Actions secrets. If they are absent, the app starts, serves only the health checks and a notice, and admits no one.
-- [ ] Every route requires a session except the health checks. Admin-only routes enforced on the server, not only hidden in the interface. (USR-1, USR-2)
-- [ ] User management screen for admins. Each event records who entered it. (USR-4)
-- [ ] The auth layer has a seam for a second credential type (service tokens) for WP-9. No integration routes yet.
-- [ ] Caddy reverse proxy as a Compose service: `/api/*` to the API, everything else to the frontend, one origin. Hostname from `APP_HOSTNAME`; automatic HTTPS when it is set, plain HTTP on port 80 when it is not. Frontend built with a relative API base (`/api`). The API and frontend ports published on `127.0.0.1` only. CORS reduced to the one origin. Security headers. The deploy workflow rewrites the non-secret keys in the droplet's `.env` to match. (SEC-1, SEC-2)
-- [ ] Deploy smoke tests updated: health checks without a session, one authenticated request with the bootstrap admin.
-- [ ] Browser tests for sign-in, sign-out, role enforcement, and an expired session.
+- [x] Users, roles (`admin`, `operator`), password hashing, server-side sessions in an HttpOnly, Secure, SameSite cookie, origin checking on state-changing requests, login rate limiting, sign-out, change password. (USR-1 to USR-3)
+- [x] First admin created at startup from `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` when no user exists. The deploy workflow passes these from GitHub Actions secrets. If they are absent, the app starts, serves only the health checks and a notice, and admits no one.
+- [x] Every route requires a session except the health checks. Admin-only routes enforced on the server, not only hidden in the interface. (USR-1, USR-2)
+- [x] User management screen for admins. Each event records who entered it. (USR-4)
+- [x] The auth layer has a seam for a second credential type (service tokens) for WP-9. No integration routes yet.
+- [x] Caddy reverse proxy as a Compose service: `/api/*` to the API, everything else to the frontend, one origin. Hostname from `APP_HOSTNAME`; automatic HTTPS when it is set, plain HTTP on port 80 when it is not. Frontend built with a relative API base (`/api`). The API and frontend ports published on `127.0.0.1` only. CORS reduced to the one origin. Security headers. The deploy workflow rewrites the non-secret keys in the droplet's `.env` to match. (SEC-1, SEC-2)
+- [x] Deploy smoke tests updated: health checks without a session, one authenticated request with the bootstrap admin.
+- [x] Browser tests for sign-in, sign-out, role enforcement, and an expired session.
 
-Done when: nothing but the health checks answers without a session, and the stack serves correctly through the proxy in CI. Going live also needs owner actions O2, O3 and O4.
+Done: pull requests #31 and #32. Nothing but the health checks and the sign-in routes answers without a session, and CI signs in through the proxy over HTTP and over HTTPS in production mode. Going live needs owner actions O2, O3 and O4.
+
+Left for later, recorded so that it is not lost: an audit trail of administrator actions on users (who changed a role or reset a password); a sessions list with "sign out everywhere" on the account page.
 
 ### WP-3. Fit the model to the farm: sources and reference data
 

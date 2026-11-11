@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Assert the properties the running Compose stack must have (SRS REL-1, SEC-2):
 # every container restarts by itself, rotates its logs, and publishes ports on
-# the loopback interface only. Run from the repository root with the stack up.
+# the loopback interface only. The one exception is the proxy, which must
+# publish exactly ports 80 and 443 and nothing else. Run from the repository
+# root with the stack up.
 set -Eeuo pipefail
 
 fail=0
@@ -20,6 +22,14 @@ for c in $containers; do
   fi
   if [ -z "$max_size" ]; then
     echo "  FAIL: no log rotation"; fail=1
+  fi
+  service="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$c")"
+  if [ "$service" = "proxy" ]; then
+    published="$(docker inspect -f '{{range $port, $bindings := .HostConfig.PortBindings}}{{range $bindings}}{{.HostPort}} {{end}}{{end}}' "$c" | tr ' ' '\n' | sort -n | tr '\n' ' ' | xargs)"
+    if [ "$published" != "80 443" ]; then
+      echo "  FAIL: the proxy publishes '$published', expected exactly 80 and 443"; fail=1
+    fi
+    continue
   fi
   for ip in $host_ips; do
     if [ "$ip" != "127.0.0.1" ]; then
