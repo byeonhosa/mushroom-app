@@ -8,7 +8,7 @@
     "test:e2e": "playwright test",
     "typecheck": "next typegen && tsc --noEmit",
     "build": "next build",
-    "start": "next start -H 0.0.0.0 -p 3000"
+    "start": "cp -r .next/static .next/standalone/.next/ && PORT=3000 HOSTNAME=0.0.0.0 node .next/standalone/server.js"
   },
   "dependencies": {
     "next": "^16.4.6",

@@ -30,6 +30,7 @@ updates:
     directories:
       - /backend
       - /frontend
+      - /ops/backup
     schedule:
       interval: weekly
       day: monday

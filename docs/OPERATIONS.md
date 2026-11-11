@@ -1,7 +1,7 @@
 # Mushroom App Operations Guide
 
-Status: Draft v1
-Last updated: 2026-03-26
+Status: Draft v1, backup and restore sections rewritten November 2026 (WP-1). A full rewrite for the server as it now runs is planned in WP-7.
+Last updated: 2026-11-11
 
 ## 1. Scope
 
@@ -40,6 +40,9 @@ Services:
 - `db`: PostgreSQL 16
 - `api`: FastAPI backend with migrations applied at startup
 - `frontend`: Next.js operator UI
+- `backup`: daily database dumps (section 5)
+
+Every service has `restart: unless-stopped`, so the stack comes back by itself after a crash or a reboot. Ports are published on `127.0.0.1` only. Container logs rotate at 10 MB, five files each.
 
 Default local URLs:
 
@@ -68,47 +71,42 @@ Expected behavior:
 
 ## 5. Backup
 
-The backup helper wraps `pg_dump` and writes a timestamped custom-format dump.
+The `backup` Compose service (`ops/backup/`) is built from the same `postgres:16` image as the database, so `pg_dump` always matches the server. It needs nothing installed on the host.
 
-Example:
+What it does:
+
+- Writes a custom-format dump (`pg_dump -Fc`) once every 24 hours into `daily/`, and keeps the newest 14.
+- Checks every dump with `pg_restore --list` before keeping it. A dump that fails is discarded and the container exits non-zero, so Docker restarts it and the failure shows in `docker compose ps`.
+- The deploy workflow takes one more dump into `predeploy/` before each deploy, before any migration runs, and keeps the newest 5.
+
+Where the dumps are: the host directory named by `BACKUP_DIR` in `.env`. On the droplet that is `/var/backups/mushroom-app`, outside the repository checkout. Locally it defaults to `./backups`. Files are readable by root only.
+
+These copies are on the same server as the database. A copy off the server is the DigitalOcean droplet backup, which the owner switches on (roadmap, owner action O5).
+
+Commands, run from the repository directory on the server:
 
 ```bash
-cd backend
-python scripts/postgres_backup.py --output ../backups/pre_release.dump
+docker compose exec backup backup status          # what is on disk, and how old the newest daily dump is
+docker compose exec backup backup once            # a daily dump now
+docker compose exec backup backup once predeploy  # a pre-deploy dump now
+docker compose exec backup backup verify          # restore test, see below
 ```
 
-Default behavior:
-
-- reads `DATABASE_URL` from the environment
-- writes dumps under `/backups` when no explicit `--output` path is supplied
-
-Prerequisite:
-
-- PostgreSQL client tools must be installed locally so `pg_dump` is available on `PATH`
+Every deploy runs `status` and `verify` and prints the result in the workflow log.
 
 ## 6. Restore
 
-The restore helper wraps `dropdb`, `createdb`, and `pg_restore`.
+**Restore test (safe, run on every deploy and in CI).** `backup verify` restores the newest dump into a scratch database named `<database>_restore_check`, counts the rows in every table, compares them with the live database, and drops the scratch database. It never touches the live database.
 
-Example:
+**Real restore (replaces the live database).** Stop the API first so that nothing writes during the restore, then restore, then start it again:
 
 ```bash
-cd backend
-python scripts/postgres_restore.py --input ../backups/pre_release.dump
+docker compose stop api frontend
+docker compose exec -e RESTORE_CONFIRM=mushroom backup backup restore daily/mushroom_YYYYMMDD_HHMMSS.dump
+docker compose up -d
 ```
 
-Default behavior:
-
-- reads `DATABASE_URL` from the environment
-- drops and recreates the target database before restoring
-
-Optional flag:
-
-- `--skip-drop-create`: restore into an existing database without recreating it first
-
-Prerequisite:
-
-- PostgreSQL client tools must be installed locally so `dropdb`, `createdb`, and `pg_restore` are available on `PATH`
+`RESTORE_CONFIRM` must equal the database name (`POSTGRES_DB`); without it the command refuses. A safety dump of the current state is written to `predeploy/` before anything is replaced.
 
 ## 7. Release Checklist
 
