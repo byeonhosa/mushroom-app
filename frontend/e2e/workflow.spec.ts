@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
 const apiBaseUrl = "http://localhost:8001/api";
 
@@ -34,10 +34,6 @@ type PasteurizationRunDetail = {
   run_code: string;
   bags: BagRow[];
 };
-
-function uniqueSuffix(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
-}
 
 function localDateTime(offsetMinutes = 0) {
   const timestamp = new Date(Date.now() + offsetMinutes * 60_000);
@@ -94,37 +90,52 @@ async function getPasteurizationRunDetail(request: APIRequestContext, runId: num
   return apiGet<PasteurizationRunDetail>(request, `/pasteurization-runs/${runId}/detail`);
 }
 
-async function createSterilizationRun(page: Page, request: APIRequestContext, runCode: string) {
+// RUN-6: the form proposes the run code from the unload date (YYMMDD plus the
+// first free letter), so the operator, and this test, never types it.
+const RUN_CODE = /^\d{6}[A-Z]$/;
+
+async function proposedRunCode(createRunForm: Locator, unloadedAt: string) {
+  const [year, month, day] = unloadedAt.slice(0, 10).split("-");
+  const datePart = `${year.slice(2)}${month}${day}`;
+  const runCodeField = createRunForm.getByRole("textbox", { name: "Run Code", exact: true });
+  await expect(runCodeField).toHaveValue(new RegExp(`^${datePart}[A-Z]$`));
+  const runCode = await runCodeField.inputValue();
+  expect(runCode).toMatch(RUN_CODE);
+  return runCode;
+}
+
+async function createSterilizationRun(page: Page, request: APIRequestContext) {
   await page.goto("/sterilization-runs");
   await expect(page.getByRole("heading", { name: "Sterilization Runs (Autoclave)" })).toBeVisible();
   const createRunForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Create Run" }) });
-  await createRunForm.getByRole("textbox", { name: "Run Code", exact: true }).fill(runCode);
   await createRunForm.getByLabel("Spawn Recipe").selectOption({ label: "SR1" });
   await createRunForm.getByLabel("Grain Type").selectOption({ label: "Rye" });
   await createRunForm.getByLabel("Bag Count").fill("1");
-  await createRunForm.getByLabel("Unloaded At").fill(localDateTime(1));
+  const unloadedAt = localDateTime(1);
+  await createRunForm.getByLabel("Unloaded At").fill(unloadedAt);
+  const runCode = await proposedRunCode(createRunForm, unloadedAt);
   await createRunForm.getByRole("button", { name: "Create Run" }).click();
   await expect(page.getByRole("link", { name: runCode })).toBeVisible();
-  return waitForSterilizationRunId(request, runCode);
+  return { runCode, runId: await waitForSterilizationRunId(request, runCode) };
 }
 
-async function createPasteurizationRun(page: Page, request: APIRequestContext, runCode: string) {
+async function createPasteurizationRun(page: Page, request: APIRequestContext) {
   await page.goto("/pasteurization-runs");
   await expect(page.getByRole("heading", { name: "Pasteurization Runs (Steam)" })).toBeVisible();
   const createRunForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Create Run" }) });
-  await createRunForm.getByRole("textbox", { name: "Run Code", exact: true }).fill(runCode);
   await createRunForm.getByLabel("Mix Lot").selectOption({ label: "LOT-STD-001" });
   await createRunForm.getByLabel("Substrate Recipe").selectOption({ label: "Masters Mix (MM)" });
   await createRunForm.getByLabel("Bag Count").fill("1");
-  await createRunForm.getByLabel("Unloaded At").fill(localDateTime(2));
+  const unloadedAt = localDateTime(2);
+  await createRunForm.getByLabel("Unloaded At").fill(unloadedAt);
+  const runCode = await proposedRunCode(createRunForm, unloadedAt);
   await createRunForm.getByRole("button", { name: "Create Run" }).click();
   await expect(page.getByRole("link", { name: runCode })).toBeVisible();
-  return waitForPasteurizationRunId(request, runCode);
+  return { runCode, runId: await waitForPasteurizationRunId(request, runCode) };
 }
 
-async function createReadySpawnBag(page: Page, request: APIRequestContext, suffix: string) {
-  const runCode = `E2E-STER-${suffix}`;
-  const runId = await createSterilizationRun(page, request, runCode);
+async function createReadySpawnBag(page: Page, request: APIRequestContext) {
+  const { runCode, runId } = await createSterilizationRun(page, request);
 
   await page.goto(`/sterilization-runs/${runId}`);
   await expect(page.getByText(`Run Code: ${runCode}`)).toBeVisible();
@@ -165,10 +176,8 @@ async function createSubstrateBagFromSpawn(
   page: Page,
   request: APIRequestContext,
   spawnBagRef: string,
-  suffix: string,
 ) {
-  const runCode = `E2E-PAST-${suffix}`;
-  const runId = await createPasteurizationRun(page, request, runCode);
+  const { runCode, runId } = await createPasteurizationRun(page, request);
 
   await page.goto(`/pasteurization-runs/${runId}`);
   await expect(page.getByText(`Run Code: ${runCode}`)).toBeVisible();
@@ -241,14 +250,17 @@ test.describe("bag workflow e2e", () => {
     page,
     request,
   }) => {
-    const suffix = uniqueSuffix("happy");
-    const { spawnBagRef } = await createReadySpawnBag(page, request, suffix);
+    const { spawnBagRef } = await createReadySpawnBag(page, request);
     const { runCode: pasteurizationRunCode, substrateBagRef } = await createSubstrateBagFromSpawn(
       page,
       request,
       spawnBagRef,
-      suffix,
     );
+
+    // BAG-5: type, species, run code and the bag's number in the run, 18 characters at most.
+    expect(spawnBagRef).toMatch(/^SP-LM-\d{6}[A-Z]-01$/);
+    expect(substrateBagRef).toBe(`SB-LM-${pasteurizationRunCode}-01`);
+    expect(substrateBagRef.length).toBeLessThanOrEqual(18);
 
     await recordBagStateChange(page, "/events/incubation", "Record Incubation Start", substrateBagRef, "INCUBATING");
     await recordBagStateChange(page, "/events/ready", "Record Ready", substrateBagRef, "READY");
@@ -281,9 +293,8 @@ test.describe("bag workflow e2e", () => {
   });
 
   test("tracks contamination through run detail and reporting views", async ({ page, request }) => {
-    const suffix = uniqueSuffix("contam");
-    const { runId: sterilizationRunId, spawnBagRef } = await createReadySpawnBag(page, request, suffix);
-    const { substrateBagRef } = await createSubstrateBagFromSpawn(page, request, spawnBagRef, suffix);
+    const { runId: sterilizationRunId, spawnBagRef } = await createReadySpawnBag(page, request);
+    const { substrateBagRef } = await createSubstrateBagFromSpawn(page, request, spawnBagRef);
 
     await recordBagStateChange(page, "/events/incubation", "Record Incubation Start", substrateBagRef, "INCUBATING");
     await recordDisposal(page, substrateBagRef, "CONTAMINATION");

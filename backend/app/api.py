@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Literal
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -7,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .db import get_db
 from .errors import is_unique_violation
-from . import schemas, crud, ops
+from . import bag_id, crud, models, ops, schemas
 
 router = APIRouter()
 
@@ -195,6 +196,13 @@ def create_pasteurization_run(payload: schemas.PasteurizationRunCreate, db: Sess
         raise
 
 
+@router.get("/pasteurization-runs/next-code", response_model=schemas.NextRunCodeOut)
+def next_pasteurization_run_code(on: date | None = None, db: Session = Depends(get_db)):
+    """The run code to propose for a pasteurization run on a given day (today by default)."""
+    run_date = on or bag_id.farm_today()
+    return {"run_code": bag_id.next_run_code(db, models.PasteurizationRun, run_date), "run_date": run_date}
+
+
 @router.get("/pasteurization-runs/{run_id}", response_model=schemas.PasteurizationRunOut)
 def get_pasteurization_run(run_id: int, db: Session = Depends(get_db)):
     r = crud.get_pasteurization_run(db, run_id)
@@ -238,6 +246,13 @@ def create_sterilization_run(payload: schemas.SterilizationRunCreate, db: Sessio
         if is_unique_violation(e):
             raise HTTPException(409, "Run code already exists.")
         raise
+
+
+@router.get("/sterilization-runs/next-code", response_model=schemas.NextRunCodeOut)
+def next_sterilization_run_code(on: date | None = None, db: Session = Depends(get_db)):
+    """The run code to propose for a sterilization run on a given day (today by default)."""
+    run_date = on or bag_id.farm_today()
+    return {"run_code": bag_id.next_run_code(db, models.SterilizationRun, run_date), "run_date": run_date}
 
 
 @router.get("/sterilization-runs/{run_id}", response_model=schemas.SterilizationRunOut)

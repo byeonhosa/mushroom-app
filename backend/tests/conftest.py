@@ -101,11 +101,16 @@ class Farm:
         assert response.status_code == expect, f"GET {path} -> {response.status_code}: {response.text}"
         return response.json()
 
-    def sterilization_run(self, run_code: str = "STER-1", bag_count: int = 4, **extra) -> dict:
+    def next_code(self, kind: str, on: str | None = None) -> str:
+        """The run code the app proposes for a `sterilization` or `pasteurization` run."""
+        query = f"?on={on}" if on else ""
+        return self.get(f"/api/{kind}-runs/next-code{query}")["run_code"]
+
+    def sterilization_run(self, run_code: str | None = None, bag_count: int = 4, **extra) -> dict:
         return self.post(
             "/api/sterilization-runs",
             {
-                "run_code": run_code,
+                "run_code": run_code or self.next_code("sterilization"),
                 "spawn_recipe_id": self.spawn_recipe_id,
                 "grain_type_id": self.grain_type["grain_type_id"],
                 "unloaded_at": iso(self.now - timedelta(hours=2)),
@@ -114,11 +119,11 @@ class Farm:
             },
         )
 
-    def pasteurization_run(self, run_code: str = "PAST-1", bag_count: int = 4, **extra) -> dict:
+    def pasteurization_run(self, run_code: str | None = None, bag_count: int = 4, **extra) -> dict:
         return self.post(
             "/api/pasteurization-runs",
             {
-                "run_code": run_code,
+                "run_code": run_code or self.next_code("pasteurization"),
                 "mix_lot_id": self.mix_lot["mix_lot_id"],
                 "substrate_recipe_version_id": self.substrate_recipe_id,
                 "unloaded_at": iso(self.now - timedelta(hours=2)),
@@ -127,9 +132,9 @@ class Farm:
             },
         )
 
-    def ready_spawn_bag(self, run_code: str = "STER-1") -> dict:
+    def ready_spawn_bag(self) -> dict:
         """One spawn bag inoculated from the liquid culture and marked ready."""
-        run = self.sterilization_run(run_code=run_code, bag_count=1)
+        run = self.sterilization_run(bag_count=1)
         self.post("/api/bags/spawn", {"sterilization_run_id": run["sterilization_run_id"], "bag_count": 1})
         bag = self.post(
             "/api/spawn-inoculations/batch",
@@ -143,10 +148,10 @@ class Farm:
         self.post(f"/api/bags/{bag['bag_id']}/incubation-start")
         return self.post(f"/api/bags/{bag['bag_id']}/ready")
 
-    def inoculated_substrate_bags(self, bag_count: int = 3, run_code: str = "PAST-1") -> tuple[dict, list[dict]]:
+    def inoculated_substrate_bags(self, bag_count: int = 3) -> tuple[dict, list[dict]]:
         """A pasteurization run with `bag_count` bags inoculated from one ready spawn bag."""
-        spawn = self.ready_spawn_bag(run_code=f"STER-FOR-{run_code}")
-        run = self.pasteurization_run(run_code=run_code, bag_count=bag_count)
+        spawn = self.ready_spawn_bag()
+        run = self.pasteurization_run(bag_count=bag_count)
         self.post(
             "/api/bags/substrate",
             {"pasteurization_run_id": run["pasteurization_run_id"], "bag_count": bag_count},

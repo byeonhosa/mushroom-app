@@ -48,7 +48,7 @@ export default function HarvestPage() {
           <input
             value={bagId}
             onChange={(e) => setBagId(e.target.value)}
-            placeholder="e.g. PAST-20260301-001-MM-LM-0001"
+            placeholder="e.g. SB-LM-261109A-07"
             autoFocus
           />
         </label>

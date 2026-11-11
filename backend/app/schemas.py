@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+import re
+from datetime import date, datetime, timezone
 from typing import Annotated, Optional, List, Literal
 from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
@@ -17,6 +18,28 @@ UtcDatetime = Annotated[datetime, AfterValidator(_as_utc)]
 # A time sent by a client must say which zone it is in. A value without an
 # offset is refused; it would otherwise be stored as if it were UTC.
 InputDatetime = Annotated[AwareDatetime, AfterValidator(_as_utc)]
+
+
+def _clean_run_code(value: str) -> str:
+    code = value.strip().upper()
+    if not re.fullmatch(r"\d{6}[A-Z]", code):
+        raise ValueError(
+            "Run code must be the date as YYMMDD followed by a letter, for example 261109A."
+        )
+    return code
+
+
+def _clean_species_code(value: str) -> str:
+    code = value.strip().upper()
+    if not re.fullmatch(r"[A-Z0-9]{2,3}", code):
+        raise ValueError("Species code must be two or three letters or digits, for example LM.")
+    return code
+
+
+# RUN-6: the run's date and a letter for its place in the day.
+RunCode = Annotated[str, AfterValidator(_clean_run_code)]
+# BAG-5: short enough to keep a bag code within 18 characters.
+SpeciesCode = Annotated[str, AfterValidator(_clean_species_code)]
 
 
 class HealthCheckOut(BaseModel):
@@ -98,7 +121,7 @@ class MixLotOut(BaseModel):
 
 # --- Species ---
 class MushroomSpeciesCreate(BaseModel):
-    code: str
+    code: SpeciesCode
     name: str
     latin_name: Optional[str] = None
     notes: Optional[str] = None
@@ -106,7 +129,7 @@ class MushroomSpeciesCreate(BaseModel):
 
 
 class MushroomSpeciesUpdate(BaseModel):
-    code: Optional[str] = None
+    code: Optional[SpeciesCode] = None
     name: Optional[str] = None
     latin_name: Optional[str] = None
     notes: Optional[str] = None
@@ -211,7 +234,7 @@ class GrainTypeOut(BaseModel):
 
 # --- Pasteurization runs ---
 class PasteurizationRunCreate(BaseModel):
-    run_code: str
+    run_code: RunCode
     mix_lot_id: int
     substrate_recipe_version_id: int
     steam_start_at: Optional[InputDatetime] = None
@@ -234,9 +257,14 @@ class PasteurizationRunOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class NextRunCodeOut(BaseModel):
+    run_code: str
+    run_date: date
+
+
 # --- Sterilization runs ---
 class SterilizationRunCreate(BaseModel):
-    run_code: str
+    run_code: RunCode
     spawn_recipe_id: int
     grain_type_id: int
     cycle_start_at: Optional[InputDatetime] = None

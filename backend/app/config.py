@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     api_host: str = Field(default="0.0.0.0", validation_alias=AliasChoices("API_HOST", "HOST"))
     api_port: int = Field(default=8000, validation_alias=AliasChoices("API_PORT", "PORT"))
     cors_origins: str = "http://localhost:3000"
+    # The zone in which "today" is worked out for run codes and reports.
+    farm_timezone: str = "America/New_York"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

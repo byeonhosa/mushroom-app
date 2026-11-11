@@ -37,6 +37,14 @@ class BagStatusEventType(str, enum.Enum):
     DISPOSED = "DISPOSED"
 
 
+class IdCounter(Base):
+    """Next number to hand out for a family of identifiers (see bag_id.py)."""
+
+    __tablename__ = "id_counters"
+    name = Column(String(40), primary_key=True)
+    next_value = Column(Integer, nullable=False, default=1)
+
+
 class SubstrateRecipeVersion(Base):
     __tablename__ = "substrate_recipe_versions"
     substrate_recipe_version_id = Column(Integer, primary_key=True)
