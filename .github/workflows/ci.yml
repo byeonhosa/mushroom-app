@@ -169,6 +169,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [backend-tests, frontend-build]
     steps:
       - name: Checkout
@@ -200,7 +201,14 @@ jobs:
 
       - name: Install Playwright browser
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 8
+        # --with-deps installs system packages with apt, and the runner's
+        # package mirrors fail now and then. Try twice, then fall back to the
+        # browser alone: the runner image already carries Chrome's libraries.
+        run: |
+          timeout 150 npx playwright install --with-deps chromium \
+            || (sleep 15 && timeout 150 npx playwright install --with-deps chromium) \
+            || npx playwright install chromium
 
       - name: Run browser workflow tests
         working-directory: frontend
