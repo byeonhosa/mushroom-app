@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../../lib/api";
+import { useProposedRunCode } from "../../lib/run-code";
 import type { SterilizationRun, SpawnRecipe, GrainType } from "../../lib/types";
 
 function toIsoOrNull(value: string): string | null {
@@ -42,6 +43,14 @@ export default function SterilizationRunsPage() {
   const [createPsi, setCreatePsi] = useState("");
   const [createHoldMinutes, setCreateHoldMinutes] = useState("");
   const [createNotes, setCreateNotes] = useState("");
+
+  // RUN-6: the code is proposed from the unload date, so the operator does not type it.
+  const proposedRunCode = useProposedRunCode("sterilization", createUnloadedAt, runs.length);
+  useEffect(() => {
+    if (proposedRunCode) setCreateRunCode(proposedRunCode);
+    // Also re-apply after a run is created or the date changes, when the form
+    // was cleared but the proposal itself came back unchanged.
+  }, [proposedRunCode, runs.length, createUnloadedAt]);
 
   async function loadRuns() {
     const params = new URLSearchParams();
@@ -134,8 +143,11 @@ export default function SterilizationRunsPage() {
             Run Code
             <input
               value={createRunCode}
-              onChange={(e) => setCreateRunCode(e.target.value)}
-              placeholder="e.g., AUTO-2026-02-15-A"
+              onChange={(e) => setCreateRunCode(e.target.value.toUpperCase())}
+              placeholder="e.g. 261109A"
+              pattern="[0-9]{6}[A-Za-z]"
+              title="The date as YYMMDD followed by a letter, for example 261109A"
+              maxLength={7}
               required
             />
           </label>

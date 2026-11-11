@@ -60,7 +60,7 @@ export default function InoculationPage() {
           <input
             value={spawnBagRef}
             onChange={(e) => setSpawnBagRef(e.target.value)}
-            placeholder="e.g. STER-20260324-SR1-LM-0001"
+            placeholder="e.g. SP-LM-261109A-01"
             autoFocus
           />
         </label>

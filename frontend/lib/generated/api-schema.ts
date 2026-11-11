@@ -301,6 +301,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pasteurization-runs/next-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Next Pasteurization Run Code
+         * @description The run code to propose for a pasteurization run on a given day (today by default).
+         */
+        get: operations["next_pasteurization_run_code_api_pasteurization_runs_next_code_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pasteurization-runs/{run_id}": {
         parameters: {
             query?: never;
@@ -347,6 +367,26 @@ export interface paths {
         put?: never;
         /** Create Sterilization Run */
         post: operations["create_sterilization_run_api_sterilization_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sterilization-runs/next-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Next Sterilization Run Code
+         * @description The run code to propose for a sterilization run on a given day (today by default).
+         */
+        get: operations["next_sterilization_run_code_api_sterilization_runs_next_code_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1577,6 +1617,16 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /** NextRunCodeOut */
+        NextRunCodeOut: {
+            /** Run Code */
+            run_code: string;
+            /**
+             * Run Date
+             * Format: date
+             */
+            run_date: string;
+        };
         /** PasteurizationRunCreate */
         PasteurizationRunCreate: {
             /** Run Code */
@@ -2710,6 +2760,37 @@ export interface operations {
             };
         };
     };
+    next_pasteurization_run_code_api_pasteurization_runs_next_code_get: {
+        parameters: {
+            query?: {
+                on?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextRunCodeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_pasteurization_run_api_pasteurization_runs__run_id__get: {
         parameters: {
             query?: never;
@@ -2825,6 +2906,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SterilizationRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    next_sterilization_run_code_api_sterilization_runs_next_code_get: {
+        parameters: {
+            query?: {
+                on?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextRunCodeOut"];
                 };
             };
             /** @description Validation Error */

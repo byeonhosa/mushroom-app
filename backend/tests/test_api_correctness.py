@@ -23,7 +23,7 @@ def test_run_planned_bag_count_must_be_a_positive_whole_number_within_range(farm
         (
             "/api/sterilization-runs",
             {
-                "run_code": "S-BAD",
+                "run_code": "261109A",
                 "spawn_recipe_id": farm.spawn_recipe_id,
                 "grain_type_id": farm.grain_type["grain_type_id"],
             },
@@ -31,7 +31,7 @@ def test_run_planned_bag_count_must_be_a_positive_whole_number_within_range(farm
         (
             "/api/pasteurization-runs",
             {
-                "run_code": "P-BAD",
+                "run_code": "261109A",
                 "mix_lot_id": farm.mix_lot["mix_lot_id"],
                 "substrate_recipe_version_id": farm.substrate_recipe_id,
             },
@@ -50,7 +50,7 @@ def test_run_planned_bag_count_refuses_a_fraction(farm):
     response = farm.client.post(
         "/api/pasteurization-runs",
         json={
-            "run_code": "P-FRACTION",
+            "run_code": "261109A",
             "mix_lot_id": farm.mix_lot["mix_lot_id"],
             "substrate_recipe_version_id": farm.substrate_recipe_id,
             "unloaded_at": iso(farm.now),
@@ -63,13 +63,13 @@ def test_run_planned_bag_count_refuses_a_fraction(farm):
 # ---------------------------------------------------------------- RUN-7
 
 def test_duplicate_run_code_is_refused_with_a_message_not_a_server_error(farm):
-    farm.sterilization_run(run_code="STER-DUP")
-    farm.pasteurization_run(run_code="PAST-DUP")
+    farm.sterilization_run(run_code="261109A")
+    farm.pasteurization_run(run_code="261109A")
 
     again = farm.client.post(
         "/api/sterilization-runs",
         json={
-            "run_code": "STER-DUP",
+            "run_code": "261109A",
             "spawn_recipe_id": farm.spawn_recipe_id,
             "grain_type_id": farm.grain_type["grain_type_id"],
             "unloaded_at": iso(farm.now),
@@ -82,7 +82,7 @@ def test_duplicate_run_code_is_refused_with_a_message_not_a_server_error(farm):
     again = farm.client.post(
         "/api/pasteurization-runs",
         json={
-            "run_code": "PAST-DUP",
+            "run_code": "261109A",
             "mix_lot_id": farm.mix_lot["mix_lot_id"],
             "substrate_recipe_version_id": farm.substrate_recipe_id,
             "unloaded_at": iso(farm.now),
@@ -126,7 +126,7 @@ def test_run_naming_a_missing_reference_record_is_not_found(farm):
     response = farm.client.post(
         "/api/pasteurization-runs",
         json={
-            "run_code": "P-NO-LOT",
+            "run_code": "261109A",
             "mix_lot_id": 9999,
             "substrate_recipe_version_id": farm.substrate_recipe_id,
             "unloaded_at": iso(farm.now),
@@ -139,7 +139,7 @@ def test_run_naming_a_missing_reference_record_is_not_found(farm):
     response = farm.client.post(
         "/api/sterilization-runs",
         json={
-            "run_code": "S-NO-GRAIN",
+            "run_code": "261109A",
             "spawn_recipe_id": farm.spawn_recipe_id,
             "grain_type_id": 9999,
             "unloaded_at": iso(farm.now),
@@ -153,14 +153,14 @@ def test_run_naming_a_missing_reference_record_is_not_found(farm):
 # ---------------------------------------------------------------- RUN-8
 
 def test_sterilization_runs_sort_by_known_fields(farm):
-    farm.sterilization_run(run_code="B-RUN", bag_count=2)
-    farm.sterilization_run(run_code="A-RUN", bag_count=9)
+    farm.sterilization_run(run_code="261109B", bag_count=2)
+    farm.sterilization_run(run_code="261109A", bag_count=9)
 
     by_code = farm.get("/api/sterilization-runs?sort_by=run_code&sort_order=asc")
-    assert [row["run_code"] for row in by_code] == ["A-RUN", "B-RUN"]
+    assert [row["run_code"] for row in by_code] == ["261109A", "261109B"]
 
     by_count = farm.get("/api/sterilization-runs?sort_by=bag_count&sort_order=desc")
-    assert [row["run_code"] for row in by_count] == ["A-RUN", "B-RUN"]
+    assert [row["run_code"] for row in by_count] == ["261109A", "261109B"]
 
 
 @pytest.mark.parametrize("sort_by", ["spawn_recipe", "grain_type", "metadata", "no_such_field", "__class__"])
@@ -241,7 +241,7 @@ def test_a_time_without_an_offset_is_refused(farm):
     response = farm.client.post(
         "/api/pasteurization-runs",
         json={
-            "run_code": "P-NAIVE",
+            "run_code": "261109A",
             "mix_lot_id": farm.mix_lot["mix_lot_id"],
             "substrate_recipe_version_id": farm.substrate_recipe_id,
             "unloaded_at": "2026-11-09T14:00:00",
@@ -253,7 +253,7 @@ def test_a_time_without_an_offset_is_refused(farm):
 
 
 def test_a_time_with_an_offset_is_stored_as_the_same_instant(farm):
-    run = farm.pasteurization_run(run_code="P-EASTERN", unloaded_at="2026-11-09T09:30:00-05:00")
+    run = farm.pasteurization_run(run_code="261109A", unloaded_at="2026-11-09T09:30:00-05:00")
     assert datetime.fromisoformat(run["unloaded_at"].replace("Z", "+00:00")) == datetime(
         2026, 11, 9, 14, 30, tzinfo=timezone.utc
     )
@@ -312,7 +312,7 @@ def test_status_is_the_same_with_and_without_event_history(db_session, farm):
 
 
 def test_a_new_bag_record_starts_at_its_heat_treatment_status(db_session, farm):
-    run = farm.sterilization_run(run_code="S-NEW", bag_count=1)
+    run = farm.sterilization_run(bag_count=1)
     bag = farm.post("/api/bags/spawn", {"sterilization_run_id": run["sterilization_run_id"], "bag_count": 1})[0]
     assert bag["status"] == "STERILIZED"
 

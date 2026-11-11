@@ -55,6 +55,20 @@ def _validate_run_capacity(run_label: str, planned_bag_count: int, existing_bag_
         )
 
 
+def _lock_run(db: Session, run_model, run_id_column, run_id: int):
+    """Load a run and hold its row until the transaction ends.
+
+    Everything that hands out a run's bags (choosing the unlabeled ones,
+    numbering their codes) happens behind this lock, so two inoculation
+    sessions on one run at the same moment take their bags in turn instead of
+    both taking the same ones (SRS BAG-11). SQLite ignores the lock clause; it
+    has a single writer anyway.
+    """
+    return db.execute(
+        select(run_model).where(run_id_column == run_id).with_for_update()
+    ).scalar_one_or_none()
+
+
 def _get_unlabeled_bags_for_run(
     db: Session,
     *,
@@ -397,7 +411,9 @@ def inoculate_spawn_bags(
     inoculated_at=None,
     notes: str | None = None,
 ):
-    run = db.get(models.SterilizationRun, sterilization_run_id)
+    run = _lock_run(
+        db, models.SterilizationRun, models.SterilizationRun.sterilization_run_id, sterilization_run_id
+    )
     if not run:
         raise LookupError("Sterilization run not found")
 
@@ -605,6 +621,11 @@ def create_inoculation_batch(
     inoculated_at=None,
     notes: str | None = None,
 ):
+    run = _lock_run(
+        db, models.PasteurizationRun, models.PasteurizationRun.pasteurization_run_id, pasteurization_run_id
+    )
+    if not run:
+        raise LookupError("Pasteurization run not found")
     substrate_bags = _get_unlabeled_bags_for_run(
         db,
         bag_type="SUBSTRATE",

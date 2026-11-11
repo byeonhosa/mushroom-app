@@ -74,6 +74,10 @@ jobs:
       - name: Run migration smoke test
         run: pytest -q tests/test_migrations.py
 
+      - name: Run concurrency tests against PostgreSQL
+        # BAG-11: simultaneous sessions. SQLite cannot show these.
+        run: pytest -q tests/test_postgres_concurrency.py
+
   api-contract:
     runs-on: ubuntu-latest
     steps:

@@ -89,7 +89,7 @@ def _seed_mix_lot(db, substrate_recipe, fill_profile):
 
 def _seed_pasteurization_run(db, mix_lot, substrate_recipe):
     row = models.PasteurizationRun(
-        run_code="PAST-001",
+        run_code="261109A",
         mix_lot_id=mix_lot.mix_lot_id,
         substrate_recipe_version_id=substrate_recipe.substrate_recipe_version_id,
         unloaded_at=datetime.now(timezone.utc),
@@ -103,7 +103,7 @@ def _seed_pasteurization_run(db, mix_lot, substrate_recipe):
 
 def _seed_sterilization_run(db, spawn_recipe, grain_type):
     row = models.SterilizationRun(
-        run_code="STER-001",
+        run_code="261109A",
         spawn_recipe_id=spawn_recipe.spawn_recipe_id,
         grain_type_id=grain_type.grain_type_id,
         unloaded_at=datetime.now(timezone.utc),
@@ -167,8 +167,8 @@ def test_create_spawn_bags_creates_unlabeled_internal_records():
         assert all(bag.status == "STERILIZED" for bag in first_batch + second_batch)
         status_events = crud.list_bag_status_events(db, first_batch[0].bag_id)
         assert [event.event_type for event in status_events] == ["CREATED", "STERILIZED"]
-        assert status_events[0].detail == "Spawn bag record created for sterilization run STER-001"
-        assert status_events[1].detail == "Sterilization run completed: STER-001"
+        assert status_events[0].detail == "Spawn bag record created for sterilization run 261109A"
+        assert status_events[1].detail == "Sterilization run completed: 261109A"
     finally:
         db.close()
 
@@ -201,10 +201,10 @@ def test_spawn_inoculation_assigns_unique_printable_codes_across_batches():
         bag_codes = [bag.bag_code for bag in first_inoculation + second_inoculation]
 
         assert bag_codes == [
-            "STER-STER-001-SR1-LM-0001",
-            "STER-STER-001-SR1-LM-0002",
-            "STER-STER-001-SR1-LM-0003",
-            "STER-STER-001-SR1-LM-0004",
+            "SP-LM-261109A-01",
+            "SP-LM-261109A-02",
+            "SP-LM-261109A-03",
+            "SP-LM-261109A-04",
         ]
         assert all(bag.bag_ref == bag.bag_code for bag in first_inoculation + second_inoculation)
         assert all(bag.labeled_at is not None for bag in first_inoculation + second_inoculation)
@@ -222,7 +222,7 @@ def test_spawn_to_spawn_inoculation_assigns_lineage_and_consumes_donor():
         second_spawn_recipe = _seed_spawn_recipe(db, recipe_code="SR2")
         grain_type = _seed_grain_type(db, name="Millet")
         child_run = models.SterilizationRun(
-            run_code="STER-002",
+            run_code="261109B",
             spawn_recipe_id=second_spawn_recipe.spawn_recipe_id,
             grain_type_id=grain_type.grain_type_id,
             unloaded_at=datetime.now(timezone.utc),
@@ -282,9 +282,9 @@ def test_substrate_inoculation_batch_assigns_codes_and_consumes_spawn():
 
         assert [bag.bag_id for bag in unlabeled_bags] == ["SUBREC-0001", "SUBREC-0002", "SUBREC-0003"]
         assert [bag.bag_code for bag in inoculated_bags] == [
-            "PAST-PAST-001-MM-LM-0001",
-            "PAST-PAST-001-MM-LM-0002",
-            "PAST-PAST-001-MM-LM-0003",
+            "SB-LM-261109A-01",
+            "SB-LM-261109A-02",
+            "SB-LM-261109A-03",
         ]
         assert all(bag.parent_spawn_bag_id == spawn_bag.bag_id for bag in inoculated_bags)
         assert all(bag.species_id == spawn_bag.species_id for bag in inoculated_bags)
@@ -313,7 +313,7 @@ def test_single_inoculation_returns_inoculation_row_for_bag_refs():
         assert inoculation.substrate_bag_id == substrate_bag.bag_id
         assert inoculation.spawn_bag_id == spawn_bag.bag_id
         assert refreshed_bag is not None
-        assert refreshed_bag.bag_code == "PAST-PAST-001-MM-LM-0001"
+        assert refreshed_bag.bag_code == "SB-LM-261109A-01"
         assert refreshed_bag.parent_spawn_bag_id == spawn_bag.bag_id
     finally:
         db.close()

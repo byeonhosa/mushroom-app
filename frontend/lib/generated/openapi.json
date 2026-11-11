@@ -798,6 +798,54 @@
         }
       }
     },
+    "/api/pasteurization-runs/next-code": {
+      "get": {
+        "summary": "Next Pasteurization Run Code",
+        "description": "The run code to propose for a pasteurization run on a given day (today by default).",
+        "operationId": "next_pasteurization_run_code_api_pasteurization_runs_next_code_get",
+        "parameters": [
+          {
+            "name": "on",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "On"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextRunCodeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/pasteurization-runs/{run_id}": {
       "get": {
         "summary": "Get Pasteurization Run",
@@ -965,6 +1013,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SterilizationRunOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sterilization-runs/next-code": {
+      "get": {
+        "summary": "Next Sterilization Run Code",
+        "description": "The run code to propose for a sterilization run on a given day (today by default).",
+        "operationId": "next_sterilization_run_code_api_sterilization_runs_next_code_get",
+        "parameters": [
+          {
+            "name": "on",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "On"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextRunCodeOut"
                 }
               }
             }
@@ -4895,6 +4991,25 @@
         },
         "type": "object",
         "title": "MushroomSpeciesUpdate"
+      },
+      "NextRunCodeOut": {
+        "properties": {
+          "run_code": {
+            "type": "string",
+            "title": "Run Code"
+          },
+          "run_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Run Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_code",
+          "run_date"
+        ],
+        "title": "NextRunCodeOut"
       },
       "PasteurizationRunCreate": {
         "properties": {

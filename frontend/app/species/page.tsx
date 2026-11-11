@@ -67,7 +67,15 @@ export default function SpeciesPage() {
       <form className="form" onSubmit={onCreate}>
         <label>
           Code
-          <input value={code} onChange={(e) => setCode(e.target.value)} required />
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="e.g. LM"
+            pattern="[A-Za-z0-9]{2,3}"
+            title="Two or three letters or digits. It is printed in every bag code."
+            maxLength={3}
+            required
+          />
         </label>
         <label>
           Name
