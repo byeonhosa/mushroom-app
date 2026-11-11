@@ -176,7 +176,23 @@ class GrainType(Base):
     notes = Column(Text)
 
 
+# The farm website's own vocabulary (byeonhosa/maury-river-mushroom-farm-web,
+# packages/shared/src/types.ts). Values stored here must stay within it, so
+# that the website can read them without a mapping (brief section 10).
+AVAILABILITY_TIERS = ("year-round", "in-rotation-now", "returning", "wholesale-only", "functional-coming-later")
+SALE_PATHS = (
+    "available", "low-stock", "sold-out", "coming-soon", "seasonal",
+    "preorder", "hidden", "wholesale-only", "inquiry-only",
+)
+
+
 class MushroomSpecies(Base):
+    """A variety the farm grows: the one species list (SRS REF-1, REF-2).
+
+    `code` goes on labels. `slug` is the identifier shared with the website
+    and never changes once set. The cultivation profile hangs off `profile`.
+    """
+
     __tablename__ = "mushroom_species"
     species_id = Column(Integer, primary_key=True)
     code = Column(String(40), nullable=False, unique=True)
@@ -184,6 +200,15 @@ class MushroomSpecies(Base):
     latin_name = Column(String(160))
     notes = Column(Text)
     is_active = Column(Boolean, nullable=False, default=True)
+    slug = Column(String(60), unique=True)
+    # What the website may say about it. A new species is hidden until an
+    # administrator decides otherwise.
+    availability_tier = Column(String(40))
+    sale_path = Column(String(40), nullable=False, default="hidden")
+    in_rotation_now = Column(Boolean, nullable=False, default=False)
+    restrictions = Column(Text)
+
+    profile = relationship("SpeciesProfile", back_populates="species", uselist=False, cascade="all, delete-orphan")
 
 
 class LiquidCulture(Base):
@@ -453,12 +478,11 @@ class HarvestEvent(Base):
 
 
 class SpeciesProfile(Base):
-    """Species cultivation reference (Crowe-detailed commercial parameters).
+    """The cultivation profile of one species (SRS REF-2).
 
-    Standalone reference table — NOT the operational ``mushroom_species`` table
-    that carries FKs from liquid_cultures/bags. Field names mirror the keys in
-    backend/app/seeds/mushroom_species.json; the JSON ``id`` maps to ``code``,
-    which is the upsert key used by ``app.seed_species``.
+    One row per row of ``mushroom_species``, linked by ``species_id``. Field
+    names mirror the keys in backend/app/seeds/mushroom_species.json. Rows are
+    created by ``app.seed_species`` from backend/app/seeds/species.json.
 
     Range fields are nullable integers (``*_low`` / ``*_high``); a JSON null is
     preserved as SQL NULL, never coerced to 0. ``use_type`` and
@@ -472,7 +496,13 @@ class SpeciesProfile(Base):
     __tablename__ = "species_profiles"
 
     species_profile_id = Column(Integer, primary_key=True)
+    # The species this profile belongs to; `code` repeats that species' slug.
+    species_id = Column(Integer, ForeignKey("mushroom_species.species_id", ondelete="CASCADE"), nullable=False, unique=True)
     code = Column(String(60), nullable=False, unique=True)
+    # 'farm': from the farm's own sources. 'researched': from outside
+    # research, to be replaced by the farm's experience (SPR-2).
+    data_source = Column(String(20), nullable=False, default="farm")
+    source_note = Column(Text)
     common_name = Column(String(160), nullable=False)
     scientific_name = Column(String(160))
     difficulty = Column(String(40))
@@ -509,3 +539,9 @@ class SpeciesProfile(Base):
     yield_notes = Column(Text)
     pricing_notes = Column(Text)
     notes = Column(Text)
+
+    species = relationship("MushroomSpecies", back_populates="profile")
+
+    @property
+    def species_code(self) -> str | None:
+        return self.species.code if self.species else None

@@ -75,10 +75,10 @@ Done: pull requests #31 and #32. Nothing but the health checks and the sign-in r
 
 Left for later, recorded so that it is not lost: an audit trail of administrator actions on users (who changed a role or reset a password); a sessions list with "sign out everywhere" on the account page.
 
-### WP-3. Fit the model to the farm: sources and reference data
+### WP-3. Fit the model to the farm: sources and reference data (in progress)
 
-- [ ] One species list with the cultivation profile attached; stable slug per species; the four portal fields. Migrate the eight existing profiles onto it. (REF-1, REF-2, brief section 10)
-- [ ] Load the farm's eighteen varieties: blue oyster, white (pearl) oyster, pink oyster, golden oyster, king oyster (king trumpet), black king oyster, lion's mane, shiitake, chestnut, maitake, reishi, turkey tail, pioppino, beech (shimeji), nameko, golden enoki, white enoki, cordyceps. The eight in `backend/app/seeds/mushroom_species.json` come from the farm's sources; the single `oyster` row becomes four. Research the rest and mark every researched value as such in the data. The June dataset for these was not committed and is presumed lost. (SPR-2)
+- [x] One species list with the cultivation profile attached; stable slug per species; the four portal fields. Migrate the eight existing profiles onto it. (REF-1, REF-2, brief section 10)
+- [x] Load the farm's eighteen varieties, with the website's codes and slugs. Eleven profiles come from the farm's sources and seven from research, marked as such (`docs/research/species-profiles-2026-11-11.md`). (SPR-2)
 - [ ] Screens to add and edit spawn recipes, substrate recipes, fill profiles, grain types, ingredients, mix lots and liquid cultures; all reachable from the menu; deactivate in place of delete. (REF-3 to REF-8, REF-10, REF-14)
 - [ ] Purchased spawn lots, and inoculation of substrate or spawn bags from a lot. Multi-session use until marked used up. (REF-11, INO-6, INO-7)
 - [ ] Liquid culture parent link. (REF-12)

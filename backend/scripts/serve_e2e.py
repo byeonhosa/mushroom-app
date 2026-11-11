@@ -16,7 +16,7 @@ os.environ.setdefault("PYTHONPATH", str(BACKEND_DIR))
 # would only slow them down.
 os.environ.setdefault("PASSWORD_HASH_ROUNDS", "4")
 
-from app import models, security  # noqa: E402
+from app import models, security, seed_species  # noqa: E402
 
 # Accounts for the browser tests. This server only ever runs against a
 # throwaway SQLite file.
@@ -63,9 +63,9 @@ def _reset_database() -> None:
                 )
             )
 
-        species = models.MushroomSpecies(code="LM", name="Lion's Mane", is_active=True)
-        db.add(species)
-        db.flush()
+        # The farm's real species list and profiles, as a deployed server has them.
+        seed_species.seed(db)
+        species = db.query(models.MushroomSpecies).filter_by(code="LM").one()
 
         db.add(
             models.LiquidCulture(

@@ -179,20 +179,54 @@ class MixLotOut(BaseModel):
 
 
 # --- Species ---
+# The farm website's vocabulary (models.AVAILABILITY_TIERS, models.SALE_PATHS).
+AvailabilityTier = Literal["year-round", "in-rotation-now", "returning", "wholesale-only", "functional-coming-later"]
+SalePath = Literal[
+    "available", "low-stock", "sold-out", "coming-soon", "seasonal",
+    "preorder", "hidden", "wholesale-only", "inquiry-only",
+]
+
+
+def slugify(text: str) -> str:
+    """The website's rule: lower case, anything else becomes a hyphen. Lion's Mane -> lion-s-mane."""
+    return re.sub(r"[^a-z0-9]+", "-", text.strip().lower()).strip("-")
+
+
+def _clean_slug(value: str) -> str:
+    slug = value.strip().lower()
+    if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", slug) or len(slug) > 60:
+        raise ValueError("A slug is lower-case letters and digits joined by hyphens, for example blue-oyster.")
+    return slug
+
+
+Slug = Annotated[str, AfterValidator(_clean_slug)]
+
+
 class MushroomSpeciesCreate(BaseModel):
     code: SpeciesCode
-    name: str
+    name: str = Field(..., min_length=1, max_length=120)
     latin_name: Optional[str] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = True
+    # Left out, the slug is made from the name. It never changes afterwards.
+    slug: Optional[Slug] = None
+    availability_tier: Optional[AvailabilityTier] = None
+    sale_path: SalePath = "hidden"
+    in_rotation_now: bool = False
+    restrictions: Optional[str] = None
 
 
 class MushroomSpeciesUpdate(BaseModel):
     code: Optional[SpeciesCode] = None
-    name: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
     latin_name: Optional[str] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = None
+    slug: Optional[Slug] = None
+    availability_tier: Optional[AvailabilityTier] = None
+    sale_path: Optional[SalePath] = None
+    in_rotation_now: Optional[bool] = None
+    restrictions: Optional[str] = None
 
 
 class MushroomSpeciesOut(BaseModel):
@@ -202,6 +236,11 @@ class MushroomSpeciesOut(BaseModel):
     latin_name: Optional[str] = None
     notes: Optional[str] = None
     is_active: bool
+    slug: Optional[str] = None
+    availability_tier: Optional[AvailabilityTier] = None
+    sale_path: SalePath
+    in_rotation_now: bool
+    restrictions: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -211,6 +250,12 @@ class MushroomSpeciesOut(BaseModel):
 # the seed JSON _meta.conventions and the model docstring).
 class SpeciesProfileOut(BaseModel):
     species_profile_id: int
+    species_id: int
+    # The label code of the species (LM); `code` below is its slug (lion-s-mane).
+    species_code: Optional[str] = None
+    # SPR-2: whether the values come from the farm's sources or outside research.
+    data_source: Literal["farm", "researched"]
+    source_note: Optional[str] = None
     code: str
     common_name: str
     scientific_name: Optional[str] = None

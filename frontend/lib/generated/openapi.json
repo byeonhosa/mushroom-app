@@ -5264,6 +5264,8 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
             "title": "Name"
           },
           "latin_name": {
@@ -5299,6 +5301,67 @@
             ],
             "title": "Is Active",
             "default": true
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "availability_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "year-round",
+                  "in-rotation-now",
+                  "returning",
+                  "wholesale-only",
+                  "functional-coming-later"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Tier"
+          },
+          "sale_path": {
+            "type": "string",
+            "enum": [
+              "available",
+              "low-stock",
+              "sold-out",
+              "coming-soon",
+              "seasonal",
+              "preorder",
+              "hidden",
+              "wholesale-only",
+              "inquiry-only"
+            ],
+            "title": "Sale Path",
+            "default": "hidden"
+          },
+          "in_rotation_now": {
+            "type": "boolean",
+            "title": "In Rotation Now",
+            "default": false
+          },
+          "restrictions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restrictions"
           }
         },
         "type": "object",
@@ -5347,6 +5410,65 @@
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "availability_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "year-round",
+                  "in-rotation-now",
+                  "returning",
+                  "wholesale-only",
+                  "functional-coming-later"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Tier"
+          },
+          "sale_path": {
+            "type": "string",
+            "enum": [
+              "available",
+              "low-stock",
+              "sold-out",
+              "coming-soon",
+              "seasonal",
+              "preorder",
+              "hidden",
+              "wholesale-only",
+              "inquiry-only"
+            ],
+            "title": "Sale Path"
+          },
+          "in_rotation_now": {
+            "type": "boolean",
+            "title": "In Rotation Now"
+          },
+          "restrictions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restrictions"
           }
         },
         "type": "object",
@@ -5354,7 +5476,9 @@
           "species_id",
           "code",
           "name",
-          "is_active"
+          "is_active",
+          "sale_path",
+          "in_rotation_now"
         ],
         "title": "MushroomSpeciesOut"
       },
@@ -5374,7 +5498,9 @@
           "name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
               },
               {
                 "type": "null"
@@ -5414,6 +5540,79 @@
               }
             ],
             "title": "Is Active"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "availability_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "year-round",
+                  "in-rotation-now",
+                  "returning",
+                  "wholesale-only",
+                  "functional-coming-later"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability Tier"
+          },
+          "sale_path": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "low-stock",
+                  "sold-out",
+                  "coming-soon",
+                  "seasonal",
+                  "preorder",
+                  "hidden",
+                  "wholesale-only",
+                  "inquiry-only"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Path"
+          },
+          "in_rotation_now": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Rotation Now"
+          },
+          "restrictions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restrictions"
           }
         },
         "type": "object",
@@ -6043,6 +6242,40 @@
             "type": "integer",
             "title": "Species Profile Id"
           },
+          "species_id": {
+            "type": "integer",
+            "title": "Species Id"
+          },
+          "species_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Code"
+          },
+          "data_source": {
+            "type": "string",
+            "enum": [
+              "farm",
+              "researched"
+            ],
+            "title": "Data Source"
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note"
+          },
           "code": {
             "type": "string",
             "title": "Code"
@@ -6440,6 +6673,8 @@
         "type": "object",
         "required": [
           "species_profile_id",
+          "species_id",
+          "data_source",
           "code",
           "common_name"
         ],

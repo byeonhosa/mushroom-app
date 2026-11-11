@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 
 from . import models
-from .errors import DomainError, NotFoundError
+from .errors import ConflictError, DomainError, NotFoundError
 
 # Columns a run list may be sorted by (RUN-8). Anything else is refused.
 STERILIZATION_RUN_SORT_FIELDS = (
@@ -86,7 +86,23 @@ def list_species(db: Session, active_only: bool = True):
     return db.execute(stmt).scalars().all()
 
 
+def _slug_in_use(db: Session, slug: str, *, except_species_id: int | None = None) -> bool:
+    stmt = select(models.MushroomSpecies.species_id).where(models.MushroomSpecies.slug == slug)
+    if except_species_id is not None:
+        stmt = stmt.where(models.MushroomSpecies.species_id != except_species_id)
+    return db.execute(stmt).first() is not None
+
+
 def create_species(db: Session, data: dict):
+    from .schemas import slugify
+
+    data = dict(data)
+    slug = data.get("slug") or slugify(data["name"])
+    if not slug:
+        raise DomainError("Give the species a name with at least one letter or digit.")
+    if _slug_in_use(db, slug):
+        raise ConflictError(f"Another species already uses the slug '{slug}'.")
+    data["slug"] = slug
     s = models.MushroomSpecies(**data)
     db.add(s)
     db.commit()
@@ -98,8 +114,27 @@ def update_species(db: Session, species_id: int, data: dict):
     s = db.get(models.MushroomSpecies, species_id)
     if not s:
         return None
+    data = dict(data)
+    if "slug" in data:
+        new_slug = data.pop("slug")
+        if new_slug is not None and new_slug != s.slug:
+            # The website keys its species pages on the slug (brief section 10).
+            if s.slug is not None:
+                raise DomainError(
+                    f"The slug '{s.slug}' is shared with the website and cannot be changed once set."
+                )
+            if _slug_in_use(db, new_slug, except_species_id=species_id):
+                raise ConflictError(f"Another species already uses the slug '{new_slug}'.")
+            s.slug = new_slug
+    for required in ("name", "code", "sale_path", "in_rotation_now", "is_active"):
+        if required in data and data[required] is None:
+            data.pop(required)
     for k, v in data.items():
         setattr(s, k, v)
+    if s.profile is not None:
+        # The profile repeats the species' name for the reference page.
+        s.profile.common_name = s.name
+        s.profile.scientific_name = s.latin_name
     db.commit()
     db.refresh(s)
     return s
@@ -109,15 +144,19 @@ def update_species(db: Session, species_id: int, data: dict):
 
 def list_species_profiles(db: Session):
     return db.execute(
-        select(models.SpeciesProfile).order_by(
-            models.SpeciesProfile.common_name.asc(), models.SpeciesProfile.species_profile_id.asc()
-        )
+        select(models.SpeciesProfile)
+        .options(joinedload(models.SpeciesProfile.species))
+        .order_by(models.SpeciesProfile.common_name.asc(), models.SpeciesProfile.species_profile_id.asc())
     ).scalars().all()
 
 
 def get_species_profile(db: Session, code: str):
+    """Find a profile by its species' slug (lion-s-mane) or label code (LM)."""
     return db.execute(
-        select(models.SpeciesProfile).where(models.SpeciesProfile.code == code)
+        select(models.SpeciesProfile)
+        .join(models.MushroomSpecies)
+        .options(joinedload(models.SpeciesProfile.species))
+        .where((models.SpeciesProfile.code == code.lower()) | (models.MushroomSpecies.code == code.upper()))
     ).scalar_one_or_none()
 
 

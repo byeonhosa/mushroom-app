@@ -160,10 +160,19 @@ function SpeciesCard({ s }: { s: SpeciesProfile }) {
           <div className="sp-sname">{s.scientific_name}</div>
         </div>
         <div className="sp-tags">
+          {s.species_code && <span className="sp-code">{s.species_code}</span>}
           {s.use_type && <span className="statusBadge">{USE_LABEL[s.use_type] ?? s.use_type}</span>}
           {s.difficulty && <span className="sp-diff">{s.difficulty}</span>}
+          {s.data_source === "researched" && (
+            <span className="sp-researched" title={s.source_note ?? undefined}>Researched</span>
+          )}
         </div>
       </div>
+      {s.source_note && (
+        <p className={s.data_source === "researched" ? "sp-source sp-source-researched" : "sp-source"}>
+          {s.source_note}
+        </p>
+      )}
 
       <div className="sp-band">
         <TemperatureBar label="Incubation" lo={s.incubation_temp_f_low} hi={s.incubation_temp_f_high} />
@@ -276,9 +285,10 @@ export default function SpeciesReferencePage() {
         <p className="sectionEyebrow">Cultivation Reference</p>
         <h1>Species Reference</h1>
         <p className="muted">
-          Eight species with commercial-protocol detail. Each temperature band is graded cool → warm on a fixed
-          45–90°F scale, so species that share a grow room cluster by color. Read-only reference; verify against your
-          own production.
+          Growing conditions for the farm&apos;s varieties. Each temperature band is graded cool → warm on a fixed
+          45–90°F scale, so varieties that can share a grow room cluster by color. Values marked Researched come
+          from suppliers and papers, not the farm&apos;s own sources: treat them as a starting point and check them
+          against your own runs.
         </p>
 
         <div className="sp-controls">
