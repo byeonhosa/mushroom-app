@@ -17,6 +17,7 @@ The app is built, deployed and running on the droplet, and nobody can reach it o
 | O5 | Regain the droplet | SEC-6, SEC-7, the pending reboot, off-server backups | DigitalOcean console > the droplet > **Access > Launch Droplet Console**. Add a new SSH public key to `/root/.ssh/authorized_keys` and remove the old one. In the **Backups** tab enable weekly droplet backups (this is the only copy of the database off the server). Take a snapshot, then reboot the droplet once: it has not restarted in seven months, and the stack now comes back by itself. |
 | O6 | Optional: give Claude Code read access to DigitalOcean | Lets the lead developer do O4 and check droplet health itself | Create a DigitalOcean API token (API > Tokens), then in claude.ai/code open the environment's settings > **Network secrets** > **Add secret**: allowed website `api.digitalocean.com`, header `Authorization`, prefix `Bearer`, value the token. |
 | O7 | Label printer and stock, when chosen | LBL-3 | Tell the lead developer the model and label size. |
+| O8 | Check what the website may say about each variety | Correct data for the website integration (WP-9) | After first sign-in, open **Species**. Each of the eighteen varieties shows a website tier, a sale state and whether it is growing now. They were set from the website's current list on November 11, 2026. Use **Edit** on any row that does not say what the farm means. Nothing reads these fields until WP-9, so this can wait. |
 
 ## Deployment state
 
