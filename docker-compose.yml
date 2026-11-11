@@ -1,12 +1,29 @@
+# Production and local stack. On the droplet this file is the whole server
+# configuration: the deploy workflow runs `docker compose up -d --build`.
+#
+# - Every service restarts by itself after a crash or a reboot (REL-1).
+# - Ports are published on the loopback interface only (SEC-2). Nothing here is
+#   reachable from outside the host.
+# - Container logs are rotated so they cannot fill the disk.
+# - The pgdata volume holds the database. Never remove it.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:16
+    restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mushroom}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mushroom}
       POSTGRES_DB: ${POSTGRES_DB:-mushroom}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +36,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-mushroom}:${POSTGRES_PASSWORD:-mushroom}@db:5432/${POSTGRES_DB:-mushroom}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
@@ -26,7 +45,7 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -48,10 +67,10 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000/api}
-    environment:
-      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000/api}
+    restart: unless-stopped
+    logging: *default-logging
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       api:
         condition: service_healthy
@@ -66,6 +85,35 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+
+  # Daily pg_dump into a host directory, 14 copies kept (REL-2). See
+  # ops/backup/backup.sh. BACKUP_DIR is set on the droplet to a path outside
+  # the repository checkout; locally it defaults to ./backups (gitignored).
+  backup:
+    build:
+      context: .
+      dockerfile: ops/backup/Dockerfile
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-mushroom}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-mushroom}
+      PGDATABASE: ${POSTGRES_DB:-mushroom}
+      BACKUP_DAILY_KEEP: ${BACKUP_DAILY_KEEP:-14}
+      BACKUP_PREDEPLOY_KEEP: ${BACKUP_PREDEPLOY_KEEP:-5}
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/backup", "status"]
+      interval: 5m
+      timeout: 20s
+      retries: 2
+      start_period: 2m
 
 volumes:
   pgdata:

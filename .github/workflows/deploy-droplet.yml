@@ -4,6 +4,13 @@ name: Deploy to droplet
 # This is the security mitigation for running a self-hosted runner on a public repo:
 # fork PRs cannot trigger this workflow because they cannot push to main.
 # PR validation continues to run on GitHub-hosted runners in ci.yml.
+#
+# The droplet has no SSH access at present, so this workflow is the only way to
+# change it. Everything the server needs is expressed here or in
+# docker-compose.yml. Two rules that must never be broken:
+#   - never remove the pgdata volume (no `down -v`, no `volume rm`, no
+#     `system prune --volumes`);
+#   - never print the contents of /opt/mushroom-app/.env.
 on:
   push:
     branches: [main]
@@ -15,10 +22,13 @@ concurrency:
   group: deploy-droplet
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: [self-hosted, mushroom-app-prod]
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: /opt/mushroom-app
@@ -31,9 +41,29 @@ jobs:
           git reset --hard origin/main
           git log --oneline -3
 
+      - name: Host state before deploy
+        run: |
+          echo "uptime: $(uptime -p)"
+          df -h / | tail -n 1
+          free -m | sed -n '1,2p'
+          docker --version
+          docker compose version
+
+      - name: Update non-secret settings in .env
+        run: |
+          # Database dumps live outside the repository checkout so that no git
+          # operation can touch them.
+          bash ops/deploy/set-env.sh .env BACKUP_DIR /var/backups/mushroom-app
+
+      - name: Back up the database before changing anything
+        run: |
+          docker compose build backup
+          docker compose up -d --wait db
+          docker compose run --rm --no-deps backup once predeploy
+
       - name: Rebuild and start containers
         run: |
-          docker compose up -d --build
+          docker compose up -d --build --remove-orphans
           docker compose ps
 
       - name: Wait for API to respond
@@ -51,7 +81,6 @@ jobs:
 
       - name: Wait for frontend to respond
         run: |
-          # Next.js startup is slower than uvicorn; up to ~75s for healthcheck to pass.
           for i in $(seq 1 30); do
             if curl -fsS -m 5 http://127.0.0.1:3000/ > /dev/null 2>&1; then
               echo "Frontend responding after $((i * 5))s"
@@ -69,26 +98,64 @@ jobs:
           echo "=== /api/health/ready ==="
           curl -fsS http://127.0.0.1:8000/api/health/ready | python3 -m json.tool
           echo ""
-          echo "=== /api/species ==="
-          curl -fsS http://127.0.0.1:8000/api/species | python3 -m json.tool
+          echo "=== /api/species (count) ==="
+          curl -fsS http://127.0.0.1:8000/api/species | python3 -c "import json,sys; print(len(json.load(sys.stdin)), 'active species')"
           echo ""
-          echo "=== /api/dashboard/overview (head only) ==="
-          curl -fsS http://127.0.0.1:8000/api/dashboard/overview | python3 -m json.tool | head -20
+          echo "=== /api/dashboard/overview (summary) ==="
+          curl -fsS http://127.0.0.1:8000/api/dashboard/overview | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['summary'], indent=2))"
           echo ""
           echo "=== frontend ==="
           curl -fsS -o /dev/null -w "frontend: HTTP %{http_code}\n" http://127.0.0.1:3000/
 
-      - name: Show running containers
-        run: docker compose ps
+      - name: Row counts (is there real data yet?)
+        run: |
+          # Counts only. The lead developer brief treats the database as empty,
+          # and free to migrate, until these are above zero.
+          docker compose exec -T db sh -c 'for t in bags harvest_events; do echo "$t=$(psql -X -At -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT count(*) FROM $t")"; done'
+
+      - name: Backup status and restore test
+        run: |
+          # The daily loop writes its first dump on start; give it a moment.
+          for i in $(seq 1 12); do
+            if docker compose exec -T backup backup status > /dev/null 2>&1; then
+              break
+            fi
+            sleep 5
+          done
+          docker compose exec -T backup backup status
+          # REL-3: restore the newest dump into a scratch database on every deploy.
+          docker compose exec -T backup backup verify
+
+      - name: Restart policies and published ports
+        run: |
+          for c in $(docker compose ps -q); do
+            docker inspect --format '{{.Name}} restart={{.HostConfig.RestartPolicy.Name}} log-max-size={{index .HostConfig.LogConfig.Config "max-size"}}' "$c"
+          done
+          docker compose ps --format 'table {{.Service}}\t{{.Status}}\t{{.Ports}}'
+
+      - name: Prune old images and build cache
+        run: |
+          # Dangling images are the ones this deploy replaced. Build cache
+          # unused for three days goes too. Volumes are never pruned.
+          docker image prune -f
+          docker builder prune -f --filter "until=72h"
+          docker system df
+          df -h / | tail -n 1
 
       - name: Dump logs on failure
         if: failure()
         run: |
           echo "=== docker compose ps ==="
-          docker compose ps
+          docker compose ps -a
           echo ""
           echo "=== api logs (tail 100) ==="
           docker compose logs --tail 100 api || true
           echo ""
           echo "=== frontend logs (tail 50) ==="
           docker compose logs --tail 50 frontend || true
+          echo ""
+          echo "=== backup logs (tail 50) ==="
+          docker compose logs --tail 50 backup || true
+          echo ""
+          echo "=== db logs (tail 30) ==="
+          docker compose logs --tail 30 db || true
