@@ -37,13 +37,6 @@ class BagStatusEventType(str, enum.Enum):
     DISPOSED = "DISPOSED"
 
 
-class Zone(Base):
-    __tablename__ = "zones"
-    zone_id = Column(Integer, primary_key=True)
-    name = Column(String(120), nullable=False, unique=True)
-    zone_type = Column(String(20), nullable=False)
-
-
 class SubstrateRecipeVersion(Base):
     __tablename__ = "substrate_recipe_versions"
     substrate_recipe_version_id = Column(Integer, primary_key=True)

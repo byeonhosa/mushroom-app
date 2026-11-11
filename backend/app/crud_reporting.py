@@ -370,25 +370,6 @@ def _summarize_bags(bags: list[models.Bag]) -> dict:
     }
 
 
-def _summarize_substrate_metric_rows(rows: list[dict]) -> dict:
-    total_bags = len(rows)
-    total_harvest_kg = sum(row["total_harvest_kg"] for row in rows)
-    total_dry_weight_kg = sum(row["dry_weight_kg"] or 0.0 for row in rows)
-    return {
-        "total_bags": total_bags,
-        "unlabeled_bags": sum(1 for row in rows if row["bag_code"] is None),
-        "inoculated_bags": sum(1 for row in rows if row["status"] not in {"PASTEURIZED"}),
-        "ready_bags": sum(1 for row in rows if row["status"] in {"READY", "FRUITING", "FLUSH_1_COMPLETE", "FLUSH_2_COMPLETE", "DISPOSED", "CONTAMINATED"}),
-        "fruiting_bags": sum(1 for row in rows if row["status"] in {"FRUITING", "FLUSH_1_COMPLETE", "FLUSH_2_COMPLETE"}),
-        "contaminated_bags": sum(1 for row in rows if row["contaminated"]),
-        "harvested_bags": sum(1 for row in rows if row["total_harvest_kg"] > 0),
-        "consumed_bags": 0,
-        "total_harvest_kg": total_harvest_kg,
-        "total_dry_weight_kg": total_dry_weight_kg,
-        "overall_bio_efficiency": total_harvest_kg / total_dry_weight_kg if total_dry_weight_kg > 0 else None,
-    }
-
-
 def get_sterilization_run_detail(db: Session, sterilization_run_id: int) -> dict | None:
     run = db.get(models.SterilizationRun, sterilization_run_id)
     if not run:
@@ -449,7 +430,7 @@ def get_pasteurization_run_detail(db: Session, pasteurization_run_id: int) -> di
         "bag_count": run.bag_count,
         "notes": run.notes,
         "bags": bag_rows,
-        "summary": _summarize_substrate_metric_rows(bag_rows),
+        "summary": _summarize_bags(substrate_bags),
     }
 
 
