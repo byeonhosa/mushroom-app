@@ -20,8 +20,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -U pip
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+pip install --require-hashes -r requirements.txt -r requirements-dev.txt
 ```
 
 If you are running the backend outside Docker, copy `backend/.env.example` to `backend/.env` first.

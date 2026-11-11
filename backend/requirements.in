@@ -1,0 +1,15 @@
+# Direct runtime dependencies. Edit this file, then regenerate the lockfile:
+#
+#   pip install pip-tools
+#   pip-compile --generate-hashes --strip-extras -o requirements.txt requirements.in
+#   pip-compile --generate-hashes --strip-extras -o requirements-dev.txt requirements-dev.in
+#
+# requirements.txt is the lockfile the Docker image and CI install from (MNT-7).
+fastapi>=0.162,<0.163
+uvicorn[standard]>=0.54,<0.55
+SQLAlchemy>=2.0.36,<2.1
+psycopg[binary]>=3.2,<4
+pydantic>=2.12,<3
+pydantic-settings>=2.12,<3
+qrcode[pil]>=8.0,<9
+Pillow>=11.3.0

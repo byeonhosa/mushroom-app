@@ -1,0 +1,6 @@
+# Test dependencies, constrained to the runtime lockfile.
+# Regenerate with the commands at the top of requirements.in.
+-c requirements.txt
+pytest>=9,<10
+# Starlette's TestClient now runs on httpx2 (the maintained successor to httpx).
+httpx2>=2.16,<3
