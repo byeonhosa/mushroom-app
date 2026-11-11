@@ -53,6 +53,24 @@ Default local URLs:
 
 To sign in to a local stack, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` in `.env` before the first start.
 
+## 3a. Demo data
+
+`python -m app.seed_demo` fills an empty database with a realistic farm: purchased spawn lots, liquid cultures, sterilization and pasteurization runs, inoculations from bought spawn and from the farm's own, incubation, fruiting, two flushes of harvest, disposals, a contamination rate of a few percent and one pasteurization run that went badly. It is for development, tests, performance work and screenshots.
+
+```bash
+cd backend
+python -m app.seed_demo                    # twelve weeks at the farm's own volume, about 1,000 bags
+python -m app.seed_demo --scale 10         # about 10,000 bags
+python -m app.seed_demo --seed 7 --weeks 4 --end-date 2026-11-10
+python -m app.seed_demo --user you@example.com   # record the work under an existing user
+```
+
+- It works through the same functions the screens call, with the app's clock set to the moment each step would have happened, so the data is what the app would hold had people done the work.
+- The same seed, scale, weeks and end date always give the same farm. The story ends at 6 pm on the end date (yesterday unless given).
+- It refuses to run when the database already holds runs, bags, purchased lots, liquid cultures or harvests, and refuses when `APP_ENV` is `production`. Each refusal has its own override flag: `--allow-existing-data` and `--allow-production`. It only ever adds; it deletes nothing.
+- It is not part of the deploy workflow, the Compose file or the container start, and a test fails if it is added to any of them. Do not run it on the farm's server once real records exist: there is no command that removes demo data again short of restoring a backup.
+- Timing on a laptop-class machine: about 35 seconds for scale 1 on PostgreSQL.
+
 ## 4. Health Checks
 
 Available backend health endpoints:

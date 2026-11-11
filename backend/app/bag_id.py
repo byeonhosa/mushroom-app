@@ -26,7 +26,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import models
+from . import clock, models
 from .config import settings
 from .errors import ConflictError
 
@@ -94,7 +94,7 @@ def generate_internal_bag_ids(db: Session, bag_type: str, count: int) -> list[st
 # ------------------------------------------------------------------ run codes
 
 def farm_today() -> date:
-    return datetime.now(ZoneInfo(settings.farm_timezone)).date()
+    return clock.now().astimezone(ZoneInfo(settings.farm_timezone)).date()
 
 
 def farm_date(moment: datetime) -> date:
