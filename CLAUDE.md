@@ -1,103 +1,90 @@
 # Mushroom App — Claude Code Project Instructions
 
 ## Session Start (MANDATORY)
-1. `git pull` to sync any changes pushed from the droplet or other sessions.
-2. Read this file.
+1. `git pull` to sync `main`.
+2. Read this file, then `docs/LEAD_DEVELOPER_BRIEF.md`, `docs/ROADMAP.md` and `docs/DECISIONS.md` (if it exists).
+3. Continue the first unfinished work package in the roadmap unless the owner's prompt says otherwise.
 
 ## Session End (MANDATORY)
-1. Commit with a descriptive message and `git push`.
-2. Update the Obsidian vault (see Obsidian section below).
+1. Commit, push, and merge finished work through a pull request with CI green.
+2. Update `docs/ROADMAP.md` and append to `docs/SESSION_LOG.md`.
+3. Update the Obsidian vault if the `dryden-vault` repository is attached (see the last section).
+
+## Standing mandate
+As of November 11, 2026 the owner has delegated the lead on this app to Claude Code. `docs/LEAD_DEVELOPER_BRIEF.md` sets out the authority, the limits, and the decisions already made. Work autonomously within it.
 
 ## Product
-Mushroom Farm Manager — production tracking for The Maury River Mushroom Farm, covering the full lifecycle from liquid culture → spawn → substrate → harvest → disposal. Eventually a read-only data source for The Maury River Mushroom Farm public website (separate repo, separate droplet).
+Mushroom Farm Manager — production tracking for The Maury River Mushroom Farm, covering the full lifecycle from liquid culture or purchased spawn → spawn → substrate → harvest → disposal. Eventually a read-only data source for the farm's public website (separate repo `byeonhosa/maury-river-mushroom-farm-web`, separate droplet).
 
-- **Repo:** https://github.com/byeonhosa/mushroom-app (currently public; private decision parked)
-- **Droplet:** 138.197.88.81 (production-app)
-- **Vault context:** C:\Knowledge\dryden-vault\improved-vault\10-Products\MushroomApp\Current-Context.md
+- **Repo:** https://github.com/byeonhosa/mushroom-app (currently public; private decision parked). GitHub is the only copy and the source of truth. The owner's laptop was lost in November 2026; no local clone exists.
+- **Requirements:** `docs/SRS.md`. **Order of work and current state:** `docs/ROADMAP.md`.
+- **Droplet:** 138.197.88.81 (production-app). State unverified since June 13, 2026.
 
 ## Workflow
-- Claude Code creates/edits files, commits, and pushes (typically via PR; can push directly to main for trivial changes).
-- **GitHub Actions CI is the test gate** (`.github/workflows/ci.yml`): pytest, migration smoke against PostgreSQL, API contract check, frontend typecheck, build, and Playwright e2e. PRs should not be merged unless CI is green.
-- **On every push to `main`, the deploy workflow runs automatically** (`.github/workflows/deploy-droplet.yml`) on the self-hosted runner on the droplet. It pulls, runs `docker compose up -d --build`, waits for the API to respond, and smoke-tests `/api/health/ready`, `/api/species`, `/api/dashboard/overview`, and the frontend. Watch the result in the GitHub Actions UI.
-- If a deploy fails, the running containers are unaffected — Docker keeps the previous image until a successful build replaces it. Fix forward by pushing a corrective commit to main.
-- The deploy workflow does **not** trigger on PR pushes — only on push to main. This is intentional security for the self-hosted runner on a public repo (forks cannot push to main).
+- Work on a branch, open a pull request, merge by squash when CI is green.
+- **GitHub Actions CI is the test gate** (`.github/workflows/ci.yml`): pytest, migration smoke against PostgreSQL, API contract check, frontend typecheck, build, and Playwright e2e. Do not merge on red.
+- **Every push to `main` deploys** (`.github/workflows/deploy-droplet.yml`) on the self-hosted runner on the droplet. It pulls, runs `docker compose up -d --build`, waits for the API, and smoke-tests the health endpoint, two API routes and the frontend. Check the result with `gh run list`.
+- If a deploy fails at the build, the running containers are unaffected. Fix forward or revert.
+- The deploy workflow does **not** run on pull requests. This protects the self-hosted runner on a public repo (forks cannot push to `main`).
+- In cloud sessions GitHub's GraphQL API is blocked: `gh pr create` and `gh pr merge` fail. Use the REST calls listed in the brief. The proxy also refuses branch deletion; merged branches are removed by the repository's auto-delete setting once the owner turns it on.
 
 ## Tech Stack
-- Frontend: Next.js 16.x (TypeScript)
-- Backend: FastAPI 0.115.x (Python 3.12)
+- Frontend: Next.js 16.x, React 19 (TypeScript). No Tailwind or UI library; one global `frontend/app/styles.css` with semantic classes.
+- Backend: FastAPI (see `backend/requirements.txt` for the pinned range), Python 3.12
 - Database: PostgreSQL 16 (prod), SQLite (dev/test)
 - ORM: SQLAlchemy 2.0 — **migrations are raw SQL via `python -m app.migrate` (NOT Alembic)**
-- API contract: OpenAPI spec auto-generated; frontend types generated from it; CI checks for drift
-- CI: GitHub Actions (`.github/workflows/ci.yml`)
-- Deploy: GitHub Actions self-hosted runner on droplet (`.github/workflows/deploy-droplet.yml`)
+- API contract: OpenAPI generated from the code; frontend types generated from it (`npm run generate:api-contract`); CI checks for drift
+- Deploy: Docker Compose on one droplet, driven by the self-hosted runner
 
 ## Droplet Environment Notes
-- The droplet host has **no Python or Node toolchain** — everything runs in Docker containers. Do not assume `pytest` or `npm` is available on the droplet host. Use `docker compose exec api ...` if you need to run a command inside a container.
-- Repo lives at `/opt/mushroom-app` on the droplet, owned by the `actions-runner` user.
-- Postgres data persists in the `pgdata` named volume across rebuilds.
-- A DigitalOcean Cloud Firewall blocks public access to ports 5432 (Postgres), 8000 (API), 3000 (frontend). SSH (22) is open to all IPs but uses key-only auth.
-- SSH config alias on the laptop: `ssh mushroom-app` (uses `~/.ssh/id_ed25519`).
+- **The SSH key was lost with the laptop.** Until the owner installs a new key through the DigitalOcean console, the deploy workflow is the only way to change anything on the droplet. Express server changes as Compose services, Dockerfile changes, or workflow steps.
+- The droplet host has **no Python or Node toolchain** — everything runs in containers. Use `docker compose exec api ...` inside workflow steps.
+- Repo lives at `/opt/mushroom-app`, owned by the `actions-runner` user, which has Docker access.
+- Postgres data persists in the `pgdata` named volume. Never remove it.
+- `/opt/mushroom-app/.env` holds `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `APP_ENV`, `CORS_ORIGINS`, `NEXT_PUBLIC_API_BASE`. It exists only on the droplet. Never print it.
+- As of June 10, 2026: a DigitalOcean Cloud Firewall blocks 5432, 8000 and 3000; port 22 is open; sshd had password authentication re-enabled by a cloud-init drop-in; all containers ran with `restart=no`; a reboot was pending; no backup had ever run (`pg_dump` is not in the API image); the database held seed rows only.
 
-## Build & Test Commands (reference — for local development only)
+## Build & Test Commands
 
     # Backend
+    cd backend && pip install -r requirements.txt -r requirements-dev.txt
     cd backend && pytest -q
     cd backend && uvicorn app.main:app --reload --port 8000
 
     # Frontend
-    cd frontend && npm run dev
+    cd frontend && npm ci
     cd frontend && npm run typecheck
     cd frontend && npm run build
+    cd frontend && npm run check:api-contract
+    cd frontend && npm run test:e2e
 
-These are for ad-hoc local testing if you have the toolchain. The droplet does not — CI is the authoritative test gate.
+Run these in the session before pushing. CI remains the authoritative gate.
 
 ## Architecture Notes
 - Domain model is bag-centric (SPAWN and SUBSTRATE bag types).
-- Bag status derives from immutable event history first, with cache-based fallback (note: the two derivation paths have different defaults — see audit §4.3 for drift risk).
-- `crud.py` is now an 88-line re-export facade; actual logic lives in `crud_bags.py`, `crud_dashboard.py`, `crud_reference.py`, `crud_reporting.py`, `crud_status.py`. Add new functions to the appropriate domain module.
-- **No authentication exists yet** — API is open at the application layer, network-protected by the droplet firewall. Operator + integration auth is the next major batch of work.
-- Dashboard loads ALL bags unbounded and `get_dashboard_overview` calls `get_production_report` which reloads the same set — known performance issue, will need pagination + reuse-bags optimization at scale.
-
-## Known Tech Debt (high-priority items only — full list in audit doc)
-- No application-layer auth → next batch of work (expanded Batch 1: integration + operator auth).
-- Dependency CVEs: `fastapi==0.115.6`, `uvicorn==0.30.6`, `next ^16.1.6`, unpinned Pillow → bump as part of next batch.
-- Status derivation drift between cache-based and history-based paths.
-- `harvest_events.flush_number CHECK (1, 2)` — hard cap at 2 flushes.
-- Stale frontend routes: `frontend/app/{blocks,batches,spawn-batches}/` from bag-centric rebuild.
-- Backup script likely writes inside container (no `backups:` volume) — confirm persistence on droplet.
+- Bag status derives from immutable event history (`bag_status_events`) first, with a cache-column fallback. The two paths have different defaults; unifying them is in WP-1.
+- `crud.py` is a re-export facade; logic lives in `crud_bags.py`, `crud_dashboard.py`, `crud_reference.py`, `crud_reporting.py`, `crud_status.py`. Add new functions to the appropriate domain module, and add new modules by domain as the code grows.
+- `species_profiles` (read-only cultivation reference, seeded from `backend/app/seeds/mushroom_species.json`) is separate from the operating `mushroom_species` table. Merging them is in WP-3.
+- **No authentication exists yet.** Sign-in is WP-2. Do not expose the app publicly before it is live.
+- The dashboard loads all bags and rebuilds the full report on each request. Rework is in WP-6.
 
 ## Conventions
-- Pydantic v2: use `model_config = ConfigDict(from_attributes=True)`, not deprecated `class Config`.
-- Commit messages should be descriptive.
-- Run `pytest -q` and `npm run typecheck` locally before committing if your environment supports it; otherwise rely on CI.
-- Never commit `.env`, `.env.*`, backups, database volumes, or SSH keys (gitignored, but be careful).
+- Pydantic v2: `model_config = ConfigDict(from_attributes=True)`, not `class Config`.
+- New database changes are new numbered files in `backend/app/migrations/`. Never edit a merged migration.
+- Tests accompany every change: pytest through the API, Playwright for screen flows.
+- Descriptive commit messages.
+- Never commit `.env`, `.env.*`, backups, database volumes, keys or tokens.
 
-## Obsidian Vault Update (MANDATORY — end of every session)
+## Obsidian Vault Update (end of session, when the vault is attached)
 
-The vault is itself a Git repo (`https://github.com/byeonhosa/dryden-vault`).
-For the editing rules, structure overview, and commit-and-push workflow, see
-the vault's own CLAUDE.md at
-`C:\Knowledge\dryden-vault\improved-vault\CLAUDE.md` — it is the source of
-truth. This section names only the MushroomApp-specific files to touch.
+The vault is the Git repo `byeonhosa/dryden-vault`. In a cloud session it is available only if it was attached to the session. If it is not attached, skip this section; `docs/SESSION_LOG.md` in this repository is then the record.
+
+When it is attached, follow the vault's own `CLAUDE.md` for editing rules and commit conventions. The product folder is `10-Products/MushroomApp/` (at the vault repo root, or under `improved-vault/` if that folder exists). Update:
 
 **File 1 — overwrite each time:**
-`C:\Knowledge\dryden-vault\improved-vault\10-Products\MushroomApp\Current-Context.md`
-
-Follow the canonical template at
-`C:\Knowledge\dryden-vault\improved-vault\50-Templates\Current-Context-Template.md`.
-The template is the source of truth — do not enumerate sections here, because
-that's what created drift in the first place. Required vs. optional sections
-are marked inside the template.
+`10-Products/MushroomApp/Current-Context.md`, following `50-Templates/Current-Context-Template.md`.
 
 **File 2 — new file each session (append-only history):**
-`C:\Knowledge\dryden-vault\improved-vault\10-Products\MushroomApp\Development-Status\MushroomApp_Development_Status_[YYYYMMDD_HHMMSS].md`
+`10-Products/MushroomApp/Development-Status/MushroomApp_Development_Status_[YYYYMMDD_HHMMSS].md` (Eastern time), with sections: Session Summary (commit, duration), Changes Made, Test Results, Decisions Made, Backlog Items Discovered.
 
-Sections: Session Summary (commit, duration), Changes Made, Test Results,
-Decisions Made, Backlog Items Discovered.
-
-Create the Development-Status directory if it doesn't exist.
-
-**Commit + push the vault changes** with a message of the form
-`vault: MushroomApp: <what changed and why>` (per the convention in the
-vault's CLAUDE.md). Direct edits without commit-and-push create drift — the
-hourly Pi auto-backup cron is a safety net, not the workflow.
+Commit and push the vault with a message of the form `vault: MushroomApp: <what changed and why>`.
