@@ -308,6 +308,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mix-lots/{mix_lot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Mix Lot
+         * @description Correct a mix lot after it was recorded (REF-8).
+         */
+        patch: operations["update_mix_lot_api_mix_lots__mix_lot_id__patch"];
+        trace?: never;
+    };
     "/api/species": {
         parameters: {
             query?: never;
@@ -1948,6 +1968,22 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * MixLotUpdate
+         * @description A correction to a mix lot (REF-8). Only the fields sent are changed.
+         */
+        MixLotUpdate: {
+            /** Lot Code */
+            lot_code?: string | null;
+            /** Substrate Recipe Version Id */
+            substrate_recipe_version_id?: number | null;
+            /** Fill Profile Id */
+            fill_profile_id?: number | null;
+            /** Mixed At */
+            mixed_at?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** MushroomSpeciesCreate */
         MushroomSpeciesCreate: {
             /** Code */
@@ -3347,6 +3383,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["MixLotCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MixLotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_mix_lot_api_mix_lots__mix_lot_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mix_lot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MixLotUpdate"];
             };
         };
         responses: {

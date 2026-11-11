@@ -130,6 +130,44 @@ def create_mix_lot(db: Session, data: dict):
     return m
 
 
+def update_mix_lot(db: Session, mix_lot_id: int, data: dict):
+    """Correct a mix lot (REF-8).
+
+    Its code, the time it was mixed and its notes can always be corrected.
+    Its recipe and fill profile are what the lot's runs and their bags were
+    made with, so they can change only while no pasteurization run uses it.
+    """
+    lot = db.get(models.MixLot, mix_lot_id)
+    if lot is None:
+        return None
+    keep = ("lot_code", "substrate_recipe_version_id", "fill_profile_id", "mixed_at")
+    data = {key: value for key, value in data.items() if not (value is None and key in keep)}
+    changed = {key: value for key, value in data.items() if getattr(lot, key) != value}
+
+    composition = [key for key in ("substrate_recipe_version_id", "fill_profile_id") if key in changed]
+    if composition:
+        runs = db.execute(
+            select(func.count()).select_from(models.PasteurizationRun).where(
+                models.PasteurizationRun.mix_lot_id == lot.mix_lot_id
+            )
+        ).scalar_one()
+        if runs:
+            raise DomainError(
+                f"Mix lot {lot.lot_code} has been used by {runs} pasteurization run(s). "
+                "Its recipe and fill profile cannot be changed now."
+            )
+        if "substrate_recipe_version_id" in changed:
+            _usable(db, models.SubstrateRecipeVersion, changed["substrate_recipe_version_id"], "Substrate recipe")
+        if "fill_profile_id" in changed:
+            _usable(db, models.FillProfile, changed["fill_profile_id"], "Fill profile")
+
+    for key, value in changed.items():
+        setattr(lot, key, value)
+    db.commit()
+    db.refresh(lot)
+    return lot
+
+
 # --- Species ---
 
 def list_species(db: Session, active_only: bool = True):
@@ -411,6 +449,7 @@ def list_ingredient_lots(db: Session, ingredient_id: int | None = None):
 
 
 def create_ingredient_lot(db: Session, data: dict):
+    _usable(db, models.Ingredient, data.get("ingredient_id"), "Ingredient")
     lot = models.IngredientLot(**data)
     db.add(lot)
     db.commit()

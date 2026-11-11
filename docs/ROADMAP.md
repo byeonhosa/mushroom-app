@@ -2,7 +2,7 @@
 
 The order of work for the Mushroom Farm App and its current state. Maintained by the lead developer (see `docs/LEAD_DEVELOPER_BRIEF.md`). Requirement IDs refer to `docs/SRS.md`.
 
-Last updated: November 11, 2026, end of the first lead-developer session (WP-1 done, WP-2 built, WP-3 done but for two small screens).
+Last updated: November 11, 2026, end of the first lead-developer session (WP-1 done, WP-2 built, WP-3 done).
 
 ## Owner actions needed
 
@@ -22,7 +22,7 @@ The app is built, deployed and running on the droplet, and nobody can reach it o
 
 | Item | State | As of |
 |---|---|---|
-| `main` | WP-1 complete, WP-2 merged, WP-3 merged but for two small screens (pull requests #22, #28 to #37). | Nov 11, 2026 |
+| `main` | WP-1, WP-2 and WP-3 merged (pull requests #22, #28 to #38). | Nov 11, 2026 |
 | Droplet and runner | Online. Every deploy on November 11 succeeded. Uptime seven months; a reboot is still pending (O5). 48 GB disk, 40% used (the first prune freed 18 GB of build cache). SSH key still lost. | Nov 11, 2026 |
 | Containers | `db`, `api`, `frontend`, `backup`, `proxy`: all `restart=unless-stopped`, logs rotated. Only the proxy publishes ports (80, 443); the rest are on the loopback interface. | Nov 11, 2026 |
 | Backups | Daily dump to `/var/backups/mushroom-app`, 14 kept, plus one before each deploy. Restore test passes on every deploy. No copy off the server yet (O5). | Nov 11, 2026 |
@@ -75,12 +75,12 @@ Done: pull requests #31 and #32. Nothing but the health checks and the sign-in r
 
 Left for later, recorded so that it is not lost: an audit trail of administrator actions on users (who changed a role or reset a password); a sessions list with "sign out everywhere" on the account page.
 
-### WP-3. Fit the model to the farm: sources and reference data (done November 11, 2026, but for the one unticked item)
+### WP-3. Fit the model to the farm: sources and reference data (done November 11, 2026)
 
 - [x] One species list with the cultivation profile attached; stable slug per species; the four portal fields. Migrate the eight existing profiles onto it. (REF-1, REF-2, brief section 10)
 - [x] Load the farm's eighteen varieties, with the website's codes and slugs. Eleven profiles come from the farm's sources and seven from research, marked as such (`docs/research/species-profiles-2026-11-11.md`). (SPR-2)
 - [x] Screens to add and edit spawn recipes, substrate recipes, fill profiles, grain types and liquid cultures; all reachable from the menu; deactivate in place of delete. (REF-3 to REF-6, REF-10, REF-14)
-- [ ] The same for the two that remain: rename and deactivate on the Ingredients screen (the API has it), and edit on the Mix Lots screen. (REF-7, REF-8)
+- [x] The same for the two that remained: rename and deactivate on the Ingredients screen, and corrections on the Mix Lots screen. (REF-7, REF-8, D-048)
 - [x] Purchased spawn lots, and inoculation of substrate or spawn bags from a lot. Multi-session use until marked used up. (REF-11, INO-6, INO-7) The setting that lets the farm's own spawn bags serve several sessions moves to WP-4 (D-037).
 - [x] Liquid culture parent link. (REF-12)
 - [x] Correct a run after creation, within what its bags and labels allow. (RUN-5, D-047)

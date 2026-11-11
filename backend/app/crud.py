@@ -27,6 +27,7 @@ from .crud_reference import (  # noqa: F401
     update_spawn_recipe,
     list_mix_lots,
     create_mix_lot,
+    update_mix_lot,
     list_species,
     create_species,
     update_species,

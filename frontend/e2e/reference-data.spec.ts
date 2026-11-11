@@ -65,6 +65,50 @@ test.describe("reference data", () => {
     await expect(again.getByRole("alert")).toContainText("already exists");
   });
 
+  test("an administrator retires an ingredient and corrects a mix lot", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/ingredients");
+    const list = page.getByRole("region", { name: "Ingredient list" });
+    await list.getByLabel("Name").fill("Soy hulls");
+    await list.getByLabel("Category").fill("Supplement");
+    await list.getByRole("button", { name: "Add ingredient" }).click();
+    await expect(list.getByRole("status")).toHaveText("Added Soy hulls.");
+
+    // It is offered for a delivery, and a delivery can be recorded.
+    const lots = page.getByRole("region", { name: "Ingredient lots" });
+    await lots.getByLabel("Ingredient").selectOption({ label: "Soy hulls" });
+    await lots.getByLabel("Supplier", { exact: true }).fill("Rockbridge Farmers Co-op");
+    await lots.getByRole("button", { name: "Record ingredient lot" }).click();
+    await expect(lots.getByRole("status")).toHaveText("Ingredient lot recorded.");
+    await expect(lots.getByRole("row").filter({ hasText: "Rockbridge Farmers Co-op" })).toContainText("Soy hulls");
+
+    // Renamed, then retired: its delivery stays listed and no new one can be recorded for it.
+    await list.getByRole("button", { name: "Edit Soy hulls" }).click();
+    await list.getByLabel("Name of Soy hulls").fill("Soy hull pellets");
+    await list.getByRole("button", { name: "Save" }).click();
+    await expect(list.getByRole("status")).toHaveText("Saved Soy hull pellets.");
+    await list.getByRole("button", { name: "Deactivate Soy hull pellets" }).click();
+    await expect(list.getByRole("status")).toContainText("Soy hull pellets is deactivated.");
+    await expect(lots.getByRole("row").filter({ hasText: "Rockbridge Farmers Co-op" })).toContainText("Soy hull pellets");
+    await expect(lots.getByRole("option", { name: "Soy hull pellets" })).toHaveCount(0);
+
+    // A mix lot entered with the wrong code is put right.
+    await page.goto("/mix-lots");
+    await page.getByLabel("Lot code").fill("MIX-TYPO");
+    await page.getByRole("button", { name: "Create Mix Lot" }).click();
+    await expect(page.getByRole("status")).toHaveText("Mix lot MIX-TYPO recorded.");
+    await page.getByRole("button", { name: "Correct MIX-TYPO" }).click();
+    const correction = page.getByRole("region", { name: "Correct mix lot MIX-TYPO" });
+    await correction.getByLabel("Lot code").fill("MIX-261111A");
+    await correction.getByLabel("Notes").fill("Code corrected");
+    await correction.getByRole("button", { name: "Save correction" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Mix lot corrected." })).toBeVisible();
+    const row = page.getByRole("row").filter({ hasText: "MIX-261111A" });
+    await expect(row).toContainText("Masters Mix (MM)");
+    await expect(row).toContainText("Code corrected");
+    await expect(page.getByRole("row").filter({ hasText: "MIX-TYPO" })).toHaveCount(0);
+  });
+
   test("an operator sees recipes and cannot change them", async ({ page }) => {
     await signIn(page, OPERATOR);
     await page.goto("/recipes");
@@ -73,6 +117,11 @@ test.describe("reference data", () => {
     await expect(spawn.getByRole("row").filter({ hasText: "SR1" })).toBeVisible();
     await expect(spawn.getByRole("button")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Add / })).toHaveCount(0);
+
+    // An operator records mix lots and cannot correct them.
+    await page.goto("/mix-lots");
+    await expect(page.getByRole("row").filter({ hasText: "LOT-STD-001" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Correct / })).toHaveCount(0);
   });
 
   test("a culture names its parent, and a retired culture leaves the pick list", async ({ page }) => {

@@ -293,3 +293,83 @@ def test_a_culture_s_code_and_species_cannot_be_changed_after_the_fact(farm):
     saved = _patch(farm.client, f"/api/liquid-cultures/{culture_id}", {"culture_code": "LC-OTHER", "source": "Lab"})
     assert saved["culture_code"] == "LC-LM-1"
     assert saved["source"] == "Lab"
+
+
+# ------------------------------------------------------- mix lots, ingredients
+
+def test_an_administrator_corrects_a_mix_lot(farm, operator_client):
+    lot_id = farm.mix_lot["mix_lot_id"]
+    saved = _patch(
+        farm.client,
+        f"/api/mix-lots/{lot_id}",
+        {"lot_code": " MIX-261109A ", "mixed_at": "2026-11-09T12:30:00Z", "notes": "Wetter than usual"},
+    )
+    assert saved["lot_code"] == "MIX-261109A"
+    assert saved["mixed_at"] == "2026-11-09T12:30:00Z"
+    assert saved["notes"] == "Wetter than usual"
+
+    assert operator_client.patch(f"/api/mix-lots/{lot_id}", json={"notes": "x"}).status_code == 403
+    assert farm.client.patch("/api/mix-lots/999", json={"notes": "x"}).status_code == 404
+    assert farm.client.patch(f"/api/mix-lots/{lot_id}", json={"lot_code": "  "}).status_code == 422
+
+    other = farm.post(
+        "/api/mix-lots",
+        {
+            "lot_code": "LOT-2",
+            "substrate_recipe_version_id": farm.substrate_recipe_id,
+            "fill_profile_id": farm.fill_profile["fill_profile_id"],
+        },
+    )
+    taken = farm.client.patch(f"/api/mix-lots/{other['mix_lot_id']}", json={"lot_code": "MIX-261109A"})
+    assert taken.status_code == 409
+
+
+def test_a_mix_lot_s_recipe_and_fill_profile_are_fixed_once_a_run_uses_it(farm):
+    lot_id = farm.mix_lot["mix_lot_id"]
+    recipe = farm.post("/api/substrate-recipe-versions", {"name": "Hardwood", "recipe_code": "HW"})
+    profile = farm.post(
+        "/api/fill-profiles", {"name": "10 lb block", "target_dry_kg_per_bag": 1.9, "target_water_kg_per_bag": 2.6}
+    )
+    change = {
+        "substrate_recipe_version_id": recipe["substrate_recipe_version_id"],
+        "fill_profile_id": profile["fill_profile_id"],
+    }
+
+    # A deactivated profile cannot be chosen, even before any run.
+    _patch(farm.client, f"/api/fill-profiles/{profile['fill_profile_id']}", {"is_active": False})
+    assert farm.client.patch(f"/api/mix-lots/{lot_id}", json=change).status_code == 400
+    _patch(farm.client, f"/api/fill-profiles/{profile['fill_profile_id']}", {"is_active": True})
+
+    saved = _patch(farm.client, f"/api/mix-lots/{lot_id}", change)
+    assert saved["fill_profile_id"] == profile["fill_profile_id"]
+
+    farm.post(
+        "/api/pasteurization-runs",
+        {
+            "run_code": farm.next_code("pasteurization"),
+            "mix_lot_id": lot_id,
+            "substrate_recipe_version_id": recipe["substrate_recipe_version_id"],
+            "unloaded_at": "2026-11-10T15:00:00Z",
+            "bag_count": 2,
+        },
+    )
+    refused = farm.client.patch(
+        f"/api/mix-lots/{lot_id}", json={"fill_profile_id": farm.fill_profile["fill_profile_id"]}
+    )
+    assert refused.status_code == 400
+    assert "used by 1 pasteurization run" in refused.json()["detail"]
+    # Its notes can still be corrected, and sending what it already has is not a change.
+    _patch(farm.client, f"/api/mix-lots/{lot_id}", {"notes": "ok", "fill_profile_id": profile["fill_profile_id"]})
+
+
+def test_an_ingredient_lot_needs_an_active_ingredient(farm):
+    ingredient = farm.post("/api/ingredients", {"name": "Soy hulls"})
+    farm.post("/api/ingredient-lots", {"ingredient_id": ingredient["ingredient_id"], "vendor": "Feed store"})
+    _patch(farm.client, f"/api/ingredients/{ingredient['ingredient_id']}", {"is_active": False})
+
+    refused = farm.client.post("/api/ingredient-lots", json={"ingredient_id": ingredient["ingredient_id"]})
+    assert refused.status_code == 400
+    assert "ingredient is deactivated" in refused.json()["detail"]
+    assert farm.client.post("/api/ingredient-lots", json={"ingredient_id": 999}).status_code == 404
+    # The lot already recorded is still listed.
+    assert len(farm.get("/api/ingredient-lots")) == 1

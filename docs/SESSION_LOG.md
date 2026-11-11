@@ -67,7 +67,7 @@ Screens were checked in a real browser at 1280 and 390 pixels wide for every pul
 
 Superseded by the entry below: the session went on into WP-3.
 
-## 2026-11-11, continued: WP-3 (the model fitted to the farm's sources and reference data)
+## 2026-11-11, continued: WP-3 done (the model fitted to the farm's sources and reference data)
 
 The same session, after the entry above was written.
 
@@ -89,22 +89,23 @@ Still gated by owner actions O2, O3 and O4 (nobody can sign in until they are do
 | 34 | WP-3: purchased spawn lots as an inoculation source | Merged, deployed |
 | 35 | WP-3: demo data generator and the app's clock | Merged, deployed |
 | 36 | WP-3: recipes, fill profiles, deactivation, a culture's parent | Merged, deployed |
-| 37 | WP-3: correct a run after creating it; this entry | See the roadmap's deployment state |
+| 37 | WP-3: correct a run after creating it; this entry | Merged, deployed |
+| 38 | WP-3: Ingredients and Mix Lots screens finished | See the roadmap's deployment state |
 
 ### Requirements closed
 
-REF-1 to REF-6, REF-10 to REF-12, REF-14, INO-6, INO-7 (purchased lots), RUN-5, SPR-1, SPR-2, and the generator of brief section 7. TRC-3 and RPT-2 extended to purchased lots.
+REF-1 to REF-8, REF-10 to REF-12, REF-14, INO-6, INO-7 (purchased lots), RUN-5, SPR-1, SPR-2, and the generator of brief section 7. TRC-3 and RPT-2 extended to purchased lots.
 
 ### Tests
 
 | Suite | When the entry above was written | Now |
 |---|---|---|
-| Backend (pytest) | 135 passed, 3 skipped | 217 passed, 5 skipped (the skipped ones need PostgreSQL and run in CI) |
+| Backend (pytest) | 135 passed, 3 skipped | 220 passed, 5 skipped (the skipped ones need PostgreSQL and run in CI) |
 | PostgreSQL in CI | migrations; eight simultaneous sessions on bags | the same, and eight people recording a lot of one species at once, and eight sessions inoculating from one lot |
-| Browser (Playwright) | 10 | 22, three of them at 390 pixels wide |
+| Browser (Playwright) | 10 | 23, three of them at 390 pixels wide |
 | Generated data | none | the production report equals totals added up from the generator's own books: counts, harvest, dry weight, biological efficiency, contamination by species, by run, and by root culture or lot followed back through the farm's own spawn |
 
-Every screen changed was looked at in a real browser at 1280 and 390 pixels wide. That found two things the tests had not: labels crammed against their fields on the new forms (now above them), and unstyled fields when a table row is edited in place.
+Every screen changed was looked at in a real browser at 1280 and 390 pixels wide. That found three things the tests had not: labels crammed against their fields on the new forms (now above them), unstyled fields when a table row is edited in place, and a heading that read "Add a ingredient".
 
 ### Found by testing, and fixed
 
@@ -121,7 +122,6 @@ Every screen changed was looked at in a real browser at 1280 and 390 pixels wide
 - **The report's overall biological efficiency reads low on a working farm.** It divides total harvest by the dry weight of every substrate bag, including those still incubating: 43% on the demo farm, whose finished bags come to 100%. Added to WP-6.
 - **Nothing records who corrected a run, or what it said before.** RUN-5 is met; the history belongs with COR-1 to COR-3 in WP-4.
 - The recipe, grain and mix lot of a run can be corrected through the API only (and only before the run has bag records); the screen offers the code, times, count, settings and notes.
-- Ingredients can be renamed and deactivated through the API but not yet on their screen, and a mix lot cannot be edited. One unticked line in WP-3.
 - On a phone, the Actions column of the set-up tables (recipes, cultures, lots) is reached by scrolling the table sideways. The daily event screens are WP-5's subject; these are used rarely.
 - The setting that lets one of the farm's own spawn bags serve several sessions is deferred to WP-4 with the other farm settings (D-037).
 - The demo generator is not yet used by the browser tests or for user-guide screenshots, and stops at two flushes because the app does.
@@ -130,7 +130,6 @@ Every screen changed was looked at in a real browser at 1280 and 390 pixels wide
 
 ### Next session starts at
 
-1. Rebase and merge Dependabot #24, #26 and #27 when green.
-2. The unticked line in WP-3 (Ingredients and Mix Lots screens).
-3. WP-4, research first (brief section 8): bulk steps and group harvest. Then the farm settings table (flush limit, weight unit, partial use of the farm's own spawn), date and time on every event, and corrections with history.
+1. Rerun the checks on Dependabot #24, #26 and #27 against the current `main` and merge each when green.
+2. WP-4, research first (brief section 8): bulk steps and group harvest. Then the farm settings table (flush limit, weight unit, partial use of the farm's own spawn), date and time on every event, and corrections with history.
 

@@ -51,11 +51,21 @@ export function RunCorrection(props: {
   values: Values;
   fields: CorrectionField[];
   onSaved: () => Promise<void> | void;
+  /** Wording for a record that is not a run. */
+  title?: string;
+  intro?: string;
+  savedMessage?: string;
+  /** Show the form at once, for a record picked from a list. */
+  startOpen?: boolean;
+  onClose?: () => void;
 }) {
   const user = useCurrentUser();
   const formId = useId();
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Record<string, string>>({});
+  const title = props.title ?? "Correct this run";
+  const initialDraft = () =>
+    Object.fromEntries(props.fields.map((field) => [field.key, asInput(field, props.values[field.key])]));
+  const [open, setOpen] = useState(Boolean(props.startOpen));
+  const [draft, setDraft] = useState<Record<string, string>>(() => (props.startOpen ? initialDraft() : {}));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +73,7 @@ export function RunCorrection(props: {
   if (user.role !== "admin") return null;
 
   function start() {
-    setDraft(Object.fromEntries(props.fields.map((field) => [field.key, asInput(field, props.values[field.key])])));
+    setDraft(initialDraft());
     setError(null);
     setMessage(null);
     setOpen(true);
@@ -88,7 +98,7 @@ export function RunCorrection(props: {
       await apiPatch(props.path, changes);
       await props.onSaved();
       setOpen(false);
-      setMessage("Run corrected.");
+      setMessage(props.savedMessage ?? "Run corrected.");
     } catch (failure: any) {
       setError(failure?.message || String(failure));
     } finally {
@@ -97,13 +107,13 @@ export function RunCorrection(props: {
   }
 
   return (
-    <section className="card" aria-label="Correct this run">
-      <h2>Correct this run</h2>
+    <section className="card" aria-label={title}>
+      <h2>{title}</h2>
       {message && <p className="success" role="status">{message}</p>}
       {!open ? (
         <>
-          <p>If the run was entered with a wrong date, count or setting, an administrator can put it right here.</p>
-          <button className="btn" type="button" onClick={start}>Correct this run</button>
+          <p>{props.intro ?? "If the run was entered with a wrong date, count or setting, an administrator can put it right here."}</p>
+          <button className="btn" type="button" onClick={start}>{title}</button>
         </>
       ) : (
         <form className="form stackedForm" onSubmit={save}>
@@ -129,7 +139,17 @@ export function RunCorrection(props: {
             );
           })}
           <button className="btn btnSolid" type="submit" disabled={busy}>Save correction</button>
-          <button className="btn" type="button" onClick={() => setOpen(false)} disabled={busy}>Cancel</button>
+          <button
+            className="btn"
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setOpen(false);
+              props.onClose?.();
+            }}
+          >
+            Cancel
+          </button>
         </form>
       )}
     </section>
