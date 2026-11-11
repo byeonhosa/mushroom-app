@@ -909,6 +909,27 @@ select:focus-visible {
   overflow-x: auto;
 }
 
+/* A deactivated reference record: still listed, visibly out of use. */
+.rowInactive td {
+  color: #7a8a7e;
+}
+
+.stackedForm h3 {
+  margin: 18px 0 0;
+}
+
+/* A field edited in place in a table row. */
+.cellInput {
+  width: 100%;
+  min-width: 110px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #c9d4cb;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 1rem;
+}
+
 .rowActions {
   display: flex;
   flex-wrap: wrap;

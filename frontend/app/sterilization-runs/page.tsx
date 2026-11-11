@@ -63,10 +63,12 @@ export default function SterilizationRunsPage() {
       apiGet<GrainType[]>("/grain-types"),
     ]);
     setRuns(r);
-    setSpawnRecipes(spr);
-    setGrainTypes(gt);
-    if (spr.length > 0 && !createSpawnRecipeId) setCreateSpawnRecipeId(spr[0].spawn_recipe_id);
-    if (gt.length > 0 && !createGrainTypeId) setCreateGrainTypeId(gt[0].grain_type_id);
+    const usableRecipes = spr.filter((row) => row.is_active);
+    const usableGrains = gt.filter((row) => row.is_active);
+    setSpawnRecipes(usableRecipes);
+    setGrainTypes(usableGrains);
+    if (usableRecipes.length > 0 && !createSpawnRecipeId) setCreateSpawnRecipeId(usableRecipes[0].spawn_recipe_id);
+    if (usableGrains.length > 0 && !createGrainTypeId) setCreateGrainTypeId(usableGrains[0].grain_type_id);
   }
 
   useEffect(() => {

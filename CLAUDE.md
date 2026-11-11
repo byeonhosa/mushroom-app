@@ -75,6 +75,7 @@ Run these in the session before pushing. CI remains the authoritative gate.
 ## Conventions
 - Pydantic v2: `model_config = ConfigDict(from_attributes=True)`, not `class Config`.
 - New database changes are new numbered files in `backend/app/migrations/`. Never edit a merged migration.
+- Reference data is never deleted. It has an `is_active` flag; a deactivated row stays listed, is filtered out of pick lists by the page, and is refused for new work by `_usable()` in `crud_reference.py` (decision D-043). A new reference list gets its screen from `frontend/lib/reference-list.tsx`.
 - Tests accompany every change: pytest through the API, Playwright for screen flows.
 - Descriptive commit messages.
 - Never commit `.env`, `.env.*`, backups, database volumes, keys or tokens.

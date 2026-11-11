@@ -56,14 +56,60 @@ def create_fill_profile(payload: schemas.FillProfileCreate, db: Session = Depend
     )
 
 
+@router.patch("/fill-profiles/{fill_profile_id}", response_model=schemas.FillProfileOut, dependencies=ADMIN_ONLY)
+def update_fill_profile(fill_profile_id: int, payload: schemas.FillProfileUpdate, db: Session = Depends(get_db)):
+    row = crud.update_fill_profile(db, fill_profile_id, payload.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Fill profile not found")
+    return row
+
+
 @router.get("/substrate-recipe-versions", response_model=list[schemas.SubstrateRecipeVersionOut])
 def list_substrate_recipe_versions(db: Session = Depends(get_db)):
     return crud.list_substrate_recipe_versions(db)
 
 
+@router.post(
+    "/substrate-recipe-versions", response_model=schemas.SubstrateRecipeVersionOut, dependencies=ADMIN_ONLY
+)
+def create_substrate_recipe_version(payload: schemas.SubstrateRecipeVersionCreate, db: Session = Depends(get_db)):
+    return crud.create_substrate_recipe_version(db, payload.model_dump(exclude_unset=True))
+
+
+@router.patch(
+    "/substrate-recipe-versions/{substrate_recipe_version_id}",
+    response_model=schemas.SubstrateRecipeVersionOut,
+    dependencies=ADMIN_ONLY,
+)
+def update_substrate_recipe_version(
+    substrate_recipe_version_id: int,
+    payload: schemas.SubstrateRecipeVersionUpdate,
+    db: Session = Depends(get_db),
+):
+    row = crud.update_substrate_recipe_version(
+        db, substrate_recipe_version_id, payload.model_dump(exclude_unset=True)
+    )
+    if not row:
+        raise HTTPException(404, "Substrate recipe not found")
+    return row
+
+
 @router.get("/spawn-recipes", response_model=list[schemas.SpawnRecipeOut])
 def list_spawn_recipes(db: Session = Depends(get_db)):
     return crud.list_spawn_recipes(db)
+
+
+@router.post("/spawn-recipes", response_model=schemas.SpawnRecipeOut, dependencies=ADMIN_ONLY)
+def create_spawn_recipe(payload: schemas.SpawnRecipeCreate, db: Session = Depends(get_db)):
+    return crud.create_spawn_recipe(db, payload.model_dump(exclude_unset=True))
+
+
+@router.patch("/spawn-recipes/{spawn_recipe_id}", response_model=schemas.SpawnRecipeOut, dependencies=ADMIN_ONLY)
+def update_spawn_recipe(spawn_recipe_id: int, payload: schemas.SpawnRecipeUpdate, db: Session = Depends(get_db)):
+    row = crud.update_spawn_recipe(db, spawn_recipe_id, payload.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Spawn recipe not found")
+    return row
 
 
 @router.get("/mix-lots", response_model=list[schemas.MixLotOut])
@@ -139,6 +185,16 @@ def create_liquid_culture(payload: schemas.LiquidCultureCreate, db: Session = De
         raise
 
 
+@router.patch("/liquid-cultures/{liquid_culture_id}", response_model=schemas.LiquidCultureOut)
+def update_liquid_culture(
+    liquid_culture_id: int, payload: schemas.LiquidCultureUpdate, db: Session = Depends(get_db)
+):
+    row = crud.update_liquid_culture(db, liquid_culture_id, payload.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Liquid culture not found")
+    return row
+
+
 # --- Purchased spawn lots (REF-11, INO-7). An input of the day's work: any signed-in user. ---
 
 @router.get("/purchased-spawn-lots", response_model=list[schemas.PurchasedSpawnLotOut])
@@ -195,6 +251,14 @@ def list_ingredients(db: Session = Depends(get_db)):
 @router.post("/ingredients", response_model=schemas.IngredientOut, dependencies=ADMIN_ONLY)
 def create_ingredient(payload: schemas.IngredientCreate, db: Session = Depends(get_db)):
     return crud.create_ingredient(db, payload.model_dump(exclude_unset=True))
+
+
+@router.patch("/ingredients/{ingredient_id}", response_model=schemas.IngredientOut, dependencies=ADMIN_ONLY)
+def update_ingredient(ingredient_id: int, payload: schemas.IngredientUpdate, db: Session = Depends(get_db)):
+    row = crud.update_ingredient(db, ingredient_id, payload.model_dump(exclude_unset=True))
+    if not row:
+        raise HTTPException(404, "Ingredient not found")
+    return row
 
 
 @router.get("/ingredient-lots", response_model=list[schemas.IngredientLotOut])

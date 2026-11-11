@@ -26,10 +26,12 @@ export default function MixLotsPage() {
         apiGet<FillProfile[]>("/fill-profiles"),
       ]);
       setLots(l);
-      setRecipes(r);
-      setProfiles(p);
-      if (r.length > 0 && !recipeId) setRecipeId(r[0].substrate_recipe_version_id);
-      if (p.length > 0 && !profileId) setProfileId(p[0].fill_profile_id);
+      const usableRecipes = r.filter((row) => row.is_active);
+      const usableProfiles = p.filter((row) => row.is_active);
+      setRecipes(usableRecipes);
+      setProfiles(usableProfiles);
+      if (usableRecipes.length > 0 && !recipeId) setRecipeId(usableRecipes[0].substrate_recipe_version_id);
+      if (usableProfiles.length > 0 && !profileId) setProfileId(usableProfiles[0].fill_profile_id);
     })().catch((e) => setError(String(e)));
   }, []);
 

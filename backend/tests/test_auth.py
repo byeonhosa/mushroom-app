@@ -1,5 +1,6 @@
 """Sign-in, sessions, roles and attribution (SRS USR-1 to USR-4), through the API."""
 
+import re
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -35,6 +36,8 @@ def _operations():
             .replace("{lot_id}", "1")
             .replace("{code}", "lions_mane")
         )
+        # Any other identifier in a path is a number.
+        concrete = re.sub(r"\{[a-z_]+_id\}", "1", concrete)
         assert "{" not in concrete, f"add a sample value for {path}"
         for method in methods:
             yield method.upper(), path, concrete

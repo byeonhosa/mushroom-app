@@ -413,6 +413,55 @@
         }
       }
     },
+    "/api/fill-profiles/{fill_profile_id}": {
+      "patch": {
+        "summary": "Update Fill Profile",
+        "operationId": "update_fill_profile_api_fill_profiles__fill_profile_id__patch",
+        "parameters": [
+          {
+            "name": "fill_profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Fill Profile Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FillProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FillProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/substrate-recipe-versions": {
       "get": {
         "summary": "List Substrate Recipe Versions",
@@ -428,6 +477,91 @@
                   },
                   "type": "array",
                   "title": "Response List Substrate Recipe Versions Api Substrate Recipe Versions Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Substrate Recipe Version",
+        "operationId": "create_substrate_recipe_version_api_substrate_recipe_versions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubstrateRecipeVersionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubstrateRecipeVersionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/substrate-recipe-versions/{substrate_recipe_version_id}": {
+      "patch": {
+        "summary": "Update Substrate Recipe Version",
+        "operationId": "update_substrate_recipe_version_api_substrate_recipe_versions__substrate_recipe_version_id__patch",
+        "parameters": [
+          {
+            "name": "substrate_recipe_version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Substrate Recipe Version Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubstrateRecipeVersionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubstrateRecipeVersionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -450,6 +584,91 @@
                   },
                   "type": "array",
                   "title": "Response List Spawn Recipes Api Spawn Recipes Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Spawn Recipe",
+        "operationId": "create_spawn_recipe_api_spawn_recipes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpawnRecipeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpawnRecipeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/spawn-recipes/{spawn_recipe_id}": {
+      "patch": {
+        "summary": "Update Spawn Recipe",
+        "operationId": "update_spawn_recipe_api_spawn_recipes__spawn_recipe_id__patch",
+        "parameters": [
+          {
+            "name": "spawn_recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Spawn Recipe Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpawnRecipeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpawnRecipeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -785,6 +1004,55 @@
         }
       }
     },
+    "/api/liquid-cultures/{liquid_culture_id}": {
+      "patch": {
+        "summary": "Update Liquid Culture",
+        "operationId": "update_liquid_culture_api_liquid_cultures__liquid_culture_id__patch",
+        "parameters": [
+          {
+            "name": "liquid_culture_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Liquid Culture Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiquidCultureUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiquidCultureOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/purchased-spawn-lots": {
       "get": {
         "summary": "List Purchased Spawn Lots",
@@ -1054,6 +1322,55 @@
             }
           },
           "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngredientOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingredients/{ingredient_id}": {
+      "patch": {
+        "summary": "Update Ingredient",
+        "operationId": "update_ingredient_api_ingredients__ingredient_id__patch",
+        "parameters": [
+          {
+            "name": "ingredient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Ingredient Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngredientUpdate"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
@@ -4143,14 +4460,19 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 120,
             "title": "Name"
           },
           "target_dry_kg_per_bag": {
             "type": "number",
+            "maximum": 50.0,
+            "exclusiveMinimum": 0.0,
             "title": "Target Dry Kg Per Bag"
           },
           "target_water_kg_per_bag": {
             "type": "number",
+            "maximum": 50.0,
+            "minimum": 0.0,
             "title": "Target Water Kg Per Bag"
           },
           "notes": {
@@ -4175,6 +4497,10 @@
       },
       "FillProfileOut": {
         "properties": {
+          "fill_profile_id": {
+            "type": "integer",
+            "title": "Fill Profile Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -4198,24 +4524,92 @@
             ],
             "title": "Notes"
           },
-          "fill_profile_id": {
-            "type": "integer",
-            "title": "Fill Profile Id"
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
           }
         },
         "type": "object",
         "required": [
+          "fill_profile_id",
           "name",
           "target_dry_kg_per_bag",
           "target_water_kg_per_bag",
-          "fill_profile_id"
+          "is_active"
         ],
         "title": "FillProfileOut"
+      },
+      "FillProfileUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "target_dry_kg_per_bag": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Dry Kg Per Bag"
+          },
+          "target_water_kg_per_bag": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Water Kg Per Bag"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "FillProfileUpdate"
       },
       "GrainTypeCreate": {
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 80,
             "title": "Name"
           },
           "notes": {
@@ -4256,12 +4650,17 @@
               }
             ],
             "title": "Notes"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
           }
         },
         "type": "object",
         "required": [
           "grain_type_id",
-          "name"
+          "name",
+          "is_active"
         ],
         "title": "GrainTypeOut"
       },
@@ -4270,7 +4669,8 @@
           "name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 80
               },
               {
                 "type": "null"
@@ -4288,6 +4688,17 @@
               }
             ],
             "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
           }
         },
         "type": "object",
@@ -4544,6 +4955,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 120,
             "title": "Name"
           },
           "category": {
@@ -4749,14 +5161,70 @@
               }
             ],
             "title": "Notes"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
           }
         },
         "type": "object",
         "required": [
           "ingredient_id",
-          "name"
+          "name",
+          "is_active"
         ],
         "title": "IngredientOut"
+      },
+      "IngredientUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "IngredientUpdate"
       },
       "InoculationBatchCreate": {
         "properties": {
@@ -5231,6 +5699,7 @@
         "properties": {
           "culture_code": {
             "type": "string",
+            "maxLength": 120,
             "title": "Culture Code"
           },
           "species_id": {
@@ -5282,6 +5751,17 @@
             ],
             "title": "Is Active",
             "default": true
+          },
+          "parent_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Liquid Culture Id"
           }
         },
         "type": "object",
@@ -5347,6 +5827,28 @@
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
+          },
+          "parent_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Liquid Culture Id"
+          },
+          "parent_culture_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Culture Code"
           }
         },
         "type": "object",
@@ -5358,6 +5860,69 @@
           "is_active"
         ],
         "title": "LiquidCultureOut"
+      },
+      "LiquidCultureUpdate": {
+        "properties": {
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "prepared_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "parent_liquid_culture_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Liquid Culture Id"
+          }
+        },
+        "type": "object",
+        "title": "LiquidCultureUpdate",
+        "description": "The code and the species are fixed once the culture exists: bag codes and lineage rest on them."
       },
       "LoginIn": {
         "properties": {
@@ -6794,8 +7359,37 @@
         "title": "SpawnInoculationBatchCreate",
         "description": "Inoculate unlabeled spawn bags of a run from one source (INO-1, INO-2, INO-6)."
       },
+      "SpawnRecipeCreate": {
+        "properties": {
+          "recipe_code": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Recipe Code"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe_code"
+        ],
+        "title": "SpawnRecipeCreate"
+      },
       "SpawnRecipeOut": {
         "properties": {
+          "spawn_recipe_id": {
+            "type": "integer",
+            "title": "Spawn Recipe Id"
+          },
           "recipe_code": {
             "type": "string",
             "title": "Recipe Code"
@@ -6811,9 +7405,9 @@
             ],
             "title": "Notes"
           },
-          "spawn_recipe_id": {
-            "type": "integer",
-            "title": "Spawn Recipe Id"
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
           },
           "created_at": {
             "type": "string",
@@ -6823,11 +7417,52 @@
         },
         "type": "object",
         "required": [
-          "recipe_code",
           "spawn_recipe_id",
+          "recipe_code",
+          "is_active",
           "created_at"
         ],
         "title": "SpawnRecipeOut"
+      },
+      "SpawnRecipeUpdate": {
+        "properties": {
+          "recipe_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipe Code"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "SpawnRecipeUpdate"
       },
       "SpeciesProfileOut": {
         "properties": {
@@ -7887,8 +8522,43 @@
         ],
         "title": "SubstrateBagMetricsOut"
       },
+      "SubstrateRecipeVersionCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Name"
+          },
+          "recipe_code": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Recipe Code"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "recipe_code"
+        ],
+        "title": "SubstrateRecipeVersionCreate"
+      },
       "SubstrateRecipeVersionOut": {
         "properties": {
+          "substrate_recipe_version_id": {
+            "type": "integer",
+            "title": "Substrate Recipe Version Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -7908,9 +8578,9 @@
             ],
             "title": "Notes"
           },
-          "substrate_recipe_version_id": {
-            "type": "integer",
-            "title": "Substrate Recipe Version Id"
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
           },
           "created_at": {
             "type": "string",
@@ -7920,12 +8590,65 @@
         },
         "type": "object",
         "required": [
+          "substrate_recipe_version_id",
           "name",
           "recipe_code",
-          "substrate_recipe_version_id",
+          "is_active",
           "created_at"
         ],
         "title": "SubstrateRecipeVersionOut"
+      },
+      "SubstrateRecipeVersionUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "recipe_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipe Code"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "SubstrateRecipeVersionUpdate"
       },
       "UserCreate": {
         "properties": {

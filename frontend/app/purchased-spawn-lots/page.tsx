@@ -40,7 +40,7 @@ export default function PurchasedSpawnLotsPage() {
     ]);
     setLots(lotRows);
     setSpecies(speciesRows);
-    setGrainTypes(grainRows);
+    setGrainTypes(grainRows.filter((row) => row.is_active));
   }
 
   useEffect(() => {
