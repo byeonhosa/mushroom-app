@@ -137,18 +137,18 @@ Before designing the bulk-step, group-harvest, phone-scanning, forecast and disp
 - The app runs on one DigitalOcean droplet (see `CLAUDE.md`). Its SSH key was lost in November 2026. Until the owner installs a new one, **the only way to change the droplet is the deploy workflow**, which runs on a self-hosted runner on the droplet as the `actions-runner` user, in `/opt/mushroom-app`, with Docker access.
 - Anything the server needs must therefore be expressed in the repository: Compose services, Dockerfiles, and workflow steps. Design for that. A daily backup, for example, is a small Compose service with a host-mounted directory, not a host cron job.
 - `/opt/mushroom-app/.env` on the droplet holds the database password and other settings and exists nowhere else. Workflow steps may add or change non-secret keys in it idempotently. Never print its contents in a log. New secrets come from GitHub Actions secrets, injected by the workflow.
-- **Is there real data?** As of June 2026 the database held seed rows only and the app could not be reached, so it is almost certainly still empty. Confirm in the deploy workflow by logging row counts for `bags` and `harvest_events` (counts only). Treat the database as empty until those counts are above zero from something other than your own demo seed. Once the owner starts using it, production data is untouchable.
+- **Is there real data?** Every deploy logs row counts for `bags` and `harvest_events` (counts only), and the roadmap's deployment table records the last reading. Check the latest deploy log before any destructive change. Treat the database as empty until those counts are above zero from something other than your own demo seed. Once the owner starts using it, production data is untouchable.
 - If a DigitalOcean API token has been stored as a network secret on the cloud environment, `curl https://api.digitalocean.com/v2/...` works without your seeing the token. Use it to read droplet status, backups and firewall rules, and to open ports 80 and 443 once sign-in is live. If the call returns 401 or 403, the token is not there; carry on without it and list the action for the owner.
 
 ## 10. The website
 
-The farm's public website is a separate project (`byeonhosa/maury-river-mushroom-farm-web`) on a separate droplet. It will eventually read from this app. Read `docs/integration/public-website-integration-review.md` and `docs/integration/claude-code-production-app-fix-list.md` before WP-2, and if the website repository is attached, read its `packages/shared/src/availability.ts`.
+The farm's public website is a separate project (`byeonhosa/maury-river-mushroom-farm-web`) on a separate droplet. It will eventually read from this app. Before work that touches species, sign-in or the integration routes, read `docs/research/website-contract-2026-11-11.md` and the two documents in `docs/integration/`, and if the website repository is attached, read its `packages/shared/src/availability.ts`.
 
 Build with these constraints from the start, even though the integration itself is WP-9:
 
 - Reserve the route namespace `/api/integration/v1/` for the website. Operator routes never move into it and it never serves operator screens.
-- The website will authenticate with a service token, separate from user sessions. Design the auth layer in WP-2 so that a second credential type can be added without rework.
-- Species need a stable public identifier. Keep the short code (`LM`) for labels and add a stable slug (`lions-mane`) that never changes once assigned.
+- The website will authenticate with a service token, separate from user sessions. Keep the auth layer able to take that second credential type without rework.
+- Species need a stable public identifier. Keep the short code (`LM`) for labels and a stable slug, equal to the website's (`lion-s-mane`), that never changes once assigned.
 - Keep the species fields `availability_tier`, `in_rotation_now`, `sale_path` and `restrictions`, and keep their values compatible with the website's availability vocabulary (`wholesale-only`, `coming-soon`, `seasonal`, `hidden`, and whatever else that file defines).
 - The integration is read-only for the website. The website never writes production records.
 - Harvest and forecast data should be queryable by species and week, since "what is available and what is coming" is what the website will ask.
