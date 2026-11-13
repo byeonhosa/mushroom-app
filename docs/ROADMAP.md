@@ -2,11 +2,11 @@
 
 The order of work for the Mushroom Farm App and its current state. Maintained by the lead developer (see `docs/LEAD_DEVELOPER_BRIEF.md`). Requirement IDs refer to `docs/SRS.md`.
 
-Last updated: November 11, 2026, end of the first lead-developer session (WP-1 done, WP-2 built, WP-3 done).
+Last updated: November 13, 2026. The owner adopted the recommendations drawn from the wholesale sales plan and the website review (SRS Revision 2; brief section 4, decisions 16 to 22); their work is added to WP-4, WP-5, WP-6, WP-8 and WP-9 below. Development state unchanged since November 11 (WP-1 done, WP-2 built, WP-3 done).
 
 ## Owner actions needed
 
-The app is built, deployed and running on the droplet, and nobody can reach it or sign in yet. **O2, O3 and O4, in that order, are what stand between you and signing in from your phone.** None of them blocks further development.
+The app is built, deployed and running on the droplet, and nobody can reach it or sign in yet. **O2, O3 and O4, in that order, are what stand between you and signing in from your phone.** None of them blocks further development, but do them before December if you can: from then on the winter's batches go into the app instead of the workbook's batch log, and no import of that log is planned (brief, decision 22).
 
 | # | Action | Unblocks | How |
 |---|---|---|---|
@@ -17,7 +17,8 @@ The app is built, deployed and running on the droplet, and nobody can reach it o
 | O5 | Regain the droplet | SEC-6, SEC-7, the pending reboot, off-server backups | DigitalOcean console > the droplet > **Access > Launch Droplet Console**. Add a new SSH public key to `/root/.ssh/authorized_keys` and remove the old one. In the **Backups** tab enable weekly droplet backups (this is the only copy of the database off the server). Take a snapshot, then reboot the droplet once: it has not restarted in seven months, and the stack now comes back by itself. |
 | O6 | Optional: give Claude Code read access to DigitalOcean | Lets the lead developer do O4 and check droplet health itself | Create a DigitalOcean API token (API > Tokens), then in claude.ai/code open the environment's settings > **Network secrets** > **Add secret**: allowed website `api.digitalocean.com`, header `Authorization`, prefix `Bearer`, value the token. |
 | O7 | Label printer and stock, when chosen | LBL-3 | Tell the lead developer the model and label size. |
-| O8 | Check what the website may say about each variety | Correct data for the website integration (WP-9) | After first sign-in, open **Species**. Each of the eighteen varieties shows a website tier, a sale state and whether it is growing now. They were set from the website's current list on November 11, 2026. Use **Edit** on any row that does not say what the farm means. Nothing reads these fields until WP-9, so this can wait. |
+| O8 | Mark which varieties are in rotation now | The next-week view (RPT-11) and the website feed (WP-9) | After first sign-in, open **Species** and use **Edit** so that **in rotation now** is ticked for the varieties grown every week (blue oyster, white oyster, shiitake, chestnut, king trumpet, lion's mane) and, from January, golden and pink oyster. The tier, sale state and restriction shown there now belong to the website (SRS SPR-5) and need no attention in the app. Golden oyster's retail status is decided in the website review. |
+| O9 | Start using harvest lot codes now | Traceability for restaurant sales before the app is in use (TRC-5) | From the first restaurant delivery, write the lot code on every container and invoice: the variety code and the harvest date, `BO-261116` for blue oyster harvested November 16, 2026. Codes: BO blue oyster, WO white oyster, PO pink oyster, GO golden oyster, KT king trumpet, LM lion's mane, STK shiitake, CNT chestnut. In the workbook's batch log, record for each culture line the commercial supplier it came from and the date bought. The app takes both over in WP-4 and WP-5 with the same format. |
 
 ## Deployment state
 
@@ -101,6 +102,12 @@ Research first (brief section 8): bulk steps and group harvest.
 - [ ] Further disposal reasons and optional contamination type. (DSP-3)
 - [ ] Bag notes. (BAG-9)
 - [ ] Admin corrections: amend or void an event, void a bag record, with the original kept and status and reports recalculated. (COR-1 to COR-3)
+- [ ] Commercial supplier and date bought on the first culture of each line; a printable list of commercial origins by species for the restaurant source letter. (REF-15)
+- [ ] Cold storage: move a ready bag into and out of cold storage; time held shown on the bag page and list. (LIF-10)
+- [ ] Dashboard alerts for bags held cold past a setting (3 weeks) and ready spawn past a setting (90 days, or the species' own limit); species flag for spawn that cannot be stored cold. Both limits go in the farm settings table. (DSH-5, SPR-4)
+- [ ] Disposal as "sent out as grow kit", kept out of contamination, pounds per bag and biological efficiency. (DSP-3, DSP-5)
+- [ ] Harvest grade: first quality, seconds, unsaleable. (HAR-8)
+- [ ] Species sale fields (`availability_tier`, `sale_path`, `restrictions`) shown read-only and no longer editable; `in_rotation_now` stays editable. Values kept. (SPR-5)
 
 ### WP-5. Usable on a phone
 
@@ -112,12 +119,15 @@ Research first: scanning and label practice.
 - [ ] Plain-language errors; no double submission. (SRS 6.1, USE-3)
 - [ ] Label reprint from the bag page; the 2 x 1 inch layout with species and date; label size setting. (LBL-2 to LBL-4)
 - [ ] Bag list filters for species and run. (BAG-7)
+- [ ] Harvest lots: `{species code}-{YYMMDD}`, a lot page tracing back to bags, runs, cultures and purchased lots, and a container label. Same format the farm uses by hand from O9. (TRC-5, LBL-6)
 
 ### WP-6. Reports that answer weekly questions
 
 - [ ] Harvest and biological efficiency by species, by recipe and by fill profile. (RPT-4)
 - [ ] Date range on every report; weekly harvest by species. (RPT-5)
 - [ ] Days in each stage by species. (RPT-7)
+- [ ] Pounds per bag by species, recipe and fill profile, beside biological efficiency. (RPT-4)
+- [ ] Next-week view: bags fruiting or ready and expected pounds by variety, the figure the owner types into the website each week. (RPT-11)
 - [ ] Biological efficiency sanity rule in the data-quality list. (RPT-10)
 - [ ] CSV download on every report table. (RPT-9)
 - [ ] Trace page for a liquid culture or purchased lot. (TRC-4)
@@ -137,14 +147,17 @@ Research first: scanning and label practice.
 
 Research first: yield forecasting in comparable tools.
 
-- [ ] Bag location and moves. (BAG-10)
+- [ ] Bag location and moves; the cold-storage step becomes a location. (BAG-10)
 - [ ] Forecast of harvest by species and week. (RPT-8)
-- [ ] Product disposition by channel and weekly commitments. (INV-1 to INV-3)
+- [ ] Inoculation planner: from harvest week and target pounds to bags needed, inoculate-by and spawn-start-by dates; cold-held bags as a source; default target from standing commitments. Retires the workbook's Weekly plan sheet. (PLN-1 to PLN-3)
+- [ ] Product disposition by channel (online retail, restaurants, markets, grow kits, dried and salt, donation, waste) and weekly commitments with the two-thirds warning. Build once three standing restaurant orders have held for a month. (INV-1 to INV-3)
 
 ### WP-9. Website integration
 
 - [ ] Service tokens and the `/api/integration/v1/` namespace, read-only, following `docs/integration/` and the website repository's contract: species and availability, harvest and forecast by species and week.
 - [ ] Contract tests shared with the website repository.
+- [ ] The feed serves cultivation data, `in_rotation_now`, and harvest and forecast by variety and week; it does not serve the sale fields the website owns (SPR-5). Still read-only.
+- [ ] Later, after one season of INV-2 by hand: one write route for weekly order totals by variety from the website (its INT-3), totals only, no customer data. (SRS 6.4)
 
 ## Parked
 

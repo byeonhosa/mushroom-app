@@ -73,12 +73,19 @@ These settle the open decisions in SRS section 9. The owner may overrule any of 
 | 7 | Access | Public HTTPS on a hostname, behind app sign-in, through a Caddy reverse proxy serving the frontend and `/api` from one origin. No Tailscale. Nothing is exposed until sign-in is live. (SEC-1, SEC-2) |
 | 8 | Backups | Daily `pg_dump`, 14 daily copies kept on the droplet outside the containers. Off-server copies are an owner action (DigitalOcean droplet backups). (REL-2, REL-3) |
 | 9 | Volume | Under 100 new substrate bags a week, about 5,000 bag records a year, up to 10 users. Test performance at 10,000 bag records. (PRF-1) |
-| 10 | Product disposition and forecast | In scope, after the core is usable (WP-8). |
+| 10 | Product disposition and forecast | In scope, after the core is usable (WP-8). Build product disposition once three standing restaurant orders have held for a month (November 13, 2026). |
 | 11 | Units | Farm setting, default pounds and ounces for harvest entry and pounds on reports. Stored in kilograms. (HAR-5) |
 | 12 | Flush limit | Admin setting, default 4. (HAR-3) |
 | 13 | Offline use | Not required. |
 | 14 | Cost tracking | Out. FarmRaise holds the books. |
 | 15 | Record retention | Keep everything. No purge function. |
+| 16 | Harvest lots (Nov. 13, 2026) | Each day's harvest of a variety is a lot coded `{species code}-{YYMMDD}`, for example `BO-261116`, traceable to its bags and their culture lines and printed on a container label. The farm uses the same code by hand until WP-5. (TRC-5, LBL-6) |
+| 17 | Culture origin (Nov. 13, 2026) | The first culture of each line records its commercial supplier and the date bought, so the farm can show restaurants and inspectors where its mycelium came from. (REF-15) |
+| 18 | Cold storage and grow kits (Nov. 13, 2026) | Ready blocks can be held cold; blocks held past a setting are flagged for grow kits, and "sent out as grow kit" is a disposal reason outside contamination and yield. Stored spawn has an age alert. Harvests can be graded. (LIF-10, DSH-5, DSP-5, SPR-4, HAR-8) |
+| 19 | Planning reports (Nov. 13, 2026) | Pounds per bag beside biological efficiency, and a next-week view of expected pounds by variety in WP-6. An inoculation planner in WP-8 that replaces the workbook's Weekly plan sheet. (RPT-4, RPT-11, PLN-1 to PLN-3) |
+| 20 | What stays out (Nov. 13, 2026) | Customers, prices, orders, invoices, delivery routes, yearly sales totals and the money side of contribution per shelf-week. They belong to the website's store, the books or the workbook. (SRS 2.6) |
+| 21 | Species data ownership (Nov. 13, 2026) | The app owns cultivation data and `in_rotation_now`. The website owns sale tier, sale state and sale restrictions; in the app those fields are kept, read-only, and not served by the feed. The feed stays read-only; a write route for weekly order totals by variety comes only after one season of recording product disposition by hand. (SPR-5, SRS 6.4) |
+| 22 | Winter records (Nov. 13, 2026) | The owner aims to finish O2 to O4 before December so the winter's batches are recorded in the app. No import of the workbook's batch log is planned. |
 
 ## 5. How to work
 
@@ -149,8 +156,8 @@ Build with these constraints from the start, even though the integration itself 
 - Reserve the route namespace `/api/integration/v1/` for the website. Operator routes never move into it and it never serves operator screens.
 - The website will authenticate with a service token, separate from user sessions. Keep the auth layer able to take that second credential type without rework.
 - Species need a stable public identifier. Keep the short code (`LM`) for labels and a stable slug, equal to the website's (`lion-s-mane`), that never changes once assigned.
-- Keep the species fields `availability_tier`, `in_rotation_now`, `sale_path` and `restrictions`, and keep their values compatible with the website's availability vocabulary (`wholesale-only`, `coming-soon`, `seasonal`, `hidden`, and whatever else that file defines).
-- The integration is read-only for the website. The website never writes production records.
+- Keep the species fields `availability_tier`, `in_rotation_now`, `sale_path` and `restrictions`, and keep their values compatible with the website's availability vocabulary (`wholesale-only`, `coming-soon`, `seasonal`, `hidden`, and whatever else that file defines). Since November 13, 2026 the website owns `availability_tier`, `sale_path` and `restrictions`: the app keeps their values read-only and does not serve them. The app owns `in_rotation_now` (decision 21, SRS SPR-5).
+- The integration is read-only for the website. The website never writes production records. The one exception under consideration is a later route for weekly order totals by variety (decision 21).
 - Harvest and forecast data should be queryable by species and week, since "what is available and what is coming" is what the website will ask.
 
 ## 11. When to stop and what to say
