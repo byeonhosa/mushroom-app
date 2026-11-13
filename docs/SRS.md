@@ -6,6 +6,8 @@ Draft 1 for owner review, November 9, 2026
 
 Revision 1, same date. Statuses updated from Claude Code's check of GitHub and the vault. BAG-11, RPT-10, SEC-6, SEC-7 and MNT-7 added.
 
+Revision 2, November 13, 2026. The owner adopted eleven recommendations drawn from the wholesale sales plan of November 10 and the website review of November 13: harvest lot codes, culture supplier records, cold storage and grow kits, pounds per bag, a next-week view, an inoculation planner, product disposition, and the division of species data between this app and the website. New requirements: REF-15, LIF-10, DSP-5, LBL-6, TRC-5, RPT-11, DSH-5, SPR-4, SPR-5, PLN-1 to PLN-3. Changed: BAG-10, HAR-8, DSP-3, RPT-4, INV-2, INV-3, sections 2.6, 4.15, 6.4, 8 and 9.
+
 Prepared for John Dryden, The Maury River Mushroom Farm
 
 Baseline: github.com/byeonhosa/mushroom-app, branch main at commit 09a1278
@@ -113,9 +115,9 @@ The March requirements assumed a trusted team and no sign-in. This draft changes
 
 | **Item**                                                                   | **Why it is out**                                                                 | **Where it stands**                                                       |
 |----------------------------------------------------------------------------|-----------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| Cost per bag, overhead allocation, COGS, profitability                     | FarmRaise is the farm's system of record for money.                               | In the February concept. Dropped in March. Recommended to stay out (C18). |
-| Customer accounts, orders, invoices, payments                              | Belongs to the website and the books.                                             | Never in scope.                                                           |
-| Public website sync: availability feed, product mapping, order reservation | No value until the farm's own records are in the app.                             | Designed in the April integration review. Deferred (C19).                 |
+| Cost per bag, overhead allocation, COGS, profitability, contribution per shelf-week | FarmRaise is the farm's system of record for money. The app supplies the pounds per bag and weeks in fruiting behind the wholesale plan's contribution figure (RPT-4, RPT-7); the money side stays in the production workbook. | In the February concept. Dropped in March. Recommended to stay out (C18). Reaffirmed November 13, 2026. |
+| Customer accounts, prices, orders, standing-order customers, invoices, payments, delivery routes, yearly sales totals | Belongs to the website's store (Medusa), the books, or the production workbook. The app keeps no customer names and no prices (INV-2). | Never in scope. Reaffirmed November 13, 2026, when the wholesale plan proposed invoices and delivery routes in the app. |
+| Public website sync beyond a read-only feed: product mapping, order reservation, orders written into the app | The read-only feed is WP-9 (section 6.4). | A write route for weekly order totals by variety is deferred until INV-2 has been used by hand for one season (section 6.4). |
 | Sensor data, environment logs, control of humidifiers or fans              | Excluded in March so that it would not shape the core model.                      | Deferred (C19).                                                           |
 | Multiple farms, other crops, subscription billing                          | A commercial product question, to be taken up after the farm's own use is proven. | Deferred (C19).                                                           |
 | Image recognition of contamination                                         | A research topic with no present farm need.                                       | Deferred.                                                                 |
@@ -172,6 +174,7 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | REF-12 | A liquid culture may name the culture it was made from, so that a contaminated culture can be traced to its parent.                                                                                 | C       | Built (WP-3). The parent must be of the same species and cannot be the culture itself or one of its descendants | New                 |
 | REF-13 | When a species is added the system shall suggest a unique code.                                                                                                                                     | C       | Not built. A species code must be two or three letters or digits (WP-1) and its slug is made from its name (WP-3)                                                                                                               | docs/BACKLOG.md 001 |
 | REF-14 | A reference record that is in use shall not be deleted. It is deactivated and remains visible on the records that used it.                                                                          | M       | Built for species, recipes, fill profiles, grain types, ingredients, liquid cultures and purchased lots (WP-3). No route deletes any of them. A deactivated record is refused for new runs and mix lots | NFR-002             |
+| REF-15 | A liquid culture with no parent (the first in its line) shall record the commercial supplier it came from and the date it was bought. For each species the system shall print a list of the commercial origins of every culture line and purchased lot in use, to back the source letter the farm gives each restaurant. | S | Proposed (WP-4). The source field is free text today and nothing requires it. | New (Wholesale plan, Nov. 10, 2026, section 7) |
 
 ## 4.2 Runs
 
@@ -199,7 +202,7 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | BAG-7  | The bag list can be filtered by type, status, species and run, and searched by any part of the code.                                                                         | M       | Built. The screen offers search, type and status. Species and run filters exist in the API only. | FR-038        |
 | BAG-8  | A bag page shall show the bag's source, run, species, full event timeline, harvests, total harvest, biological efficiency and, for a spawn bag, every bag descended from it. | M       | Built                                                                                            | FR-033, 036   |
 | BAG-9  | A note can be added to a bag at any time.                                                                                                                                    | S       | Not built. The field exists and cannot be set.                                                   | FR-013        |
-| BAG-10 | A bag shall have a location (site and room or tent). Moving a bag is recorded as an event. A whole run can be moved at once.                                                 | S       | Proposed. A zones table is seeded and unused.                                                    | New (C16)     |
+| BAG-10 | A bag shall have a location (site and room or tent). Moving a bag is recorded as an event. A whole run can be moved at once. | S | Proposed (WP-8). A zones table is seeded and unused. The cold-storage step (LIF-10) comes first, in WP-4, and becomes a location when this is built. | New (C16) |
 | BAG-11 | Two users creating bags at the same moment shall never receive the same ID or cause an error.                                                                                | S       | Met (WP-1). Internal IDs come from a locked counter; an inoculation session locks its run. Tested with eight simultaneous sessions on PostgreSQL.                                | June plan     |
 
 ## 4.4 Inoculation
@@ -229,6 +232,7 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | LIF-7  | A step can be recorded for every eligible bag in a run in one action, or for a list of scanned bags in one action.                                             | S       | Not built. One bag per action.                                                                   | New (C9)    |
 | LIF-8  | Incubation shall start automatically when a bag is inoculated. <span class="mark">\[Decision: or keep incubation as a separate step.\]</span>                  | S       | Proposed. The March design allowed either.                                                       | New (C9)    |
 | LIF-9  | A disposed or consumed bag shall accept no further events.                                                                                                     | M       | Built                                                                                            | Code        |
+| LIF-10 | A ready bag can be recorded as moved into cold storage and moved back out. The bag page and the bag list show how long a bag has been held cold. | S | Proposed (WP-4) | New (Wholesale plan, Nov. 10, 2026, section 3: the block bank and spawn bank) |
 
 ## 4.6 Harvest
 
@@ -241,7 +245,7 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | HAR-5  | Weight can be entered in grams, kilograms, or pounds and ounces according to a farm setting. It is stored in kilograms and reports show the farm's unit.                                                                                                         | S       | Proposed. Kilograms only.                                                       | New (C11)   |
 | HAR-6  | One weight can be recorded for a group of bags of the same run and species. The system divides it among the bags in proportion to dry weight and marks each record as allocated. <span class="mark">\[Decision: is group weighing how you want to work?\]</span> | S       | Proposed                                                                        | New (C10)   |
 | HAR-7  | The system shall show total harvest for each substrate bag.                                                                                                                                                                                                      | M       | Built                                                                           | FR-033      |
-| HAR-8  | A harvest can be given a grade (first quality, seconds, unsaleable).                                                                                                                                                                                             | C       | Proposed                                                                        | New         |
+| HAR-8 | A harvest can be given a grade (first quality, seconds, unsaleable). | S | Proposed (WP-4). Raised from C on November 13, 2026: seconds go to drying and the salt, so the grade decides where a harvest can go. | New; Wholesale plan, Nov. 10, 2026 |
 
 ## 4.7 Disposal
 
@@ -249,8 +253,9 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 |--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|------------------------------------------------------------------------------------------|--------------------|
 | DSP-1  | The system shall record disposal of a bag with a time and a reason. The reasons today are contamination and final harvest.                                                       | M       | Built. The March text called the second reason "spent"; the code calls it final harvest. | FR-031, 032        |
 | DSP-2  | Final harvest applies only to a substrate bag with at least one harvest.                                                                                                         | M       | Built                                                                                    | Code               |
-| DSP-3  | Further reasons shall be available: failed to fruit, damaged, and other with a note. A contamination disposal can name the type observed (green mold, bacterial, cobweb, other). | S       | Proposed                                                                                 | New                |
+| DSP-3 | Further reasons shall be available: failed to fruit, damaged, sent out as a grow kit (DSP-5), and other with a note. A contamination disposal can name the type observed (green mold, bacterial, cobweb, other). | S | Proposed (WP-4) | New; Wholesale plan, Nov. 10, 2026 |
 | DSP-4  | A bag can be flagged as suspect and set aside before it is disposed of.                                                                                                          | C       | Not built. Listed in the March design.                                                   | docs/DESIGN.md 5.2 |
+| DSP-5 | A ready substrate bag, including one held cold, can be disposed of as sent out as a grow kit. It counts neither as contamination nor as a failed bag, is left out of pounds per bag and biological efficiency, and reports count grow kits by species. | S | Proposed (WP-4) | New (Wholesale plan, Nov. 10, 2026, section 3) |
 
 ## 4.8 Labels and scanning
 
@@ -261,6 +266,7 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | LBL-3  | The label layout shall match the farm's printer and stock and stay readable after two weeks in a fruiting tent. <span class="mark">\[Decision: printer and stock.\]</span> | M       | Not verified on real stock.                                          | New               |
 | LBL-4  | The label shall also show the species name and inoculation date in plain text.                                                                                             | S       | Proposed                                                             | New               |
 | LBL-5  | Every screen that takes a bag code shall accept a scan from the phone's camera as well as typed entry or a handheld scanner.                                               | S       | Partial. Typed entry and handheld scanners work. No camera scanning. | FR-038; New (C12) |
+| LBL-6 | The system shall print a container label for a harvest lot (TRC-5) showing the lot code, the variety and the harvest date. | S | Proposed (WP-5) | New (Wholesale plan, Nov. 10, 2026, section 6) |
 
 ## 4.9 Traceability
 
@@ -270,6 +276,7 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | TRC-2  | For any spawn bag the system shall show all descendants through every generation, with their outcomes.                                                                                       | M       | Built                                                                                          | FR-021, 036     |
 | TRC-3  | For any bag the system shall work out the liquid culture or purchased spawn lot at the root of its line and its spawn generation. Spawn made from a purchased lot is generation 1; substrate inoculated straight from a purchased lot is generation 0. | M       | Built | FR-036          |
 | TRC-4  | For any liquid culture or purchased spawn lot the system shall show every bag descended from it and the contamination rate and yield of those bags.                                          | S       | Partial. Reports group contamination by liquid culture. There is no page for a single culture. | New             |
+| TRC-5 | Each day's harvest of a variety shall form a harvest lot with the code `{species code}-{harvest date as YYMMDD}`, for example `BO-261116`. For any lot code the system shall show its harvests and bags, their runs, and the liquid cultures or purchased lots at the root of their lines. | S | Proposed (WP-5). The farm writes the same code by hand on containers and invoices until then (roadmap, O9). | New (Wholesale plan, Nov. 10, 2026, sections 6 and 7) |
 
 ## 4.10 Reports
 
@@ -278,13 +285,14 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | RPT-1  | Biological efficiency for a substrate bag is total fresh harvest divided by dry substrate weight. The actual dry weight is used when recorded, otherwise the target, and the report says which.      | M       | Built                                                                                              | FR-034                      |
 | RPT-2  | Contamination count and rate shall be reported by bag type, species, liquid culture, purchased spawn lot, source type, spawn generation, sterilization run, pasteurization run and parent spawn bag. | M       | Built | FR-035                      |
 | RPT-3  | For each pasteurization run the system shall report bags, contaminated bags, total harvest, dry weight and biological efficiency.                                                                    | M       | Built. The ready count defect was fixed in WP-1: only bags marked ready are counted | FR-037                      |
-| RPT-4  | Total harvest and biological efficiency shall be reported by species, by substrate recipe and by fill profile.                                                                                       | M       | Not built. Harvest by species was in the March metric list.                                        | March section 10; New (C15) |
+| RPT-4 | Total harvest and biological efficiency shall be reported by species, by substrate recipe and by fill profile, together with pounds per bag: total harvest divided by the bags that reached fruiting, leaving out contaminated bags and grow kits, in the farm's weight unit. | M | Not built. Harvest by species was in the March metric list. Pounds per bag added November 13, 2026. | March section 10; New (C15); Wholesale plan, Nov. 10, 2026 |
 | RPT-5  | Every report can be limited to a date range. A weekly view shall show harvest by species for each week.                                                                                              | M       | Not built. Reports cover all time.                                                                 | New (C15)                   |
 | RPT-6  | The system shall list records that look wrong: inoculated bags with no source or species, ready without incubation, fruiting without ready, final harvest with no harvest.                           | S       | Built. Seven checks.                                                                               | Code                        |
 | RPT-7  | The system shall report average days from inoculation to ready, ready to fruiting, and fruiting to first harvest, by species.                                                                        | S       | Not built                                                                                          | New                         |
 | RPT-8  | The system shall forecast harvest weight by species and week from the bags now incubating and fruiting, using the farm's own averages where enough history exists and the species profile otherwise. | S       | Proposed. Second phase.                                                                            | New (C17)                   |
 | RPT-9  | Any report table can be downloaded as a CSV file.                                                                                                                                                    | S       | Not built                                                                                          | New (C15)                   |
 | RPT-10 | A bag whose biological efficiency exceeds a limit set by the admin, 200 percent by default, shall be listed as a data-quality issue.                                                                 | S       | Not built. The June 10 review saw 285 percent displayed with no warning.                           | June plan                   |
+| RPT-11 | A next-week view shall show, for each variety, the bags now fruiting or ready and the pounds expected in the coming week: the bag count times the farm's own average pounds per bag where there is enough history, and the species profile otherwise. It is the figure the owner enters on the website's weekly availability screen. | S | Proposed (WP-6). A simple first step toward RPT-8, which stays in WP-8. | New (Website review, Nov. 13, 2026: website AVL-4 and INT-2) |
 
 ## 4.11 Dashboard
 
@@ -294,6 +302,7 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | DSH-2  | It shall list recent sterilization and pasteurization runs with the next action due on each.                                                                                                                                                                                         | M       | Built                | Code       |
 | DSH-3  | It shall show the most recent bag events and any contamination or data-quality alerts.                                                                                                                                                                                               | S       | Built                | Code       |
 | DSH-4  | It shall flag bags that have stayed in a stage longer than the species profile expects.                                                                                                                                                                                              | S       | Proposed             | New        |
+| DSH-5 | The dashboard shall flag bags held cold longer than a farm setting (three weeks by default) as candidates for grow kits, and ready spawn bags older than a farm setting (90 days by default, or the species' own shorter limit from SPR-4). | S | Proposed (WP-4) | New (Wholesale plan, Nov. 10, 2026, section 3) |
 
 ## 4.12 Species reference
 
@@ -302,6 +311,8 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | SPR-1  | The system shall show a reference page of cultivation parameters by species that can be searched, filtered and sorted.                                                                                                   | S       | Built for all 18 varieties (WP-3).                                        | Code (PR \#20)       |
 | SPR-2  | The reference shall cover the farm's full list of 18 varieties, with availability tier, whether in rotation, sale path and restrictions. Values taken from research and not from the farm's sources stay marked as such. | S       | Built (WP-3). The June dataset was lost; the list was rebuilt from the website's own species list and the profiles from the farm's sources (11 varieties) and outside research (7), each marked on the page. Sources: docs/research/species-profiles-2026-11-11.md. | June plan; New (C13) |
 | SPR-3  | An admin can edit profile values in the app.                                                                                                                                                                             | C       | Not built. Depends on sign-in.                              | June plan            |
+| SPR-4 | A species profile shall say whether its spawn can be stored cold and the most days it may be stored. Pink oyster spawn cannot be refrigerated. | S | Proposed (WP-4) | New (Wholesale plan, Nov. 10, 2026, section 3) |
+| SPR-5 | The app owns a species' cultivation data and whether it is in rotation now (`in_rotation_now`). The website owns its sale tier, sale state and sale restrictions. In the app the fields `availability_tier`, `sale_path` and `restrictions` are kept with their values but shown read-only, are not edited, and are not served by the integration feed. | M | Proposed (WP-4). Since WP-3 all four fields can be edited in the app. | New (Website review, Nov. 13, 2026) |
 
 ## 4.13 Corrections
 
@@ -320,15 +331,25 @@ Since WP-1 a bag code is built from the bag type (SP for spawn, SB for substrate
 | USR-3  | Passwords shall be stored hashed. Sessions shall expire. The first admin account is created from server configuration at install.                                             | M       | Built (WP-2) to the April design: server-side sessions, bcrypt, first administrator from deployment settings. A session ends after 14 days unused or 30 days in all. | New (C7)                                 |
 | USR-4  | Each event shall record which user entered it.                                                                                                                                | S       | Built (WP-2) for bag events and harvests; the bag page shows who entered each.                                                                                                                                                                          | New (C7)                                 |
 
-## 4.15 Product disposition (second phase)
+## 4.15 Product disposition (phase 4)
 
-These requirements extend the record one step past harvest. They are the largest addition in this draft and depend on your answer to the scope question in the status report. <span class="mark">\[Decision: include, defer, or strike this section.\]</span>
+These requirements extend the record one step past harvest. Included by the owner on November 13, 2026, for phase 4 (WP-8). Build them once three or more standing restaurant orders have held for a month, the trigger the wholesale plan sets. Until then the production workbook carries this.
 
 | **ID** | **Requirement**                                                                                                                                                                      | **Pri** | **Status** | **Origin** |
 |--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|------------|------------|
 | INV-1  | The system shall show, for any week, the weight harvested of each species.                                                                                                           | S       | Proposed   | New (C17)  |
-| INV-2  | The operator can record where each week's harvest of a species went, by weight: restaurants, farmers markets, value-added products, and waste. No customer names or prices are kept. | S       | Proposed   | New (C17)  |
-| INV-3  | The admin can record a standing weekly quantity per species committed to restaurants. The forecast in RPT-8 shall show the surplus or shortfall against it.                          | C       | Proposed   | New (C17)  |
+| INV-2 | The operator can record where each week's harvest of a species went, by weight: online retail, restaurants, farmers markets, grow kits, dried product and salt, donation, and waste. No customer names or prices are kept. | S | Proposed (WP-8) | New (C17); channels revised from the Wholesale plan, Nov. 10, 2026 |
+| INV-3 | The admin can record a standing weekly quantity per species committed to restaurants. The forecast in RPT-8 shall show the surplus or shortfall against it, and warn when commitments exceed a share of expected harvest set by the admin (two-thirds by default). | S | Proposed (WP-8). Raised from C on November 13, 2026. | New (C17); Wholesale plan, Nov. 10, 2026, section 3 |
+
+## 4.16 Planning
+
+These replace the Weekly plan sheet of the production workbook prepared with the wholesale plan.
+
+| **ID** | **Requirement** | **Pri** | **Status** | **Origin** |
+|--------|-----------------|---------|------------|------------|
+| PLN-1 | Given a harvest week, a variety and target pounds, the system shall work out the bags needed (from pounds per bag, RPT-4), the latest date to inoculate and the latest date to start grain spawn. It uses the farm's own lead times by species (RPT-7) where there is enough history and the species profile otherwise. Dates already past are marked. | S | Proposed (WP-8) | New (Wholesale plan, Nov. 10, 2026) |
+| PLN-2 | The planner shall say whether a target can be met from bags already held cold (LIF-10) instead of a new inoculation. | C | Proposed (WP-8) | New (Wholesale plan, Nov. 10, 2026) |
+| PLN-3 | The planner's default target for a variety shall be its standing commitments (INV-3) divided by the commitment share, so that commitments take no more than two-thirds of expected harvest by default. | C | Proposed (WP-8) | New (Wholesale plan, Nov. 10, 2026, section 3) |
 
 # 5. Data requirements
 
@@ -347,7 +368,7 @@ These requirements extend the record one step past harvest. They are the largest
 | Bag event                                                                              | Bag, event type, time, detail, note                                                                          | bag_status_events                                                    |
 | Inoculation session and its targets                                                    | Source type, source, species, time, the bags inoculated                                                      | inoculation_batches, inoculation_batch_targets, inoculations         |
 | Harvest                                                                                | Bag, flush number, fresh weight, time, note                                                                  | harvest_events                                                       |
-| Proposed: purchased spawn lot, user, correction log, bag location, product disposition | As described in section 4                                                                                    | None yet                                                             |
+| Proposed: correction log, farm settings, cold-storage moves, bag location, harvest lots and grades, product disposition, standing commitments | As described in section 4 | None yet |
 
 ## 5.2 Rules the data must obey
 
@@ -397,7 +418,7 @@ All production records are kept without limit. <span class="mark">\[Decision: co
 
 ## 6.4 Other systems
 
-None in this version. A read-only feed for the farm website, with its own credentials and its own route namespace, is described in the April integration review and is deferred.
+None yet. WP-9 adds a read-only feed for the farm website, with its own credentials and its own route namespace (`/api/integration/v1/`), as described in the April integration review and the website's contract. It serves cultivation data, whether a variety is in rotation, and harvest and forecast by variety and week. It does not serve the sale fields the website owns (SPR-5). The website's own specification proposes that the site send weekly order totals by variety to the app (its INT-3). That write route is deferred until INV-2 has been used by hand for one season. When it is added it shall take totals by variety and week only, never customer data, and shall be the only route the website can write to.
 
 # 7. Non-functional requirements
 
@@ -456,9 +477,9 @@ None in this version. A read-only feed for the farm website, with its own creden
 | **Phase**                  | **Requirements**                                                                                                                                             | **Outcome**                                                                             |
 |----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | 1\. Safe to hold real data | Section 7.1 and 7.2. BAG-5, RUN-6 (bag code). USR-1 to USR-4.                                                                                                | The server survives a reboot, is backed up, is private, and requires sign-in.           |
-| 2\. Fits the farm          | REF-2 to REF-5, REF-11. RUN-3, RUN-5. INO-6, INO-7. LIF-6 to LIF-8. HAR-3 to HAR-6. COR-1 to COR-3. LBL-2 to LBL-5. RPT-4, RPT-5, RPT-9. SPR-2. Section 7.4. | The farm's actual practice can be recorded with few entries, and mistakes can be fixed. |
+| 2\. Fits the farm          | REF-2 to REF-5, REF-11. RUN-3, RUN-5. INO-6, INO-7. LIF-6 to LIF-8. HAR-3 to HAR-6. COR-1 to COR-3. LBL-2 to LBL-5. RPT-4, RPT-5, RPT-9. SPR-2, SPR-4, SPR-5. REF-15. LIF-10. HAR-8. DSP-3, DSP-5. DSH-5. TRC-5, LBL-6. RPT-11. Section 7.4. | The farm's actual practice can be recorded with few entries, and mistakes can be fixed. |
 | 3\. In use                 | No new requirements. One full production cycle is recorded and the reports are checked by hand.                                                              | The numbers can be trusted.                                                             |
-| 4\. Looking ahead          | BAG-10. RPT-7, RPT-8. DSH-4. INV-1 to INV-3. PRF-1.                                                                                                          | The app says what will be ready next week.                                              |
+| 4\. Looking ahead          | BAG-10. RPT-7, RPT-8. DSH-4. INV-1 to INV-3. PLN-1 to PLN-3. PRF-1.                                                                                                          | The app says what will be ready next week.                                              |
 | Later                      | Website feed, sensors, other farms.                                                                                                                          | Not specified here.                                                                     |
 
 # 9. Open decisions
@@ -481,9 +502,11 @@ Collected from the yellow flags above.
 
 8.  Volume assumptions (2.5).
 
-9.  Whether section 4.15, product disposition, is in, deferred or out.
+9.  Whether section 4.15, product disposition, is in, deferred or out. Settled November 13, 2026: in, for phase 4, built once three standing restaurant orders have held for a month.
 
 10. Connectivity at each site (2.3).
+
+11. Golden oyster's retail status. A website decision, taken in the website's own review; the app records only whether the variety is in rotation (SPR-5).
 
 # Appendix A. March requirements traced to this document
 

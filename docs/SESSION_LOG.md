@@ -150,3 +150,21 @@ Not a lead-developer session. The owner had Claude Code's `/doctor prompt-audit`
 
 - The audit raised two things and proposed no edit: "Run these in the session before pushing" in `CLAUDE.md` literally covers the development server and the demo seed, and `CLAUDE.md` says to continue the first unfinished work package while the roadmap puts the Dependabot pull requests first. Neither has caused confusion.
 - Merged branches stay on GitHub. The cloud session's proxy refuses branch deletion, and it also refuses the change to the repository setting that would remove them automatically; the owner turns that setting on himself (`CLAUDE.md`, Workflow).
+
+## 2026-11-13: owner adopts the wholesale-plan and website-review recommendations (documentation only)
+
+Not a lead-developer session. Claude, working with the owner in chat, compared the wholesale sales plan (November 10) and the website review (November 13) with this app's plan and recommended eleven changes. The owner adopted all of them. No code, test, migration or workflow changed.
+
+### What changed
+
+| File | Change |
+|---|---|
+| `docs/SRS.md` | Revision 2. New: REF-15 (culture supplier), LIF-10 (cold storage), DSP-5 (grow kits), LBL-6 and TRC-5 (harvest lots), RPT-11 (next-week view), DSH-5 (age alerts), SPR-4 (spawn storage), SPR-5 (species data ownership), section 4.16 with PLN-1 to PLN-3 (inoculation planner). Changed: BAG-10, HAR-8 (C to S), DSP-3, RPT-4 (pounds per bag), INV-2 (channels), INV-3 (two-thirds warning, C to S), 2.6, 4.15 (in, phase 4), 6.4 (read-only feed; a later write route for weekly totals only), 8 and 9. |
+| `docs/ROADMAP.md` | The new work placed in WP-4, WP-5, WP-6, WP-8 and WP-9. O8 rewritten (mark varieties in rotation; sale fields belong to the website). New O9: use harvest lot codes by hand from the first restaurant delivery. O2 to O4 asked for before December. |
+| `docs/LEAD_DEVELOPER_BRIEF.md` | Owner decisions 16 to 22 in section 4; decision 10 given its trigger; section 10 says which species fields the website owns. |
+
+### For the next development session
+
+- WP-4 has grown by six items (REF-15, LIF-10, DSH-5 with SPR-4, DSP-3/DSP-5, HAR-8, SPR-5). The cold-hold and spawn-age limits belong in the farm settings table WP-4 already creates.
+- Freezing the sale fields (SPR-5) touches the species screen and the species update route; keep the values and the seeder's add-only rule (D-030).
+- The website repository's own specification (its INT-3 and its species data) should be brought into line with SRS 6.4 and SPR-5 in the website's review.
