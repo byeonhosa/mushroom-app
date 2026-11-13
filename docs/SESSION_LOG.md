@@ -133,3 +133,20 @@ Every screen changed was looked at in a real browser at 1280 and 390 pixels wide
 1. Rerun the checks on Dependabot #24, #26 and #27 against the current `main` and merge each when green.
 2. WP-4, research first (brief section 8): bulk steps and group harvest. Then the farm settings table (flush limit, weight unit, partial use of the farm's own spawn), date and time on every event, and corrections with history.
 
+
+## 2026-11-13: prompt audit of the instruction files (documentation only)
+
+Not a lead-developer session. The owner had Claude Code's `/doctor prompt-audit` run across his repositories and approved a set of corrections for each. No code, test, migration or workflow changed here, and the order of work is unchanged: the next session still starts where the entry above says.
+
+### What changed
+
+| File | Change |
+|---|---|
+| `CLAUDE.md` | The session-start heading now says it applies to development sessions, so a session that only audits or answers a question is not told to continue a work package. The session-end heading is unchanged. |
+| `docs/LEAD_DEVELOPER_BRIEF.md` | The example slug is the website's `lion-s-mane` (D-027), not `lions-mane`. "Is there real data?" points at the row counts every deploy logs, in place of a guess dated June; both safety sentences stay. The website section no longer sequences its reading list and the service-token seam around WP-2, which is finished. |
+| `docs/ROADMAP.md` | The Playwright item says CI runs on `ubuntu-latest` (D-001), not that it is pinned to `ubuntu-24.04`. |
+
+### Found and left
+
+- The audit raised two things and proposed no edit: "Run these in the session before pushing" in `CLAUDE.md` literally covers the development server and the demo seed, and `CLAUDE.md` says to continue the first unfinished work package while the roadmap puts the Dependabot pull requests first. Neither has caused confusion.
+- Merged branches stay on GitHub. The cloud session's proxy refuses branch deletion, and it also refuses the change to the repository setting that would remove them automatically; the owner turns that setting on himself (`CLAUDE.md`, Workflow).

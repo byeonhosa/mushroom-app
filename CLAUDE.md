@@ -1,6 +1,6 @@
 # Mushroom App — Claude Code Project Instructions
 
-## Session Start (MANDATORY)
+## Session start (development sessions)
 1. `git pull` to sync `main`.
 2. Read this file, then `docs/LEAD_DEVELOPER_BRIEF.md`, `docs/ROADMAP.md` and `docs/DECISIONS.md` (if it exists).
 3. Continue the first unfinished work package in the roadmap unless the owner's prompt says otherwise.
